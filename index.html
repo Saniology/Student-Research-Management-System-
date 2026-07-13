@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KASU SRMS | Master Prototype</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #334155; }
+        h1, h2, h3, h4, .font-display { font-family: 'Fraunces', serif; letter-spacing: -0.02em; }
+        
+        .bg-primary { background-color: #065F46; } /* Rich Emerald */
+        .text-primary { color: #065F46; }
+        .border-primary { border-color: #065F46; }
+        .bg-accent { background-color: #F59E0B; } /* Vibrant Amber */
+        .text-accent { color: #F59E0B; }
+        .bg-dark { background-color: #0F172A; }
+        .text-dark { color: #0F172A; }
+        
+        .premium-shadow { box-shadow: 0 10px 40px -15px rgba(6, 95, 70, 0.15); }
+        .soft-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(6, 95, 70, 0.1); }
+        
+        .view { display: none; }
+        .active-view { display: block; }
+        .tour-btn.active { background-color: #065F46; color: #F59E0B; }
+        
+        .bar { transition: width 1s ease-out; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+
+        /* Toggle Switch CSS */
+        .toggle-checkbox:checked { right: 0; border-color: #065F46; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #065F46; }
+        .hidden-section { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- MASTER NAVIGATION -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 premium-shadow">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+            <div class="flex items-center space-x-3">
+                <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-14 w-14 object-contain" onerror="this.style.display='none'; document.getElementById('logo-fallback-nav').style.display='flex';">
+                <div id="logo-fallback-nav" class="logo-fallback" style="display:none; width:40px; height:40px; background-color:#065F46; border-radius:50%; align-items:center; justify-content:center; color:#F59E0B;"><i class="fas fa-graduation-cap"></i></div>
+                <div>
+                    <span class="font-display font-bold text-lg text-primary block leading-tight">KASU SRMS</span>
+                    <span class="text-[10px] text-slate-500 uppercase tracking-widest block leading-tight">Student Research Management System</span>
+                </div>
+            </div>
+            <div class="flex space-x-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
+                <button onclick="showView('student')" id="btn-student" class="tour-btn active px-4 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition">1. Student View</button>
+                <button onclick="showView('teacher')" id="btn-teacher" class="tour-btn px-4 py-1.5 rounded-md text-xs font-bold text-slate-600 whitespace-nowrap transition">2. Teacher View</button>
+                <button onclick="showView('vc')" id="btn-vc" class="tour-btn px-4 py-1.5 rounded-md text-xs font-bold text-slate-600 whitespace-nowrap transition">3. VC Analytics</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: STUDENT VIEW (Clearance & Upload)  -->
+    <!-- ========================================== -->
+    <div id="student" class="view active-view p-8 lg:p-12">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center space-x-3 mb-8">
+                <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-12 w-12 object-contain">
+                <div>
+                    <h1 class="text-3xl font-display font-bold text-primary">Academic Clearance Upload</h1>
+                    <p class="text-slate-500 font-light">Complete your digital graduation clearance for your respective degree level.</p>
+                </div>
+            </div>
+
+            <!-- Auto-Fetch & Clickable Profile -->
+            <div class="bg-primary text-white rounded-xl p-4 mb-6 flex items-center justify-between premium-shadow">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-accent text-xl mr-3"></i>
+                    <div>
+                        <p class="text-sm font-bold">Student Data Auto-Fetched from Portal</p>
+                        <p class="text-xs text-emerald-100 font-light">Ibrahim Yusuf | KASU/PG/19/005 | PhD Geography | 2023/2024 Session</p>
+                    </div>
+                </div>
+                <button onclick="toggleProfileModal()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 transition border border-white/20">
+                    <i class="fas fa-id-card"></i> <span class="hidden sm:inline">View Profile</span>
+                </button>
+            </div>
+
+            <!-- Project Type Toggles (Group & Physical) -->
+            <div class="bg-white rounded-xl premium-shadow border border-slate-100 p-6 mb-6">
+                <h2 class="text-lg font-display font-bold text-primary mb-4">Project Configuration</h2>
+                <div class="space-y-4">
+                    <!-- Group Project Toggle -->
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-users text-primary mr-3"></i>
+                            <div>
+                                <p class="text-sm font-bold text-dark">Group Project</p>
+                                <p class="text-xs text-slate-500 font-light">Toggle on if this is a team project.</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only toggle-checkbox" onchange="toggleSection('group-section', this.checked)">
+                            <div class="toggle-label w-11 h-6 bg-slate-300 rounded-full transition"></div>
+                            <span class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition transform"></span>
+                        </label>
+                    </div>
+
+                    <!-- Group Members Input (Hidden by default) -->
+                    <div id="group-section" class="hidden-section p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Add Group Members (Matric Numbers)</label>
+                        <p class="text-xs text-slate-400 mb-2 font-light">Separate each matric number with a comma. They will all receive clearance.</p>
+                        <input type="text" placeholder="e.g. KASU/ENG/20/111, KASU/ENG/20/112" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent">
+                    </div>
+
+                    <!-- Physical Project Toggle -->
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                        <div class="flex items-center">
+                            <i class="fas fa-cogs text-primary mr-3"></i>
+                            <div>
+                                <p class="text-sm font-bold text-dark">Physical Prototype / Hardware</p>
+                                <p class="text-xs text-slate-500 font-light">Toggle on if your project includes a tangible build.</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only toggle-checkbox" onchange="toggleSection('physical-section', this.checked)">
+                            <div class="toggle-label w-11 h-6 bg-slate-300 rounded-full transition"></div>
+                            <span class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition transform"></span>
+                        </label>
+                    </div>
+
+                    <!-- Physical Artifact Upload (Hidden by default) -->
+                    <div id="physical-section" class="hidden-section p-4 bg-amber-50/50 border border-amber-100 rounded-lg">
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Upload Prototype Demo (Video/Photos)</label>
+                        <p class="text-xs text-slate-400 mb-2 font-light">Upload a 2-minute video demonstration or clear photos of the prototype.</p>
+                        <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-white">
+                            <i class="fas fa-video text-3xl text-accent mb-2"></i>
+                            <p class="text-sm font-bold text-primary">Demo.mp4 / Photos.zip</p>
+                            <p class="text-xs text-slate-400 mt-1 font-light">Max 500MB</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 1: File Upload -->
+            <div class="bg-white rounded-xl premium-shadow border border-slate-100 p-6 mb-6">
+                <h2 class="text-lg font-display font-bold text-primary mb-4">1. Upload Research Files (Report)</h2>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-slate-50">
+                        <i class="fas fa-file-pdf text-3xl text-red-500 mb-2"></i>
+                        <p class="text-sm font-bold text-primary">Main Thesis PDF</p>
+                        <p class="text-xs text-emerald-600 mt-1 font-bold">PhD_Dissertation.pdf uploaded</p>
+                    </div>
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-slate-50">
+                        <i class="fas fa-folder-plus text-3xl text-slate-400 mb-2"></i>
+                        <p class="text-sm font-bold text-primary">Source Code / Dataset</p>
+                        <p class="text-xs text-slate-400 mt-1 font-light">Optional (Max 100MB)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Plagiarism -->
+            <div class="bg-white rounded-xl premium-shadow border border-slate-100 p-6 mb-6">
+                <h2 class="text-lg font-display font-bold text-primary mb-4">2. Plagiarism Verification</h2>
+                <div class="flex items-center justify-between bg-slate-50 p-4 rounded-lg border border-slate-100">
+                    <div>
+                        <p class="text-2xl font-display font-bold text-primary">14% <span class="text-sm font-medium text-slate-500">Similarity</span></p>
+                        <p class="text-xs text-slate-500 mt-1">Status: Passed (Below 25% threshold)</p>
+                    </div>
+                    <button class="bg-slate-200 text-primary px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-300">Run Scan</button>
+                </div>
+            </div>
+
+            <!-- Step 3: AI Metadata -->
+            <div class="bg-white rounded-xl premium-shadow border border-slate-100 p-6 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-display font-bold text-primary">3. Metadata & AI Extraction</h2>
+                    <button class="bg-primary text-accent px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-emerald-800">
+                        <i class="fas fa-magic"></i> <span>Run AI Auto-Extract</span>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Project Title</label>
+                        <input type="text" value="Climate Change Adaptation Strategies in Northern Nigeria" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent">
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-robot text-accent mr-2"></i>
+                            <p class="text-xs font-bold text-primary uppercase tracking-wider">AI Suggested Keywords</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-white text-primary px-3 py-1 rounded-full text-xs font-medium border border-slate-200">Climate Change</span>
+                            <span class="bg-white text-primary px-3 py-1 rounded-full text-xs font-medium border border-slate-200">Adaptation</span>
+                            <span class="bg-white text-primary px-3 py-1 rounded-full text-xs font-medium border border-slate-200">Agriculture</span>
+                            <span class="bg-white text-primary px-3 py-1 rounded-full text-xs font-medium border border-slate-200">Sustainability</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Payment -->
+            <div class="bg-primary rounded-xl p-6 flex flex-col md:flex-row items-center justify-between premium-shadow">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-sm font-bold text-white">4. Digital Repository Fee</p>
+                    <p class="text-xs text-emerald-100 font-light">Required for graduation clearance. Auto-receipt generated.</p>
+                </div>
+                <button class="bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition w-full md:w-auto">
+                    Pay ₦2,000 via Paystack & Submit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PROFILE MODAL (Passport & Biodata)         -->
+    <!-- ========================================== -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="bg-white rounded-2xl premium-shadow w-full max-w-md mx-4 overflow-hidden">
+            <div class="bg-primary p-6 flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-10 w-10 object-contain bg-white rounded-full p-0.5">
+                    <span class="text-white font-display font-bold text-lg">Student Biodata</span>
+                </div>
+                <button onclick="toggleProfileModal()" class="text-white/70 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="flex flex-col items-center mb-6">
+                    <div class="w-28 h-28 rounded-full border-4 border-accent overflow-hidden mb-4 premium-shadow">
+                        <img src="https://ui-avatars.com/api/?name=Ibrahim+Yusuf&size=128&bold=true" alt="Passport" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-xl font-display font-bold text-primary">Ibrahim Yusuf</h3>
+                    <p class="text-sm text-slate-500 font-light">KASU/PG/19/005</p>
+                </div>
+                <div class="space-y-3 text-sm border-t border-slate-100 pt-4">
+                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Faculty:</span><span class="text-dark font-bold">Science</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Department:</span><span class="text-dark font-bold">Geography</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Degree:</span><span class="text-dark font-bold">PhD (Postgraduate)</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Session:</span><span class="text-dark font-bold">2023/2024</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Status:</span><span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold text-xs">Cleared</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: TEACHER VIEW (Supervisor Dashboard)-->
+    <!-- ========================================== -->
+    <div id="teacher" class="view p-8 lg:p-12">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div class="flex items-center space-x-4">
+                    <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-14 w-14 object-contain">
+                    <div>
+                        <h1 class="text-3xl font-display font-bold text-primary">Supervisor Dashboard</h1>
+                        <p class="text-slate-500 font-light mt-1">Dr. Sani Musa | Department of Computer Science</p>
+                    </div>
+                </div>
+                <button class="mt-4 md:mt-0 bg-primary text-accent px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-emerald-800">
+                    <i class="fas fa-download"></i> Export Report
+                </button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Supervisees</p>
+                    <p class="text-3xl font-display font-bold text-primary mt-1">10</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Review</p>
+                    <p class="text-3xl font-display font-bold text-accent mt-1">4</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Approved</p>
+                    <p class="text-3xl font-display font-bold text-emerald-600 mt-1">6</p>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl premium-shadow border border-slate-100 overflow-hidden">
+                <div class="p-6 border-b border-slate-100">
+                    <h2 class="text-lg font-display font-bold text-primary">Assigned Students (Session 2023/2024)</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                                <th class="p-4 font-bold">Student Name / Matric</th>
+                                <th class="p-4 font-bold">Degree</th>
+                                <th class="p-4 font-bold">Project Topic</th>
+                                <th class="p-4 font-bold">Status</th>
+                                <th class="p-4 font-bold text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-table-body" class="text-sm divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 3: VC VIEW (Analytics & Charts)       -->
+    <!-- ========================================== -->
+    <div id="vc" class="view p-8 lg:p-12">
+        <div class="max-w-7xl mx-auto">
+             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div class="flex items-center space-x-4">
+                    <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-14 w-14 object-contain">
+                    <div>
+                        <h1 class="text-3xl font-display font-bold text-primary">Analytics Hub</h1>
+                        <p class="text-slate-500 font-light mt-1">Kaduna State University | Global Research Overview</p>
+                    </div>
+                </div>
+                <select class="mt-4 md:mt-0 p-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white focus:outline-none focus:ring-1 focus:ring-accent">
+                    <option>Academic Session: 2023/2024</option>
+                    <option>Academic Session: 2022/2023</option>
+                </select>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-primary p-6 rounded-xl text-white premium-shadow relative overflow-hidden">
+                    <i class="fas fa-database absolute right-4 top-4 text-5xl text-emerald-800/40"></i>
+                    <p class="text-xs uppercase tracking-wider text-accent font-bold">Total Archived</p>
+                    <p class="text-4xl font-display font-bold mt-2">4,520</p>
+                    <p class="text-xs mt-2 text-emerald-100"><i class="fas fa-arrow-up"></i> 15% from last year</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100 relative overflow-hidden">
+                    <i class="fas fa-money-bill-wave absolute right-4 top-4 text-5xl text-emerald-50"></i>
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Revenue Shared</p>
+                    <p class="text-4xl font-display font-bold text-emerald-600 mt-2">₦4.5M</p>
+                    <p class="text-xs mt-2 text-slate-400 font-light">Auto-split via Paystack</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100 relative overflow-hidden">
+                    <i class="fas fa-user-graduate absolute right-4 top-4 text-5xl text-slate-50"></i>
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Postgraduate (PG)</p>
+                    <p class="text-4xl font-display font-bold text-primary mt-2">840</p>
+                    <p class="text-xs mt-2 text-slate-400 font-light">PGD, MSc, & PhD</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100 relative overflow-hidden">
+                    <i class="fas fa-globe-africa absolute right-4 top-4 text-5xl text-slate-50"></i>
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Global DOI Issued</p>
+                    <p class="text-4xl font-display font-bold text-primary mt-2">128</p>
+                    <p class="text-xs mt-2 text-slate-400 font-light">Searchable on Google Scholar</p>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl premium-shadow border border-slate-100">
+                    <h3 class="text-base font-display font-bold text-primary mb-6">Departmental Research Activity</h3>
+                    <div class="space-y-4">
+                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Computer Science</span><span class="text-slate-500">320</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 85%"></div></div></div>
+                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Biochemistry</span><span class="text-slate-500">280</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 75%"></div></div></div>
+                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Geography</span><span class="text-slate-500">210</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 55%"></div></div></div>
+                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Mass Communication</span><span class="text-slate-500">180</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 45%"></div></div></div>
+                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Economics</span><span class="text-slate-500">150</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 38%"></div></div></div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100 flex flex-col items-center">
+                    <h3 class="text-base font-display font-bold text-primary mb-6 self-start">Degree Distribution</h3>
+                    <div class="relative w-40 h-40 mb-4">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#F1F5F9" stroke-width="4"></circle>
+                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#3B82F6" stroke-width="4" stroke-dasharray="60 40" stroke-dashoffset="0"></circle>
+                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#F59E0B" stroke-width="4" stroke-dasharray="25 75" stroke-dashoffset="-60"></circle>
+                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#10B981" stroke-width="4" stroke-dasharray="15 85" stroke-dashoffset="-85"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <p class="text-2xl font-display font-bold text-primary">4,520</p>
+                            <p class="text-[10px] uppercase tracking-wider text-slate-400">Total</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 w-full text-center text-[10px]">
+                        <div><span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>BSc (60%)</div>
+                        <div><span class="inline-block w-2 h-2 bg-accent rounded-full mr-1"></span>MSc (25%)</div>
+                        <div><span class="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-1"></span>PhD (15%)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
+                    <h3 class="text-base font-display font-bold text-primary mb-6">Monthly Submissions (2024)</h3>
+                    <div class="flex items-end justify-between h-32 space-x-2">
+                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-100 rounded-t" style="height: 30%"></div><p class="text-[10px] mt-1 text-slate-400">Jan</p></div>
+                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-200 rounded-t" style="height: 40%"></div><p class="text-[10px] mt-1 text-slate-400">Feb</p></div>
+                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-300 rounded-t" style="height: 50%"></div><p class="text-[10px] mt-1 text-slate-400">Mar</p></div>
+                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-400 rounded-t" style="height: 60%"></div><p class="text-[10px] mt-1 text-slate-400">Apr</p></div>
+                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-500 rounded-t" style="height: 75%"></div><p class="text-[10px] mt-1 text-slate-400">May</p></div>
+                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-accent rounded-t" style="height: 95%"></div><p class="text-[10px] mt-1 text-primary font-bold">Jun</p></div>
+                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-300 rounded-t" style="height: 45%"></div><p class="text-[10px] mt-1 text-slate-400">Jul</p></div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
+                    <h3 class="text-base font-display font-bold text-primary mb-4">Top Trending Research</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><div class="flex items-center min-w-0"><span class="text-accent font-display font-bold mr-3">01</span><p class="text-sm font-medium text-primary truncate">Blockchain E-Voting System</p></div><span class="text-xs text-slate-500 font-bold ml-2 flex-shrink-0"><i class="fas fa-eye mr-1"></i> 2.1k</span></div>
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><div class="flex items-center min-w-0"><span class="text-accent font-display font-bold mr-3">02</span><p class="text-sm font-medium text-primary truncate">ML Crop Yield Prediction</p></div><span class="text-xs text-slate-500 font-bold ml-2 flex-shrink-0"><i class="fas fa-eye mr-1"></i> 1.8k</span></div>
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><div class="flex items-center min-w-0"><span class="text-accent font-display font-bold mr-3">03</span><p class="text-sm font-medium text-primary truncate">Moringa Phytochemicals</p></div><span class="text-xs text-slate-500 font-bold ml-2 flex-shrink-0"><i class="fas fa-eye mr-1"></i> 1.2k</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- FOOTER                                     -->
+    <!-- ========================================== -->
+    <footer class="bg-primary text-white py-12 mt-12">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-16 w-16 object-contain bg-white rounded-full p-1">
+                <div>
+                    <span class="font-display font-bold text-lg block leading-tight text-accent">Kaduna State University</span>
+                    <span class="text-xs text-emerald-100 italic block leading-tight">"Knowledge for Development and Unity"</span>
+                </div>
+            </div>
+            <div class="flex space-x-6 text-sm text-emerald-100 font-light">
+                <a href="#" class="hover:text-accent transition">Library Portal</a>
+                <a href="#" class="hover:text-accent transition">NUC Compliance</a>
+                <a href="#" class="hover:text-accent transition">Support</a>
+            </div>
+            <p class="text-xs text-emerald-200 mt-4 md:mt-0 font-light">&copy; 2024 KASU SRMS.</p>
+        </div>
+    </footer>
+
+    <script>
+        // View Switcher
+        function showView(viewId) {
+            const views = document.querySelectorAll('.view');
+            views.forEach(v => v.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+
+            const btns = document.querySelectorAll('.tour-btn');
+            btns.forEach(b => { b.classList.remove('active'); b.classList.add('text-slate-600'); });
+            const activeBtn = document.getElementById('btn-' + viewId);
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('text-slate-600');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        // Profile Modal Toggle
+        function toggleProfileModal() {
+            document.getElementById('profile-modal').classList.toggle('active');
+        }
+
+        // Show/Hide Group & Physical Project Sections
+        function toggleSection(sectionId, isChecked) {
+            const section = document.getElementById(sectionId);
+            if (isChecked) {
+                section.style.display = 'block';
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        // Teacher View: 10 Students Data
+        const students = [
+            { name: "Musa Abdullahi", matric: "KASU/SCI/20/123", degree: "BSc", topic: "Design of a Web-Based E-Voting System using Blockchain", status: "Approved" },
+            { name: "Aisha Bello", matric: "KASU/PG/21/045", degree: "MSc", topic: "Machine Learning Algorithms for Predicting Crop Yield", status: "Pending" },
+            { name: "Ibrahim Yusuf", matric: "KASU/PG/19/005", degree: "PhD", topic: "Climate Change Adaptation Strategies in Northern Nigeria", status: "Pending" },
+            { name: "John Paul", matric: "KASU/SCI/20/088", degree: "BSc", topic: "Antimicrobial Resistance of Bacterial Isolates", status: "Approved" },
+            { name: "Fatima Sani", matric: "KASU/SCI/20/012", degree: "BSc", topic: "The Role of Social Media in Political Campaigns", status: "Revision" },
+            { name: "Daniel Ojo", matric: "KASU/SCI/20/099", degree: "BSc", topic: "Integration of Smart Home Technology in Buildings", status: "Approved" },
+            { name: "Grace Okoro", matric: "KASU/EDU/PG/22/034", degree: "PGD", topic: "Challenges of Teaching Mathematics in Junior Secondary", status: "Pending" },
+            { name: "David Okon", matric: "KASU/ENV/20/034", degree: "BSc", topic: "Sustainable Building Materials for Affordable Housing", status: "Approved" },
+            { name: "Chinedu Okafor", matric: "KASU/SS/PG/21/067", degree: "MSc", topic: "Impact of Inflation on the Manufacturing Sector", status: "Approved" },
+            { name: "Blessing Eze", matric: "KASU/LLB/19/045", degree: "LLB", topic: "An Appraisal of the Legal Framework for Cybercrime", status: "Pending" }
+        ];
+
+        const degreeColors = { "BSc": "bg-blue-50 text-blue-700", "MSc": "bg-amber-50 text-amber-700", "PhD": "bg-emerald-50 text-emerald-700", "PGD": "bg-purple-50 text-purple-700", "LLB": "bg-orange-50 text-orange-700" };
+        const statusColors = { "Approved": "bg-emerald-50 text-emerald-700", "Pending": "bg-amber-50 text-amber-700", "Revision": "bg-red-50 text-red-600" };
+
+        document.getElementById('student-table-body').innerHTML = students.map(s => `
+            <tr class="hover:bg-slate-50">
+                <td class="p-4"><p class="font-bold text-primary">${s.name}</p><p class="text-xs text-slate-400 font-light">${s.matric}</p></td>
+                <td class="p-4"><span class="text-[10px] ${degreeColors[s.degree]} px-2 py-1 rounded font-bold uppercase">${s.degree}</span></td>
+                <td class="p-4 text-slate-600 max-w-xs">${s.topic}</td>
+                <td class="p-4"><span class="text-[10px] ${statusColors[s.status]} px-2 py-1 rounded font-bold uppercase">${s.status}</span></td>
+                <td class="p-4 text-right space-x-2">
+                    ${s.status === 'Pending' ? `
+                        <button class="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-emerald-700">Approve</button>
+                        <button class="bg-red-50 text-red-600 px-3 py-1 rounded text-xs font-bold hover:bg-red-100">Reject</button>
+                    ` : `<button class="text-slate-400 hover:text-primary"><i class="fas fa-eye"></i></button>`}
+                </td>
+            </tr>
+        `).join('');
+    </script>
+</body>
+</html>
