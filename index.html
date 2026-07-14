@@ -3,498 +3,705 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KASU SRMS | Master Prototype</title>
+    <title>KASU SPMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #334155; }
-        h1, h2, h3, h4, .font-display { font-family: 'Fraunces', serif; letter-spacing: -0.02em; }
-        
-        .bg-primary { background-color: #065F46; } /* Rich Emerald */
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #334155; margin: 0; }
+        h1, h2, h3, h4, .font-display { font-family: 'Fraunces', serif; color: #0F172A; }
+        .bg-primary { background-color: #065F46; }
         .text-primary { color: #065F46; }
-        .border-primary { border-color: #065F46; }
-        .bg-accent { background-color: #F59E0B; } /* Vibrant Amber */
+        .bg-accent { background-color: #F59E0B; }
         .text-accent { color: #F59E0B; }
-        .bg-dark { background-color: #0F172A; }
-        .text-dark { color: #0F172A; }
-        
-        .premium-shadow { box-shadow: 0 10px 40px -15px rgba(6, 95, 70, 0.15); }
-        .soft-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        
+        .premium-shadow { box-shadow: 0 10px 40px -15px rgba(6, 95, 70, 0.1); }
         .card-hover { transition: all 0.3s ease; }
         .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(6, 95, 70, 0.1); }
-        
-        .view { display: none; }
-        .active-view { display: block; }
-        .tour-btn.active { background-color: #065F46; color: #F59E0B; }
-        
-        .bar { transition: width 1s ease-out; }
-
-        /* Modal Styles */
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-            z-index: 100; justify-content: center; align-items: center;
-        }
+        .view { display: none !important; }
+        .active-view { display: block !important; }
+        #admin.active-view { display: flex !important; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .glass-input { background: rgba(248, 250, 252, 0.9); border: 1px solid rgba(203, 213, 225, 0.8); color: #0F172A; }
+        .glass-input:focus { border-color: #065F46; outline: none; }
+        .blueprint-bg { background-color: #FFFFFF; position: relative; overflow: hidden; }
+        .blueprint-bg::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg width='150' height='150' viewBox='0 0 150 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23065F46' stroke-width='1' stroke-opacity='0.06'%3E%3Cpath d='M0 0 L150 150 M0 150 L150 0'/%3E%3Ccircle cx='75' cy='75' r='30'/%3E%3Ccircle cx='75' cy='75' r='60'/%3E%3C/g%3E%3C/svg%3E"); }
+        .blueprint-bg > * { position: relative; z-index: 1; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 100; justify-content: center; align-items: center; padding: 1rem; }
         .modal-overlay.active { display: flex; }
-
-        /* Toggle Switch CSS */
-        .toggle-checkbox:checked { right: 0; border-color: #065F46; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #065F46; }
-        .hidden-section { display: none; }
+        .admin-sidebar { background-color: #0F172A; color: #94a3b8; }
+        .sidebar-link { transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-link:hover { background-color: #1e293b; color: #fff; }
+        .sidebar-link.active { background-color: #065F46; color: #fff; border-left-color: #F59E0B; }
+        #receipt-template { position: absolute; left: -9999px; top: 0; width: 800px; padding: 40px; background: white; font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50">
 
-    <!-- MASTER NAVIGATION -->
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 premium-shadow">
-        <div class="max-w-7xl mx-auto px-6 py-3 flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
-            <div class="flex items-center space-x-3">
-                <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-14 w-14 object-contain" onerror="this.style.display='none'; document.getElementById('logo-fallback-nav').style.display='flex';">
-                <div id="logo-fallback-nav" class="logo-fallback" style="display:none; width:40px; height:40px; background-color:#065F46; border-radius:50%; align-items:center; justify-content:center; color:#F59E0B;"><i class="fas fa-graduation-cap"></i></div>
-                <div>
-                    <span class="font-display font-bold text-lg text-primary block leading-tight">KASU SRMS</span>
-                    <span class="text-[10px] text-slate-500 uppercase tracking-widest block leading-tight">Student Research Management System</span>
+    <!-- NAVIGATION -->
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 premium-shadow">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('landing')">
+                <img src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg?auth_key=1883957539-c26e32e54017417fa3f43a008332e2bf-0-65c12dd7c1dd680811e323fff26a3285" alt="KASU Logo" class="h-12 w-12 object-contain rounded-full" onerror="this.src='https://ui-avatars.com/api/?name=KASU&background=065F46&color=fff&bold=true'">
+                <div class="flex flex-col leading-tight">
+                    <span class="font-display font-bold text-lg text-primary">KASU SPMS</span>
+                    <span class="hidden sm:block text-[10px] text-slate-500 uppercase tracking-widest">Final-Year Project Portal</span>
                 </div>
             </div>
-            <div class="flex space-x-1 bg-slate-100 p-1 rounded-lg overflow-x-auto">
-                <button onclick="showView('student')" id="btn-student" class="tour-btn active px-4 py-1.5 rounded-md text-xs font-bold whitespace-nowrap transition">1. Student View</button>
-                <button onclick="showView('teacher')" id="btn-teacher" class="tour-btn px-4 py-1.5 rounded-md text-xs font-bold text-slate-600 whitespace-nowrap transition">2. Teacher View</button>
-                <button onclick="showView('vc')" id="btn-vc" class="tour-btn px-4 py-1.5 rounded-md text-xs font-bold text-slate-600 whitespace-nowrap transition">3. VC Analytics</button>
-            </div>
+            <div class="hidden md:flex items-center space-x-6" id="nav-links"></div>
+            <div class="flex items-center space-x-4" id="nav-actions"></div>
         </div>
     </nav>
 
-    <!-- ========================================== -->
-    <!-- VIEW 1: STUDENT VIEW (Clearance & Upload)  -->
-    <!-- ========================================== -->
-    <div id="student" class="view active-view p-8 lg:p-12">
-        <div class="max-w-4xl mx-auto">
-            <div class="flex items-center space-x-3 mb-8">
-                <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-12 w-12 object-contain">
-                <div>
-                    <h1 class="text-3xl font-display font-bold text-primary">Academic Clearance Upload</h1>
-                    <p class="text-slate-500 font-light">Complete your digital graduation clearance for your respective degree level.</p>
+    <!-- VIEW 1: LANDING -->
+    <div id="landing" class="view active-view blueprint-bg min-h-[calc(100vh-5rem)]">
+        
+        <!-- Hero Section -->
+        <section class="py-20 md:py-32 px-4 text-center">
+            <div class="max-w-4xl mx-auto">
+                <div class="inline-flex items-center space-x-2 bg-white border border-slate-200 px-4 py-1.5 rounded-full mb-8 premium-shadow">
+                    <span class="bg-primary w-2 h-2 rounded-full animate-pulse"></span>
+                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Kaduna State University</span>
                 </div>
-            </div>
-
-            <!-- Auto-Fetch & Clickable Profile -->
-            <div class="bg-primary text-white rounded-xl p-4 mb-6 flex items-center justify-between premium-shadow">
-                <div class="flex items-center">
-                    <i class="fas fa-check-circle text-accent text-xl mr-3"></i>
-                    <div>
-                        <p class="text-sm font-bold">Student Data Auto-Fetched from Portal</p>
-                        <p class="text-xs text-emerald-100 font-light">Ibrahim Yusuf | KASU/PG/19/005 | PhD Geography | 2023/2024 Session</p>
-                    </div>
-                </div>
-                <button onclick="toggleProfileModal()" class="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 transition border border-white/20">
-                    <i class="fas fa-id-card"></i> <span class="hidden sm:inline">View Profile</span>
+                <h1 class="text-4xl md:text-6xl lg:text-7xl font-display font-semibold text-primary leading-[1.1] mb-6">KASU SPMS</h1>
+                <p class="text-xl md:text-2xl text-accent italic font-medium mb-8">The Official Final-Year Project Submission Portal</p>
+                <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-10 font-light leading-relaxed">Designed to simplify project submission, supervisor approval, and library clearance through one secure digital platform.</p>
+                <button onclick="openAuthModal('login')" class="bg-primary text-white px-8 py-4 rounded-lg text-sm font-bold hover:bg-emerald-700 transition premium-shadow">
+                    Login to Portal <i class="fas fa-arrow-right ml-2"></i>
                 </button>
             </div>
+        </section>
 
-            <!-- Project Type Toggles (Group & Physical) -->
-            <div class="bg-white rounded-xl premium-shadow border border-slate-100 p-6 mb-6">
-                <h2 class="text-lg font-display font-bold text-primary mb-4">Project Configuration</h2>
-                <div class="space-y-4">
-                    <!-- Group Project Toggle -->
-                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                        <div class="flex items-center">
-                            <i class="fas fa-users text-primary mr-3"></i>
-                            <div>
-                                <p class="text-sm font-bold text-dark">Group Project</p>
-                                <p class="text-xs text-slate-500 font-light">Toggle on if this is a team project.</p>
-                            </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only toggle-checkbox" onchange="toggleSection('group-section', this.checked)">
-                            <div class="toggle-label w-11 h-6 bg-slate-300 rounded-full transition"></div>
-                            <span class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition transform"></span>
-                        </label>
+        <!-- Process Flow -->
+        <section class="py-20 bg-white border-y border-slate-200">
+            <div class="max-w-5xl mx-auto px-4 text-center">
+                <h2 class="text-3xl md:text-4xl font-display font-semibold text-primary mb-12">The Clearance Process</h2>
+                <div class="flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-6">
+                    <div class="flex flex-col items-center"><div class="w-16 h-16 bg-white border-2 border-primary rounded-full flex items-center justify-center text-primary shadow-md mb-3"><i class="fas fa-user-graduate text-xl"></i></div><p class="text-xs font-bold text-primary">Student Login</p></div>
+                    <i class="fas fa-arrow-down text-slate-300 md:rotate-90 text-xl"></i>
+                    <div class="flex flex-col items-center"><div class="w-16 h-16 bg-white border-2 border-primary rounded-full flex items-center justify-center text-primary shadow-md mb-3"><i class="fas fa-file-upload text-xl"></i></div><p class="text-xs font-bold text-primary">Upload Thesis</p></div>
+                    <i class="fas fa-arrow-down text-slate-300 md:rotate-90 text-xl"></i>
+                    <div class="flex flex-col items-center"><div class="w-16 h-16 bg-white border-2 border-accent rounded-full flex items-center justify-center text-accent shadow-md mb-3"><i class="fas fa-check-circle text-xl"></i></div><p class="text-xs font-bold text-primary">Supervisor Approval</p></div>
+                    <i class="fas fa-arrow-down text-slate-300 md:rotate-90 text-xl"></i>
+                    <div class="flex flex-col items-center"><div class="w-16 h-16 bg-white border-2 border-primary rounded-full flex items-center justify-center text-primary shadow-md mb-3"><i class="fas fa-book-reader text-xl"></i></div><p class="text-xs font-bold text-primary">Library Verification</p></div>
+                    <i class="fas fa-arrow-down text-slate-300 md:rotate-90 text-xl"></i>
+                    <div class="flex flex-col items-center"><div class="w-16 h-16 bg-primary border-2 border-primary rounded-full flex items-center justify-center text-white shadow-md mb-3"><i class="fas fa-award text-xl"></i></div><p class="text-xs font-bold text-primary">Clearance Completed</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistics -->
+        <section class="bg-primary py-20">
+            <div class="max-w-7xl mx-auto px-4">
+                <h2 class="text-center text-3xl md:text-4xl font-display font-bold text-white mb-12">Institutional Impact</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+                    <div class="p-6 bg-white/5 rounded-xl border border-white/10"><p class="text-4xl md:text-5xl font-display font-bold text-accent">18,425</p><p class="text-sm uppercase tracking-wider text-emerald-100 font-semibold mt-2">Students</p></div>
+                    <div class="p-6 bg-white/5 rounded-xl border border-white/10"><p class="text-4xl md:text-5xl font-display font-bold text-accent">4,021</p><p class="text-sm uppercase tracking-wider text-emerald-100 font-semibold mt-2">Projects Submitted</p></div>
+                    <div class="p-6 bg-white/5 rounded-xl border border-white/10"><p class="text-4xl md:text-5xl font-display font-bold text-accent">3,812</p><p class="text-sm uppercase tracking-wider text-emerald-100 font-semibold mt-2">Approved</p></div>
+                    <div class="p-6 bg-white/5 rounded-xl border border-white/10"><p class="text-4xl md:text-5xl font-display font-bold text-accent">76</p><p class="text-sm uppercase tracking-wider text-emerald-100 font-semibold mt-2">Departments</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="py-24 bg-slate-50">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-display font-semibold text-primary">Platform Features</h2>
+                    <p class="text-slate-500 mt-2">Everything you need for a seamless final year.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-xl premium-shadow border border-slate-100">
+                        <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-primary mb-6"><i class="fas fa-shield-alt text-xl"></i></div>
+                        <h3 class="text-lg font-display font-bold text-primary mb-3">Secure PDF Vault</h3>
+                        <p class="text-slate-500 text-sm">All uploads are automatically validated, watermarked, and securely stored in the university cloud.</p>
                     </div>
-
-                    <!-- Group Members Input (Hidden by default) -->
-                    <div id="group-section" class="hidden-section p-4 bg-emerald-50/50 border border-emerald-100 rounded-lg">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Add Group Members (Matric Numbers)</label>
-                        <p class="text-xs text-slate-400 mb-2 font-light">Separate each matric number with a comma. They will all receive clearance.</p>
-                        <input type="text" placeholder="e.g. KASU/ENG/20/111, KASU/ENG/20/112" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent">
+                    <div class="bg-white p-8 rounded-xl premium-shadow border border-slate-100">
+                        <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-accent mb-6"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
+                        <h3 class="text-lg font-display font-bold text-primary mb-3">Automated Clearance</h3>
+                        <p class="text-slate-500 text-sm">Say goodbye to printing 5 copies. Pay your digital fee and generate your clearance receipt instantly.</p>
                     </div>
-
-                    <!-- Physical Project Toggle -->
-                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                        <div class="flex items-center">
-                            <i class="fas fa-cogs text-primary mr-3"></i>
-                            <div>
-                                <p class="text-sm font-bold text-dark">Physical Prototype / Hardware</p>
-                                <p class="text-xs text-slate-500 font-light">Toggle on if your project includes a tangible build.</p>
-                            </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only toggle-checkbox" onchange="toggleSection('physical-section', this.checked)">
-                            <div class="toggle-label w-11 h-6 bg-slate-300 rounded-full transition"></div>
-                            <span class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition transform"></span>
-                        </label>
-                    </div>
-
-                    <!-- Physical Artifact Upload (Hidden by default) -->
-                    <div id="physical-section" class="hidden-section p-4 bg-amber-50/50 border border-amber-100 rounded-lg">
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Upload Prototype Demo (Video/Photos)</label>
-                        <p class="text-xs text-slate-400 mb-2 font-light">Upload a 2-minute video demonstration or clear photos of the prototype.</p>
-                        <div class="border-2 border-dashed border-amber-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-white">
-                            <i class="fas fa-video text-3xl text-accent mb-2"></i>
-                            <p class="text-sm font-bold text-primary">Demo.mp4 / Photos.zip</p>
-                            <p class="text-xs text-slate-400 mt-1 font-light">Max 500MB</p>
-                        </div>
+                    <div class="bg-white p-8 rounded-xl premium-shadow border border-slate-100">
+                        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-6"><i class="fas fa-project-diagram text-xl"></i></div>
+                        <h3 class="text-lg font-display font-bold text-primary mb-3">Global DOI Indexing</h3>
+                        <p class="text-slate-500 text-sm">Exceptional research is issued a Digital Object Identifier, making KASU research globally citable.</p>
                     </div>
                 </div>
             </div>
+        </section>
 
-            <!-- Step 1: File Upload -->
-            <div class="bg-white rounded-xl premium-shadow border border-slate-100 p-6 mb-6">
-                <h2 class="text-lg font-display font-bold text-primary mb-4">1. Upload Research Files (Report)</h2>
-                <div class="grid md:grid-cols-2 gap-4">
-                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-slate-50">
-                        <i class="fas fa-file-pdf text-3xl text-red-500 mb-2"></i>
-                        <p class="text-sm font-bold text-primary">Main Thesis PDF</p>
-                        <p class="text-xs text-emerald-600 mt-1 font-bold">PhD_Dissertation.pdf uploaded</p>
+        <!-- Public Repository (Anonymous) -->
+        <section id="repo" class="py-24 bg-white border-t border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-12">
+                    <span class="text-xs font-bold text-accent uppercase tracking-widest">Public Repository</span>
+                    <h2 class="text-3xl md:text-4xl font-display font-semibold text-primary mt-2">Browse Past Research</h2>
+                    <p class="text-slate-500 mt-2 max-w-2xl mx-auto">Read abstracts for free. Create an account to download full PDFs from your department.</p>
+                </div>
+                <div id="public-project-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- VIEW 2: STUDENT -->
+    <div id="student" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
+        <div class="max-w-5xl mx-auto">
+            
+            <!-- Profile Header -->
+            <div class="glass-card rounded-xl p-6 premium-shadow mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                <img src="https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b" alt="Student Profile" class="w-24 h-24 rounded-full border-4 border-accent object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Musa+Abdullahi&background=065F46&color=fff'">
+                <div class="text-center sm:text-left flex-1">
+                    <div class="flex items-center justify-center sm:justify-start space-x-2 mb-1">
+                        <h2 class="text-xl font-display font-bold text-primary">Musa Abdullahi</h2>
+                        <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Auto-Fetched</span>
                     </div>
-                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-slate-50">
-                        <i class="fas fa-folder-plus text-3xl text-slate-400 mb-2"></i>
-                        <p class="text-sm font-bold text-primary">Source Code / Dataset</p>
-                        <p class="text-xs text-slate-400 mt-1 font-light">Optional (Max 100MB)</p>
-                    </div>
+                    <p class="text-sm text-slate-500">Matric: KASU/SCI/20/123</p>
+                    <p class="text-sm text-slate-500">BSc Computer Science | 2023/2024 Session</p>
                 </div>
             </div>
 
-            <!-- Step 2: Plagiarism -->
-            <div class="bg-white rounded-xl premium-shadow border border-slate-100 p-6 mb-6">
-                <h2 class="text-lg font-display font-bold text-primary mb-4">2. Plagiarism Verification</h2>
-                <div class="flex items-center justify-between bg-slate-50 p-4 rounded-lg border border-slate-100">
-                    <div>
-                        <p class="text-2xl font-display font-bold text-primary">14% <span class="text-sm font-medium text-slate-500">Similarity</span></p>
-                        <p class="text-xs text-slate-500 mt-1">Status: Passed (Below 25% threshold)</p>
-                    </div>
-                    <button class="bg-slate-200 text-primary px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-300">Run Scan</button>
-                </div>
+            <!-- Upload Section -->
+            <div class="glass-card rounded-xl p-6 premium-shadow mb-6">
+                <h2 class="text-lg font-display font-bold text-primary mb-4">1. Upload Final Thesis</h2>
+                <label class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-slate-50 flex flex-col items-center justify-center">
+                    <i class="fas fa-file-pdf text-3xl text-red-500 mb-2"></i>
+                    <p class="text-sm font-bold text-primary">Main Thesis PDF</p>
+                    <p id="file-name" class="text-xs text-emerald-600 mt-1 font-bold">No file selected</p>
+                    <p class="text-[10px] text-slate-400 mt-1">PDF only. Max size: 100MB.</p>
+                    <input id="thesis-pdf-input" type="file" accept="application/pdf" class="hidden" onchange="handleFileSelect(event)">
+                </label>
+            </div>
+            <div class="bg-primary rounded-xl p-6 flex flex-col md:flex-row items-center justify-between premium-shadow mb-10">
+                <div class="mb-4 md:mb-0 text-center md:text-left"><p class="text-sm font-bold text-white">2. Digital Repository Fee</p><p class="text-xs text-emerald-100 font-light">Required for graduation clearance.</p></div>
+                <button id="pay-btn" onclick="processUpload()" class="bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition w-full md:w-auto">Pay ₦2,000 & Submit</button>
             </div>
 
-            <!-- Step 3: AI Metadata -->
-            <div class="bg-white rounded-xl premium-shadow border border-slate-100 p-6 mb-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-display font-bold text-primary">3. Metadata & AI Extraction</h2>
-                    <button class="bg-primary text-accent px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-emerald-800">
-                        <i class="fas fa-magic"></i> <span>Run AI Auto-Extract</span>
-                    </button>
-                </div>
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-bold text-slate-600 uppercase tracking-wider">Project Title</label>
-                        <input type="text" value="Climate Change Adaptation Strategies in Northern Nigeria" class="w-full mt-1 p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent">
+            <!-- Department Download Section -->
+            <div class="glass-card rounded-xl p-6 premium-shadow mb-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-slate-200 pb-4">
+                    <div class="mb-2 sm:mb-0">
+                        <h2 class="text-lg font-display font-bold text-primary">Browse Department Projects</h2>
+                        <p class="text-xs text-slate-500">Computer Science Projects Archive</p>
                     </div>
-                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                        <div class="flex items-center mb-3">
-                            <i class="fas fa-robot text-accent mr-2"></i>
-                            <p class="text-xs font-bold text-primary uppercase tracking-wider">AI Suggested Keywords</p>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <span class="bg-white text-primary px-3 py-1 rounded-full text-xs font-medium border border-slate-200">Climate Change</span>
-                            <span class="bg-white text-primary px-3 py-1 rounded-full text-xs font-medium border border-slate-200">Adaptation</span>
-                            <span class="bg-white text-primary px-3 py-1 rounded-full text-xs font-medium border border-slate-200">Agriculture</span>
-                            <span class="bg-white text-primary px-3 py-1 rounded-full text-xs font-medium border border-slate-200">Sustainability</span>
-                        </div>
-                    </div>
+                    <span id="dl-badge" class="bg-amber-50 text-amber-700 text-xs font-bold px-3 py-1 rounded-full uppercase">Locked</span>
                 </div>
+                <div id="dept-projects" class="space-y-4"></div>
             </div>
 
-            <!-- Step 4: Payment -->
-            <div class="bg-primary rounded-xl p-6 flex flex-col md:flex-row items-center justify-between premium-shadow">
-                <div class="mb-4 md:mb-0">
-                    <p class="text-sm font-bold text-white">4. Digital Repository Fee</p>
-                    <p class="text-xs text-emerald-100 font-light">Required for graduation clearance. Auto-receipt generated.</p>
-                </div>
-                <button class="bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition w-full md:w-auto">
-                    Pay ₦2,000 via Paystack & Submit
+            <!-- Receipt Section -->
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-6 premium-shadow text-center">
+                <i class="fas fa-check-circle text-4xl text-emerald-600 mb-3"></i>
+                <h3 class="text-lg font-display font-bold text-primary mb-2">Digital Clearance Receipt</h3>
+                <p class="text-sm text-slate-500 mb-4">Congratulations! Your project has been approved. Download your official PDF receipt.</p>
+                <button onclick="generateReceipt()" class="bg-primary text-white px-8 py-3 rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full md:w-auto">
+                    <i class="fas fa-download mr-2"></i> Download Clearance Receipt (PDF)
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- PROFILE MODAL (Passport & Biodata)         -->
-    <!-- ========================================== -->
-    <div id="profile-modal" class="modal-overlay">
-        <div class="bg-white rounded-2xl premium-shadow w-full max-w-md mx-4 overflow-hidden">
-            <div class="bg-primary p-6 flex justify-between items-center">
-                <div class="flex items-center space-x-3">
-                    <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-10 w-10 object-contain bg-white rounded-full p-0.5">
-                    <span class="text-white font-display font-bold text-lg">Student Biodata</span>
-                </div>
-                <button onclick="toggleProfileModal()" class="text-white/70 hover:text-white">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                <div class="flex flex-col items-center mb-6">
-                    <div class="w-28 h-28 rounded-full border-4 border-accent overflow-hidden mb-4 premium-shadow">
-                        <img src="https://ui-avatars.com/api/?name=Ibrahim+Yusuf&size=128&bold=true" alt="Passport" class="w-full h-full object-cover">
-                    </div>
-                    <h3 class="text-xl font-display font-bold text-primary">Ibrahim Yusuf</h3>
-                    <p class="text-sm text-slate-500 font-light">KASU/PG/19/005</p>
-                </div>
-                <div class="space-y-3 text-sm border-t border-slate-100 pt-4">
-                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Faculty:</span><span class="text-dark font-bold">Science</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Department:</span><span class="text-dark font-bold">Geography</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Degree:</span><span class="text-dark font-bold">PhD (Postgraduate)</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Session:</span><span class="text-dark font-bold">2023/2024</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500 font-medium">Status:</span><span class="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold text-xs">Cleared</span></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- VIEW 2: TEACHER VIEW (Supervisor Dashboard)-->
-    <!-- ========================================== -->
-    <div id="teacher" class="view p-8 lg:p-12">
+    <!-- VIEW 3: TEACHER -->
+    <div id="teacher" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
         <div class="max-w-7xl mx-auto">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-                <div class="flex items-center space-x-4">
-                    <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-14 w-14 object-contain">
-                    <div>
-                        <h1 class="text-3xl font-display font-bold text-primary">Supervisor Dashboard</h1>
-                        <p class="text-slate-500 font-light mt-1">Dr. Sani Musa | Department of Computer Science</p>
-                    </div>
-                </div>
-                <button class="mt-4 md:mt-0 bg-primary text-accent px-4 py-2 rounded-lg text-xs font-bold flex items-center space-x-2 hover:bg-emerald-800">
-                    <i class="fas fa-download"></i> Export Report
-                </button>
-            </div>
-
-            <div class="grid grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
-                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Supervisees</p>
-                    <p class="text-3xl font-display font-bold text-primary mt-1">10</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
-                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Review</p>
-                    <p class="text-3xl font-display font-bold text-accent mt-1">4</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
-                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Approved</p>
-                    <p class="text-3xl font-display font-bold text-emerald-600 mt-1">6</p>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl premium-shadow border border-slate-100 overflow-hidden">
-                <div class="p-6 border-b border-slate-100">
-                    <h2 class="text-lg font-display font-bold text-primary">Assigned Students (Session 2023/2024)</h2>
-                </div>
+            <h1 class="text-3xl font-display font-bold text-primary mb-8">Supervisor Dashboard</h1>
+            <div class="glass-card rounded-xl overflow-hidden premium-shadow">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-                                <th class="p-4 font-bold">Student Name / Matric</th>
-                                <th class="p-4 font-bold">Degree</th>
-                                <th class="p-4 font-bold">Project Topic</th>
-                                <th class="p-4 font-bold">Status</th>
-                                <th class="p-4 font-bold text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="student-table-body" class="text-sm divide-y divide-slate-100"></tbody>
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Degree</th><th class="p-4 font-bold">Project Topic</th><th class="p-4 font-bold">Status</th><th class="p-4 font-bold text-right">Action</th></tr></thead>
+                        <tbody id="student-table-body" class="text-sm divide-y divide-slate-200"></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- VIEW 3: VC VIEW (Analytics & Charts)       -->
-    <!-- ========================================== -->
-    <div id="vc" class="view p-8 lg:p-12">
-        <div class="max-w-7xl mx-auto">
-             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-                <div class="flex items-center space-x-4">
-                    <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-14 w-14 object-contain">
-                    <div>
-                        <h1 class="text-3xl font-display font-bold text-primary">Analytics Hub</h1>
-                        <p class="text-slate-500 font-light mt-1">Kaduna State University | Global Research Overview</p>
-                    </div>
-                </div>
-                <select class="mt-4 md:mt-0 p-2 border border-slate-200 rounded-lg text-xs font-medium text-slate-600 bg-white focus:outline-none focus:ring-1 focus:ring-accent">
-                    <option>Academic Session: 2023/2024</option>
-                    <option>Academic Session: 2022/2023</option>
-                </select>
+    <!-- VIEW 4: LIBRARY -->
+    <div id="library" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-3xl font-display font-bold text-primary mb-8">Library Verification Unit</h1>
+            <div class="glass-card rounded-xl p-6 premium-shadow text-center">
+                <i class="fas fa-book-reader text-4xl text-primary mb-4"></i>
+                <h3 class="text-xl font-display font-bold text-primary">Cataloging Interface Ready</h3>
             </div>
+        </div>
+    </div>
 
-            <div class="grid md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-primary p-6 rounded-xl text-white premium-shadow relative overflow-hidden">
-                    <i class="fas fa-database absolute right-4 top-4 text-5xl text-emerald-800/40"></i>
-                    <p class="text-xs uppercase tracking-wider text-accent font-bold">Total Archived</p>
-                    <p class="text-4xl font-display font-bold mt-2">4,520</p>
-                    <p class="text-xs mt-2 text-emerald-100"><i class="fas fa-arrow-up"></i> 15% from last year</p>
+    <!-- VIEW 5: ADMIN (Fully Restored) -->
+    <div id="admin" class="view min-h-screen">
+        <div class="flex min-h-screen">
+            <!-- Sidebar -->
+            <aside class="w-64 admin-sidebar hidden md:flex flex-col flex-shrink-0">
+                <div class="h-20 flex items-center justify-center border-b border-slate-800"><span class="font-display font-bold text-white text-lg">Admin Panel</span></div>
+                <nav class="flex-1 p-4 space-y-1">
+                    <a href="#" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-tachometer-alt w-5"></i> Dashboard</a>
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-user-graduate w-5"></i> Students</a>
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chalkboard-teacher w-5"></i> Supervisors</a>
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-building w-5"></i> Departments</a>
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-file-upload w-5"></i> Uploads</a>
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-money-bill-wave w-5"></i> Payments</a>
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chart-line w-5"></i> Reports</a>
+                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-cog w-5"></i> System Settings</a>
+                </nav>
+            </aside>
+            
+            <!-- Main Content -->
+            <main class="flex-1 p-4 md:p-8 bg-slate-50 overflow-y-auto">
+                <h1 class="text-3xl font-display font-bold text-primary mb-8">Analytics Hub</h1>
+                
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Students</p><p class="text-3xl font-display font-bold text-primary mt-1">18,425</p></div>
+                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Revenue</p><p class="text-3xl font-display font-bold text-emerald-600 mt-1">₦9.0M</p></div>
+                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Uploads</p><p class="text-3xl font-display font-bold text-primary mt-1">4,021</p></div>
+                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Approvals</p><p class="text-3xl font-display font-bold text-accent mt-1">209</p></div>
                 </div>
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100 relative overflow-hidden">
-                    <i class="fas fa-money-bill-wave absolute right-4 top-4 text-5xl text-emerald-50"></i>
-                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Revenue Shared</p>
-                    <p class="text-4xl font-display font-bold text-emerald-600 mt-2">₦4.5M</p>
-                    <p class="text-xs mt-2 text-slate-400 font-light">Auto-split via Paystack</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100 relative overflow-hidden">
-                    <i class="fas fa-user-graduate absolute right-4 top-4 text-5xl text-slate-50"></i>
-                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Postgraduate (PG)</p>
-                    <p class="text-4xl font-display font-bold text-primary mt-2">840</p>
-                    <p class="text-xs mt-2 text-slate-400 font-light">PGD, MSc, & PhD</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100 relative overflow-hidden">
-                    <i class="fas fa-globe-africa absolute right-4 top-4 text-5xl text-slate-50"></i>
-                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Global DOI Issued</p>
-                    <p class="text-4xl font-display font-bold text-primary mt-2">128</p>
-                    <p class="text-xs mt-2 text-slate-400 font-light">Searchable on Google Scholar</p>
-                </div>
-            </div>
 
-            <div class="grid lg:grid-cols-3 gap-6 mb-8">
-                <div class="lg:col-span-2 bg-white p-6 rounded-xl premium-shadow border border-slate-100">
-                    <h3 class="text-base font-display font-bold text-primary mb-6">Departmental Research Activity</h3>
-                    <div class="space-y-4">
-                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Computer Science</span><span class="text-slate-500">320</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 85%"></div></div></div>
-                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Biochemistry</span><span class="text-slate-500">280</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 75%"></div></div></div>
-                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Geography</span><span class="text-slate-500">210</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 55%"></div></div></div>
-                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Mass Communication</span><span class="text-slate-500">180</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 45%"></div></div></div>
-                        <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Economics</span><span class="text-slate-500">150</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bar bg-accent h-3 rounded-full" style="width: 38%"></div></div></div>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100 flex flex-col items-center">
-                    <h3 class="text-base font-display font-bold text-primary mb-6 self-start">Degree Distribution</h3>
-                    <div class="relative w-40 h-40 mb-4">
-                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#F1F5F9" stroke-width="4"></circle>
-                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#3B82F6" stroke-width="4" stroke-dasharray="60 40" stroke-dashoffset="0"></circle>
-                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#F59E0B" stroke-width="4" stroke-dasharray="25 75" stroke-dashoffset="-60"></circle>
-                            <circle cx="18" cy="18" r="15.915" fill="none" stroke="#10B981" stroke-width="4" stroke-dasharray="15 85" stroke-dashoffset="-85"></circle>
-                        </svg>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <p class="text-2xl font-display font-bold text-primary">4,520</p>
-                            <p class="text-[10px] uppercase tracking-wider text-slate-400">Total</p>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <!-- Charts -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                        <h3 class="text-lg font-display font-bold text-primary mb-6">Departmental Uploads</h3>
+                        <div class="space-y-4">
+                            <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Computer Science</span><span>850</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 85%"></div></div></div>
+                            <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Engineering</span><span>620</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 62%"></div></div></div>
+                            <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Sciences</span><span>450</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 45%"></div></div></div>
+                            <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Arts</span><span>300</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 30%"></div></div></div>
                         </div>
                     </div>
-                    <div class="grid grid-cols-3 gap-2 w-full text-center text-[10px]">
-                        <div><span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-1"></span>BSc (60%)</div>
-                        <div><span class="inline-block w-2 h-2 bg-accent rounded-full mr-1"></span>MSc (25%)</div>
-                        <div><span class="inline-block w-2 h-2 bg-emerald-500 rounded-full mr-1"></span>PhD (15%)</div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="grid lg:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
-                    <h3 class="text-base font-display font-bold text-primary mb-6">Monthly Submissions (2024)</h3>
-                    <div class="flex items-end justify-between h-32 space-x-2">
-                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-100 rounded-t" style="height: 30%"></div><p class="text-[10px] mt-1 text-slate-400">Jan</p></div>
-                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-200 rounded-t" style="height: 40%"></div><p class="text-[10px] mt-1 text-slate-400">Feb</p></div>
-                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-300 rounded-t" style="height: 50%"></div><p class="text-[10px] mt-1 text-slate-400">Mar</p></div>
-                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-400 rounded-t" style="height: 60%"></div><p class="text-[10px] mt-1 text-slate-400">Apr</p></div>
-                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-500 rounded-t" style="height: 75%"></div><p class="text-[10px] mt-1 text-slate-400">May</p></div>
-                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-accent rounded-t" style="height: 95%"></div><p class="text-[10px] mt-1 text-primary font-bold">Jun</p></div>
-                        <div class="flex-1 flex flex-col items-center"><div class="w-full bg-slate-300 rounded-t" style="height: 45%"></div><p class="text-[10px] mt-1 text-slate-400">Jul</p></div>
+                    <!-- System Rules Panel -->
+                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 space-y-6">
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-bell mr-2 text-accent"></i> Notifications</h4>
+                            <ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside">
+                                <li><strong>Student:</strong> Upload OK, Super. Approve/Reject, Lib. Approve/Reject</li>
+                                <li><strong>Supervisor:</strong> Student Uploads</li>
+                                <li><strong>Library:</strong> Super. Approves</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-file-pdf mr-2 text-red-500"></i> PDF Rules</h4>
+                            <ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside">
+                                <li>Format: PDF Only</li>
+                                <li>Max Size: 100MB</li>
+                                <li>Auto-Rename: Enabled</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-shield-alt mr-2 text-primary"></i> Role Permissions</h4>
+                            <ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside">
+                                <li><strong>Supervisor:</strong> Review, Approve, Reject, Comment</li>
+                                <li><strong>Library:</strong> Verify, Approve, Clearance</li>
+                                <li><strong>Admin:</strong> Users, Reports, Settings</li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-100">
-                    <h3 class="text-base font-display font-bold text-primary mb-4">Top Trending Research</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><div class="flex items-center min-w-0"><span class="text-accent font-display font-bold mr-3">01</span><p class="text-sm font-medium text-primary truncate">Blockchain E-Voting System</p></div><span class="text-xs text-slate-500 font-bold ml-2 flex-shrink-0"><i class="fas fa-eye mr-1"></i> 2.1k</span></div>
-                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><div class="flex items-center min-w-0"><span class="text-accent font-display font-bold mr-3">02</span><p class="text-sm font-medium text-primary truncate">ML Crop Yield Prediction</p></div><span class="text-xs text-slate-500 font-bold ml-2 flex-shrink-0"><i class="fas fa-eye mr-1"></i> 1.8k</span></div>
-                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100"><div class="flex items-center min-w-0"><span class="text-accent font-display font-bold mr-3">03</span><p class="text-sm font-medium text-primary truncate">Moringa Phytochemicals</p></div><span class="text-xs text-slate-500 font-bold ml-2 flex-shrink-0"><i class="fas fa-eye mr-1"></i> 1.2k</span></div>
+
+                <!-- Payments Table -->
+                <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden mb-8">
+                    <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+                        <h3 class="text-lg font-display font-bold text-primary">Recent Payments</h3>
+                        <button class="text-xs text-primary font-bold hover:underline">View All</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse min-w-[600px]">
+                            <thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Amount</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Status</th><th class="p-4 font-bold text-right">Receipt</th></tr></thead>
+                            <tbody class="text-sm divide-y divide-slate-200">
+                                <tr><td class="p-4 text-slate-700">Musa Abdullahi</td><td class="p-4 text-slate-700">₦2,500</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Success</span></td><td class="p-4 text-right"><button class="text-primary hover:text-accent"><i class="fas fa-download"></i></button></td></tr>
+                                <tr><td class="p-4 text-slate-700">Aisha Bello</td><td class="p-4 text-slate-700">₦2,000</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Success</span></td><td class="p-4 text-right"><button class="text-primary hover:text-accent"><i class="fas fa-download"></i></button></td></tr>
+                                <tr><td class="p-4 text-slate-700">Ibrahim Yusuf</td><td class="p-4 text-slate-700">₦1,000</td><td class="p-4 text-slate-500">2024-05-19</td><td class="p-4"><span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">Pending</span></td><td class="p-4 text-right"><button class="text-slate-300 cursor-not-allowed"><i class="fas fa-download"></i></button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- PROJECT CATALOGUE (KASU Faculties & Courses) -->
+                <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
+                    <div class="p-6 border-b border-slate-200">
+                        <h3 class="text-lg font-display font-bold text-primary">Project Catalogue (Faculties & Courses)</h3>
+                        <p class="text-sm text-slate-500 mt-1">Comprehensive list of all undergraduate and postgraduate courses.</p>
+                    </div>
+                    <div class="p-6 space-y-8" id="catalogue-container"></div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL (Login & Signup) -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="glass-card rounded-2xl premium-shadow w-full max-w-md mx-4 overflow-hidden">
+            <div class="bg-primary p-6 flex justify-between items-center">
+                <span id="auth-title" class="text-white font-display font-bold text-lg">Login to Portal</span>
+                <button onclick="closeAuthModal()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-8">
+                <!-- Login Form -->
+                <div id="login-form">
+                    <div class="space-y-4">
+                        <input id="login-email" type="text" placeholder="Email (e.g. student@kasu.edu.ng)" class="w-full p-3 glass-input rounded-lg text-sm">
+                        <input id="login-password" type="password" placeholder="Password" class="w-full p-3 glass-input rounded-lg text-sm">
+                        <button onclick="handleLogin()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign In</button>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-xs text-slate-500 mb-2">Demo: admin@kasu.edu.ng / password</p>
+                        <p class="text-sm text-slate-500">Don't have an account? <button onclick="openAuthModal('signup')" class="text-primary font-bold hover:underline">Sign Up</button></p>
+                    </div>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="signup-form" class="hidden">
+                    <p class="text-sm text-slate-500 mb-6 text-center">Enter your Matric Number. We will auto-fetch your details from the KASU portal.</p>
+                    <div class="space-y-4">
+                        <input id="signup-matric" type="text" placeholder="e.g. KASU/SCI/20/123" class="w-full p-3 glass-input rounded-lg text-sm">
+                        <button onclick="handleSignup()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Fetch Portal Data & Sign Up</button>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-slate-500">Already have an account? <button onclick="openAuthModal('login')" class="text-primary font-bold hover:underline">Login</button></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ========================================== -->
-    <!-- FOOTER                                     -->
-    <!-- ========================================== -->
-    <footer class="bg-primary text-white py-12 mt-12">
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
-            <div class="flex items-center space-x-4 mb-4 md:mb-0">
-                <img src="https://z-cdn-media.chatglm.cn/files/d9879cde-c318-4b78-8ee5-f9c37b2fcec6.jpeg?auth_key=1883901541-a430f4b5dbab448eb0e00e350786bda8-0-4c81e56375bcc0a57b1ddba3cdbb2d0e" alt="KASU Logo" class="h-16 w-16 object-contain bg-white rounded-full p-1">
-                <div>
-                    <span class="font-display font-bold text-lg block leading-tight text-accent">Kaduna State University</span>
-                    <span class="text-xs text-emerald-100 italic block leading-tight">"Knowledge for Development and Unity"</span>
+    <!-- ABSTRACT MODAL -->
+    <div id="abstract-modal" class="modal-overlay">
+        <div class="glass-card rounded-2xl premium-shadow w-full max-w-lg mx-4 overflow-hidden">
+            <div class="bg-primary p-6 flex justify-between items-center">
+                <span class="text-white font-display font-bold text-lg">Project Abstract</span>
+                <button onclick="closeAbstract()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-8">
+                <h3 id="abs-title" class="text-lg font-display font-bold text-primary mb-4"></h3>
+                <p id="abs-body" class="text-sm text-slate-600 leading-relaxed"></p>
+                <div class="mt-6 pt-6 border-t border-slate-200 text-center">
+                    <p class="text-xs text-slate-500 mb-3">To download the full PDF, please create an account.</p>
+                    <button onclick="closeAbstract(); openAuthModal('signup');" class="bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700">Create Account</button>
                 </div>
             </div>
-            <div class="flex space-x-6 text-sm text-emerald-100 font-light">
-                <a href="#" class="hover:text-accent transition">Library Portal</a>
-                <a href="#" class="hover:text-accent transition">NUC Compliance</a>
-                <a href="#" class="hover:text-accent transition">Support</a>
-            </div>
-            <p class="text-xs text-emerald-200 mt-4 md:mt-0 font-light">&copy; 2024 KASU SRMS.</p>
         </div>
-    </footer>
+    </div>
+
+    <!-- STUDENT MODAL -->
+    <div id="student-modal" class="modal-overlay">
+        <div class="glass-card rounded-2xl premium-shadow w-full max-w-2xl mx-4 overflow-hidden">
+            <div class="bg-primary p-6 flex justify-between items-center"><span class="text-white font-display font-bold text-lg">Student Profile</span><button onclick="closeModal()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button></div>
+            <div class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="md:col-span-1 flex flex-col items-center text-center"><img id="modal-img" src="" class="w-32 h-32 rounded-full border-4 border-accent object-cover mb-3 premium-shadow"><h3 id="modal-name" class="text-xl font-display font-bold text-primary"></h3><p id="modal-matric" class="text-sm text-slate-500 font-light"></p></div>
+                <div class="md:col-span-2 md:border-l border-slate-200 md:pl-8"><h4 class="text-xs font-bold text-slate-500 uppercase mb-1">Project Title</h4><p id="modal-topic" class="text-lg font-medium text-dark mb-4"></p><button onclick="approveStudent()" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700">Approve Project</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HIDDEN PDF RECEIPT TEMPLATE -->
+    <div id="receipt-template">
+        <div style="display: flex; align-items: center; border-bottom: 2px solid #065F46; padding-bottom: 20px; margin-bottom: 30px;">
+            <img src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg" alt="KASU Logo" style="width: 80px; height: 80px; margin-right: 20px;">
+            <div>
+                <h1 style="color: #065F46; font-size: 24px; margin: 0; font-family: 'Fraunces', serif;">Kaduna State University</h1>
+                <p style="color: #334155; font-size: 14px; margin: 5px 0 0 0;">Student Project Management System (SPMS)</p>
+                <p style="color: #F59E0B; font-size: 16px; font-weight: bold; margin: 5px 0 0 0;">Official Digital Clearance Receipt</p>
+            </div>
+        </div>
+        <p style="font-size: 14px; color: #64748b; margin-bottom: 20px;">This document serves as official proof that the student has successfully completed the digital requirements for final-year project clearance.</p>
+        <div style="background: #F8FAFC; padding: 20px; border-radius: 8px; border: 1px solid #E5E7EB; margin-bottom: 30px;">
+            <table style="width: 100%; font-size: 14px; color: #334155;">
+                <tr><td style="padding: 8px 0; font-weight: bold; width: 35%;">Student Name:</td><td style="padding: 8px 0;">Musa Abdullahi</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Reg Number:</td><td style="padding: 8px 0;">KASU/SCI/20/123</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Project Title:</td><td style="padding: 8px 0;">Web-Based E-Voting System using Blockchain</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Supervisor Name:</td><td style="padding: 8px 0;">Dr. Sani Musa</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Submission Date:</td><td style="padding: 8px 0;">May 20, 2024</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Supervisor Approval:</td><td style="padding: 8px 0; color: #059669; font-weight: bold;">Approved (May 22, 2024)</td></tr>
+                <tr><td style="padding: 8px 0; font-weight: bold;">Library Clearance:</td><td style="padding: 8px 0; color: #059669; font-weight: bold;">Cleared (May 24, 2024)</td></tr>
+            </table>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 2px solid #065F46; padding-top: 20px;">
+            <div style="font-size: 12px; color: #64748b;">
+                <p style="margin: 0;">Verification Code: KASU-SPMS-2024-00123</p>
+                <p style="margin: 5px 0 0 0;">Generated on: May 24, 2024, 10:00 AM</p>
+            </div>
+            <div style="text-align: center;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://kasu.edu.ng/verify/KASU-SPMS-2024-00123" alt="QR Code" style="width: 80px; height: 80px;">
+                <p style="font-size: 10px; color: #64748b; margin: 5px 0 0 0;">Scan to verify authenticity</p>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // View Switcher
-        function showView(viewId) {
-            const views = document.querySelectorAll('.view');
-            views.forEach(v => v.classList.remove('active-view'));
-            document.getElementById(viewId).classList.add('active-view');
+        let currentUserRole = null;
+        let selectedFile = null;
+        let hasPaidDownloadFee = false;
 
-            const btns = document.querySelectorAll('.tour-btn');
-            btns.forEach(b => { b.classList.remove('active'); b.classList.add('text-slate-600'); });
-            const activeBtn = document.getElementById('btn-' + viewId);
-            activeBtn.classList.add('active');
-            activeBtn.classList.remove('text-slate-600');
-            window.scrollTo({top: 0, behavior: 'smooth'});
-        }
+        // User Provided Pictures
+        const pic1 = "https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b";
+        const pic2 = "https://z-cdn-media.chatglm.cn/files/71860306-1785-4afa-a0f6-338175b9e560.jpeg?auth_key=1883957539-8565334395d048d4a7d1d03681ae48eb-0-49015e5172e587679758df694c27d457";
+        const pic3 = "https://z-cdn-media.chatglm.cn/files/038e70a5-a254-4092-9e6f-6d362d906ebf.jpeg?auth_key=1883957539-009c4473ff994f6c81a7092b7a4f57f9-0-2ea383c896a826d607daea3cb9c56731";
 
-        // Profile Modal Toggle
-        function toggleProfileModal() {
-            document.getElementById('profile-modal').classList.toggle('active');
-        }
+        // KASU OFFICIAL CATALOGUE DATA
+        const kasuCatalogue = [
+            { college: "College of Arts, Education, Humanities and Law", faculties: [{ name: "Faculty of Arts", courses: ["Theatre Arts", "Arabic", "History and Strategic Studies", "Islamic Studies", "Christian Religious Studies", "English", "Linguistics", "French", "Hausa"] }, { name: "Faculty of Education", courses: ["Education & Arabic", "Education & Biology", "Education & Chemistry", "Education & Christian Religious Studies", "Education & Economics", "Education & English Language", "Education & Geography", "Education & Hausa", "Education & Islamic Studies", "Education & Mathematics", "Education & Physics"] }] },
+            { college: "College of Allied Health and Pharmaceutical Sciences", faculties: [{ name: "Faculty of Pharmaceutical Sciences", courses: ["Pharmacology and Toxicology", "Pharmaceutical & Medicinal Chemistry", "Clinical Pharmacy and Pharmacy Management", "Pharmaceutics & Industrial Pharmacy", "Pharmacognosy & Drug Development", "Pharmaceutical Microbiology & Biotechnology"] }, { name: "Faculty of Allied Health Sciences", courses: ["Physiotherapy", "Medical Laboratory Science", "Nursing", "Radiography"] }] },
+            { college: "College of Postgraduate Studies", faculties: [{ name: "Postgraduate Programs", courses: ["Accounting", "Banking & Finance", "Business Administration", "Computer Science", "Criminology & Security Studies", "Economics", "English Studies", "Entrepreneurship", "Environmental Management", "Estate Management", "History", "History & Strategic Studies", "Industrial Chemistry", "Industrial Relations & Personnel Management", "International Studies and Diplomacy", "International Relations & Diplomacy", "Marketing", "Mass Communication", "Mathematics", "Physics", "Political Science", "Procurement Management", "Sociology"] }] },
+            { college: "College of Medicine", faculties: [{ name: "Faculty of Basic Medical Sciences", courses: ["Human Anatomy", "Human Physiology", "Medical Biochemistry"] }, { name: "Faculty of Basic Clinical Sciences", courses: ["Anatomic Pathology & Forensic Medicine", "Chemical Pathology", "Haematology & Blood Transfusion", "Medical Microbiology and Parasitology", "Clinical Pharmacology and Therapeutics"] }, { name: "Faculty of Clinical Sciences", courses: ["Community Medicine", "Family Medicine", "Internal Medicine", "Obstetrics & Gynaecology", "Ophthalmology", "Pediatrics", "Radiology", "Surgery", "Psychiatry"] }] },
+            { college: "College of Agriculture and Environmental Sciences", faculties: [{ name: "Faculty of Architecture", courses: ["Architecture"] }, { name: "Faculty of Agriculture", courses: ["Animal Science", "Crop protection", "Soil Science", "Plant Protection", "Agricultural Economics", "Agricultural Extension and Rural Development"] }, { name: "Faculty of Environmental Management", courses: ["Environmental Management", "Estate Management", "Building", "Quantity Surveying"] }] },
+            { college: "College of Basic Studies and Continuing Education", faculties: [{ name: "Basic Studies", courses: ["Basic Studies", "Remedials", "IJMB"] }] },
+            { college: "College of Communication, Management and Social Sciences", faculties: [{ name: "Faculty of Management Sciences", courses: ["Banking and Finance", "Entrepreneurship", "Marketing", "Public Administration", "Accounting", "Business Administration", "Procurement & Supply Chain Management", "Industrial Relations & Personnel Management"] }, { name: "Faculty of Social Sciences", courses: ["Sociology", "Criminology & Security Studies", "Economics", "Political Science", "International Relations & Diplomacy", "Library and Information Sciences"] }, { name: "Faculty of Communication", courses: ["Mass Communication", "Journalism and Media Studies", "Broadcasting"] }] },
+            { college: "College of Computing, Engineering and Sciences", faculties: [{ name: "Faculty of Life Sciences", courses: ["Biochemistry", "Biotechnology", "Biology", "Microbiology"] }, { name: "Faculty of Physical Sciences", courses: ["Pure and Applied Chemistry", "Physics", "Mathematics", "Statistics"] }, { name: "Faculty of Earth Sciences and Sustainability Studies", courses: ["Geography and Sustainability Studies", "Geophysics", "Geology", "Environmental Standards"] }, { name: "Faculty of Computing", courses: ["Computer Science", "Cyber Security", "Data Science"] }, { name: "Faculty of Engineering", courses: ["Computer Engineering", "Mechanical Engineering", "Electrical and Electronics Engineering"] }] }
+        ];
 
-        // Show/Hide Group & Physical Project Sections
-        function toggleSection(sectionId, isChecked) {
-            const section = document.getElementById(sectionId);
-            if (isChecked) {
-                section.style.display = 'block';
+        // 20 PROJECTS (Anonymous on Landing Page)
+        const projects = [
+            { id: 1, degree: "BSc", dept: "Computer Science", title: "Web-Based E-Voting System", abstract: "Explores decentralized e-voting using Ethereum blockchain.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 2, degree: "MSc", dept: "Economics", title: "Impact of Inflation on Manufacturing", abstract: "Empirical analysis of inflationary trends in Nigeria.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 3, degree: "PhD", dept: "Geography", title: "Climate Change Adaptation in N. Nigeria", abstract: "Strategies for agricultural resilience.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 4, degree: "BSc", dept: "Microbiology", title: "Antimicrobial Resistance of Bacterial Isolates", abstract: "Study of water sources in Kaduna metropolis.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 5, degree: "BSc", dept: "Mass Comm", title: "Role of Social Media in Political Campaigns", abstract: "How digital platforms shape voter behavior.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 6, degree: "BSc", dept: "Architecture", title: "Integration of Smart Home Technology", abstract: "Sustainable building designs with IoT.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 7, degree: "PGD", dept: "Education", title: "Challenges of Teaching Mathematics in JSS", abstract: "Pedagogical approaches for junior secondary.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 8, degree: "BSc", dept: "Architecture", title: "Sustainable Building Materials", abstract: "Low-cost housing materials for rural areas.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 9, degree: "MSc", dept: "Economics", title: "Impact of Inflation on Manufacturing", abstract: "Empirical study of economic policies.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 10, degree: "LLB", dept: "Law", title: "Legal Framework for Cybercrime", abstract: "Appraisal of the Cybercrime Act 2015.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 11, degree: "BSc", dept: "Accounting", title: "Electronic Payment Systems on Banking", abstract: "Efficiency of digital banking in Nigeria.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 12, degree: "PhD", dept: "Biochemistry", title: "Phytochemical Analysis of Moringa Oleifera", abstract: "Medicinal properties of local plants.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 13, degree: "BSc", dept: "Electrical Eng.", title: "Solar-Powered Inverter System", abstract: "Design of a 3.5kVA off-grid inverter.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 14, degree: "BSc", dept: "Pol Science", title: "Electoral Violence and Democratic Consolidation", abstract: "Case study of local government elections.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 15, degree: "PhD", dept: "Agronomy", title: "Effects of Organic Fertilizers on Tomatoes", abstract: "Yield comparison between NPK and compost.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 16, degree: "MSc", dept: "Business Admin", title: "Leadership Styles on Employee Productivity", abstract: "Impact of transformational leadership.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 17, degree: "BSc", dept: "Civil Engineering", title: "Structural Analysis of RC Bridges", abstract: "Load capacity of rural bridges.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 18, degree: "BSc", dept: "Sociology", title: "Effect of Banditry on Rural Education", abstract: "Out-of-school children in conflict zones.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 19, degree: "PGD", dept: "Public Admin", title: "Challenges of Revenue Generation in LG", abstract: "Internal revenue generation mechanisms.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
+            { id: 20, degree: "BSc", dept: "Computer Science", title: "Appraisal of Legal Framework for Cybercrime", abstract: "Cybersecurity frameworks in Nigeria.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" }
+        ];
+
+        // 10 STUDENTS FOR TEACHER VIEW (Using Official Pics)
+        const assignedStudents = [
+            { id: 1, name: "Musa Abdullahi", matric: "KASU/SCI/20/123", degree: "BSc", topic: "Web-Based E-Voting System", status: "Pending", img: pic1 },
+            { id: 2, name: "Aisha Bello", matric: "KASU/PG/21/045", degree: "MSc", topic: "ML Algorithms for Crop Yield", status: "Pending", img: pic2 },
+            { id: 3, name: "Ibrahim Yusuf", matric: "KASU/PG/19/005", degree: "PhD", topic: "Climate Change Adaptation", status: "Approved", img: pic3 },
+            { id: 4, name: "John Paul", matric: "KASU/SCI/20/088", degree: "BSc", topic: "Antimicrobial Resistance", status: "Approved", img: pic1 },
+            { id: 5, name: "Fatima Sani", matric: "KASU/SCI/20/012", degree: "BSc", topic: "Social Media in Campaigns", status: "Revision", img: pic2 },
+            { id: 6, name: "David Okon", matric: "KASU/ENV/20/034", degree: "BSc", topic: "Sustainable Building Materials", status: "Approved", img: pic3 },
+            { id: 7, name: "Grace Okoro", matric: "KASU/EDU/PG/22/034", degree: "PGD", topic: "Challenges of Teaching Math", status: "Pending", img: pic1 },
+            { id: 8, name: "Chinedu Okafor", matric: "KASU/SS/PG/21/067", degree: "MSc", topic: "Impact of Inflation on Mfg", status: "Approved", img: pic2 },
+            { id: 9, name: "Blessing Eze", matric: "KASU/LLB/19/045", degree: "LLB", topic: "Legal Framework for Cybercrime", status: "Pending", img: pic3 },
+            { id: 10, name: "Sani Garba", matric: "KASU/SS/20/078", degree: "BSc", topic: "Electronic Payment Systems", status: "Approved", img: pic1 }
+        ];
+
+        // --- AUTH MODAL LOGIC ---
+        function openAuthModal(mode) {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('signup-form').classList.add('hidden');
+            if (mode === 'login') {
+                document.getElementById('auth-title').innerText = 'Login to Portal';
+                document.getElementById('login-form').classList.remove('hidden');
             } else {
-                section.style.display = 'none';
+                document.getElementById('auth-title').innerText = 'Create Account';
+                document.getElementById('signup-form').classList.remove('hidden');
+            }
+            document.getElementById('auth-modal').classList.add('active');
+        }
+        function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); }
+
+        function handleLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value;
+            if (email === 'student@kasu.edu.ng' && pass === 'password') { currentUserRole = 'student'; closeAuthModal(); navigate('student'); loadDeptProjects(); }
+            else if (email === 'teacher@kasu.edu.ng' && pass === 'password') { currentUserRole = 'teacher'; closeAuthModal(); navigate('teacher'); loadTeacherStudents(); }
+            else if (email === 'library@kasu.edu.ng' && pass === 'password') { currentUserRole = 'library'; closeAuthModal(); navigate('library'); }
+            else if (email === 'admin@kasu.edu.ng' && pass === 'password') { currentUserRole = 'admin'; closeAuthModal(); navigate('admin'); loadCatalogue(); }
+            else { alert("Invalid credentials. Use student@kasu.edu.ng / password"); }
+        }
+
+        function handleSignup() {
+            const matric = document.getElementById('signup-matric').value.trim();
+            if (!matric) { alert("Please enter your Matric Number."); return; }
+            alert("Portal data fetched successfully! Account created. You are now logged in.");
+            currentUserRole = 'student';
+            closeAuthModal();
+            navigate('student');
+            loadDeptProjects();
+        }
+
+        // --- NAVIGATION ---
+        function navigate(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+            window.scrollTo(0, 0);
+            updateNav();
+            if (viewId === 'landing') loadPublicProjects();
+        }
+        function logout() {
+            currentUserRole = null;
+            hasPaidDownloadFee = false;
+            navigate('landing');
+        }
+        function updateNav() {
+            const navLinks = document.getElementById('nav-links');
+            const navActions = document.getElementById('nav-actions');
+            if (!currentUserRole) {
+                navLinks.innerHTML = '<span class="text-sm font-medium text-slate-600">Home</span>';
+                navActions.innerHTML = '<button onclick="openAuthModal(\'login\')" class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold">Login</button>';
+            } else {
+                navLinks.innerHTML = '<span class="text-sm font-bold text-primary uppercase">' + currentUserRole + ' Dashboard</span>';
+                navActions.innerHTML = '<button onclick="logout()" class="bg-red-50 text-red-600 px-5 py-2.5 rounded-lg text-sm font-semibold">Logout</button>';
             }
         }
 
-        // Teacher View: 10 Students Data
-        const students = [
-            { name: "Musa Abdullahi", matric: "KASU/SCI/20/123", degree: "BSc", topic: "Design of a Web-Based E-Voting System using Blockchain", status: "Approved" },
-            { name: "Aisha Bello", matric: "KASU/PG/21/045", degree: "MSc", topic: "Machine Learning Algorithms for Predicting Crop Yield", status: "Pending" },
-            { name: "Ibrahim Yusuf", matric: "KASU/PG/19/005", degree: "PhD", topic: "Climate Change Adaptation Strategies in Northern Nigeria", status: "Pending" },
-            { name: "John Paul", matric: "KASU/SCI/20/088", degree: "BSc", topic: "Antimicrobial Resistance of Bacterial Isolates", status: "Approved" },
-            { name: "Fatima Sani", matric: "KASU/SCI/20/012", degree: "BSc", topic: "The Role of Social Media in Political Campaigns", status: "Revision" },
-            { name: "Daniel Ojo", matric: "KASU/SCI/20/099", degree: "BSc", topic: "Integration of Smart Home Technology in Buildings", status: "Approved" },
-            { name: "Grace Okoro", matric: "KASU/EDU/PG/22/034", degree: "PGD", topic: "Challenges of Teaching Mathematics in Junior Secondary", status: "Pending" },
-            { name: "David Okon", matric: "KASU/ENV/20/034", degree: "BSc", topic: "Sustainable Building Materials for Affordable Housing", status: "Approved" },
-            { name: "Chinedu Okafor", matric: "KASU/SS/PG/21/067", degree: "MSc", topic: "Impact of Inflation on the Manufacturing Sector", status: "Approved" },
-            { name: "Blessing Eze", matric: "KASU/LLB/19/045", degree: "LLB", topic: "An Appraisal of the Legal Framework for Cybercrime", status: "Pending" }
-        ];
+        // --- LANDING PAGE PUBLIC REPO ---
+        function loadPublicProjects() {
+            const grid = document.getElementById('public-project-grid');
+            grid.innerHTML = projects.map(p => `
+                <div class="glass-card p-6 rounded-xl flex flex-col card-hover border border-slate-200 premium-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${p.degree}</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase">${p.dept}</span>
+                    </div>
+                    <h3 class="text-base font-display font-bold text-primary mb-3">${p.title}</h3>
+                    <div class="mt-auto pt-4 flex space-x-2 border-t border-slate-200">
+                        <button onclick="viewAbstract('${p.title}', '${p.abstract}')" class="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">View Abstract</button>
+                        <button onclick="openAuthModal('signup')" class="flex-1 bg-primary text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 flex items-center justify-center"><i class="fas fa-lock mr-1"></i> Download</button>
+                    </div>
+                </div>
+            `).join('');
+        }
 
-        const degreeColors = { "BSc": "bg-blue-50 text-blue-700", "MSc": "bg-amber-50 text-amber-700", "PhD": "bg-emerald-50 text-emerald-700", "PGD": "bg-purple-50 text-purple-700", "LLB": "bg-orange-50 text-orange-700" };
-        const statusColors = { "Approved": "bg-emerald-50 text-emerald-700", "Pending": "bg-amber-50 text-amber-700", "Revision": "bg-red-50 text-red-600" };
+        function viewAbstract(title, abstract) {
+            document.getElementById('abs-title').innerText = title;
+            document.getElementById('abs-body').innerText = abstract;
+            document.getElementById('abstract-modal').classList.add('active');
+        }
+        function closeAbstract() { document.getElementById('abstract-modal').classList.remove('active'); }
 
-        document.getElementById('student-table-body').innerHTML = students.map(s => `
-            <tr class="hover:bg-slate-50">
-                <td class="p-4"><p class="font-bold text-primary">${s.name}</p><p class="text-xs text-slate-400 font-light">${s.matric}</p></td>
-                <td class="p-4"><span class="text-[10px] ${degreeColors[s.degree]} px-2 py-1 rounded font-bold uppercase">${s.degree}</span></td>
-                <td class="p-4 text-slate-600 max-w-xs">${s.topic}</td>
-                <td class="p-4"><span class="text-[10px] ${statusColors[s.status]} px-2 py-1 rounded font-bold uppercase">${s.status}</span></td>
-                <td class="p-4 text-right space-x-2">
-                    ${s.status === 'Pending' ? `
-                        <button class="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-emerald-700">Approve</button>
-                        <button class="bg-red-50 text-red-600 px-3 py-1 rounded text-xs font-bold hover:bg-red-100">Reject</button>
-                    ` : `<button class="text-slate-400 hover:text-primary"><i class="fas fa-eye"></i></button>`}
-                </td>
-            </tr>
-        `).join('');
+        // --- STUDENT DASHBOARD: DEPARTMENT PROJECTS ---
+        function loadDeptProjects() {
+            const container = document.getElementById('dept-projects');
+            const badge = document.getElementById('dl-badge');
+            if (hasPaidDownloadFee) {
+                badge.innerText = 'Unlocked';
+                badge.classList.remove('bg-amber-50', 'text-amber-700');
+                badge.classList.add('bg-emerald-50', 'text-emerald-700');
+            }
+            const deptProjects = projects.filter(p => p.dept === 'Computer Science');
+            container.innerHTML = deptProjects.map(p => `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div class="mb-3 sm:mb-0">
+                        <p class="text-sm font-bold text-dark">${p.title}</p>
+                        <p class="text-xs text-slate-500">${p.degree} Final Year Project</p>
+                    </div>
+                    ${hasPaidDownloadFee ? `
+                        <a href="${p.pdf}" target="_blank" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 text-center">
+                            <i class="fas fa-download mr-1"></i> Download PDF
+                        </a>
+                    ` : `
+                        <button onclick="payDownloadFee()" class="bg-accent text-dark px-4 py-2 rounded-lg text-xs font-bold hover:bg-amber-400">
+                            <i class="fas fa-lock mr-1"></i> Pay ₦500 to Unlock
+                        </button>
+                    `}
+                </div>
+            `).join('');
+        }
+
+        function payDownloadFee() {
+            alert("Redirecting to Paystack for ₦500 one-time access fee...");
+            setTimeout(() => {
+                alert("Payment Successful! You now have unlimited access to download projects in your department.");
+                hasPaidDownloadFee = true;
+                loadDeptProjects();
+            }, 1000);
+        }
+
+        // --- ADMIN CATALOGUE LOADER ---
+        function loadCatalogue() {
+            const container = document.getElementById('catalogue-container');
+            if (!container) return;
+            let html = '';
+            kasuCatalogue.forEach(college => {
+                html += `<div class="border border-slate-200 rounded-xl p-5"><h4 class="text-md font-bold text-primary mb-4 flex items-center"><i class="fas fa-landmark mr-2 text-accent"></i> ${college.college}</h4><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+                college.faculties.forEach(faculty => {
+                    html += `<div class="bg-slate-50 p-4 rounded-lg border border-slate-100"><p class="text-xs font-bold text-dark uppercase mb-3 pb-2 border-b border-slate-200">${faculty.name}</p><div class="flex flex-wrap gap-2">`;
+                    faculty.courses.forEach(course => { html += `<span class="text-[11px] bg-white text-slate-600 px-2 py-1 rounded border border-slate-200 shadow-sm">${course}</span>`; });
+                    html += `</div></div>`;
+                });
+                html += `</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        // --- STUDENT UPLOAD ---
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.type !== 'application/pdf') { alert("Error: Only PDF files are allowed."); event.target.value = ''; return; }
+            const maxSize = 100 * 1024 * 1024; 
+            if (file.size > maxSize) { alert("Error: File size exceeds the 100MB limit."); event.target.value = ''; return; }
+            selectedFile = file;
+            document.getElementById('file-name').innerText = file.name;
+        }
+
+        function processUpload() {
+            if (!selectedFile) { alert("Please upload a PDF first."); return; }
+            const btn = document.getElementById('pay-btn');
+            btn.innerText = 'Processing...';
+            setTimeout(() => {
+                btn.innerText = 'Submission Successful!';
+                btn.classList.remove('bg-accent');
+                btn.classList.add('bg-emerald-600', 'text-white');
+                alert("Success! Project submitted to Dr. Sani Musa.");
+            }, 1000);
+        }
+
+        // --- PDF RECEIPT GENERATOR ---
+        function generateReceipt() {
+            const element = document.getElementById('receipt-template');
+            const opt = {
+                margin: 0,
+                filename: 'KASU_Clearance_Receipt_Musa_Abdullahi.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'px', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        // --- TEACHER LOGIC ---
+        function loadTeacherStudents() {
+            const tableBody = document.getElementById('student-table-body');
+            tableBody.innerHTML = assignedStudents.map(s => `
+                <tr class="hover:bg-slate-50 cursor-pointer" onclick="viewStudent(${s.id})">
+                    <td class="p-4 flex items-center space-x-3"><img src="${s.img}" class="w-10 h-10 rounded-full object-cover" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=${s.name.replace(' ', '+')}&background=065F46&color=fff'"><div><p class="font-bold text-primary">${s.name}</p><p class="text-xs text-slate-400">${s.matric}</p></div></td>
+                    <td class="p-4"><span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${s.degree}</span></td>
+                    <td class="p-4 text-slate-600 max-w-xs">${s.topic}</td>
+                    <td class="p-4"><span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">${s.status}</span></td>
+                    <td class="p-4 text-right" onclick="event.stopPropagation()">
+                        ${s.status === 'Pending' ? `<button onclick="approveStudent(${s.id})" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold">Approve</button>` : `<button class="text-slate-400"><i class="fas fa-eye"></i></button>`}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        let currentModalStudentId = null;
+        function viewStudent(id) {
+            const s = assignedStudents.find(st => st.id === id);
+            if (s) {
+                currentModalStudentId = id;
+                document.getElementById('modal-img').src = s.img;
+                document.getElementById('modal-img').onerror = function() { this.src='https://ui-avatars.com/api/?name=${s.name.replace(" ", "+")}&background=065F46&color=fff'; };
+                document.getElementById('modal-name').innerText = s.name;
+                document.getElementById('modal-matric').innerText = s.matric;
+                document.getElementById('modal-topic').innerText = s.topic;
+                document.getElementById('student-modal').classList.add('active');
+            }
+        }
+        function closeModal() { document.getElementById('student-modal').classList.remove('active'); }
+        function approveStudent(id) {
+            if(id) currentModalStudentId = id;
+            const student = assignedStudents.find(s => s.id === currentModalStudentId);
+            if (student) { student.status = "Approved"; loadTeacherStudents(); closeModal(); alert(student.name + " approved!"); }
+        }
+
+        updateNav();
+        loadPublicProjects();
     </script>
 </body>
 </html>
