@@ -31,22 +31,26 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 100; justify-content: center; align-items: center; padding: 1rem; }
         .modal-overlay.active { display: flex; }
         .admin-sidebar { background-color: #0F172A; color: #94a3b8; }
-        .sidebar-link { transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-link { transition: all 0.2s; border-left: 3px solid transparent; cursor: pointer; }
         .sidebar-link:hover { background-color: #1e293b; color: #fff; }
         .sidebar-link.active { background-color: #065F46; color: #fff; border-left-color: #F59E0B; }
+        .admin-section { display: none; }
+        .admin-section.active { display: block; }
         #receipt-template { position: absolute; left: -9999px; top: 0; width: 800px; padding: 40px; background: white; font-family: 'Inter', sans-serif; }
+        .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
 <body class="bg-slate-50">
 
     <!-- NAVIGATION -->
-    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 premium-shadow">
+    <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 premium-shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
             <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('landing')">
                 <img src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg?auth_key=1883957539-c26e32e54017417fa3f43a008332e2bf-0-65c12dd7c1dd680811e323fff26a3285" alt="KASU Logo" class="h-12 w-12 object-contain rounded-full" onerror="this.src='https://ui-avatars.com/api/?name=KASU&background=065F46&color=fff&bold=true'">
                 <div class="flex flex-col leading-tight">
                     <span class="font-display font-bold text-lg text-primary">KASU SPMS</span>
-                    <span class="hidden sm:block text-[10px] text-slate-500 uppercase tracking-widest">Final-Year Project Portal</span>
+                    <!-- TEXT CHANGED HERE -->
+                    <span class="hidden sm:block text-[10px] text-slate-500 uppercase tracking-widest">Student Project Management System</span>
                 </div>
             </div>
             <div class="hidden md:flex items-center space-x-6" id="nav-links"></div>
@@ -56,8 +60,6 @@
 
     <!-- VIEW 1: LANDING -->
     <div id="landing" class="view active-view blueprint-bg min-h-[calc(100vh-5rem)]">
-        
-        <!-- Hero Section -->
         <section class="py-20 md:py-32 px-4 text-center">
             <div class="max-w-4xl mx-auto">
                 <div class="inline-flex items-center space-x-2 bg-white border border-slate-200 px-4 py-1.5 rounded-full mb-8 premium-shadow">
@@ -67,13 +69,9 @@
                 <h1 class="text-4xl md:text-6xl lg:text-7xl font-display font-semibold text-primary leading-[1.1] mb-6">KASU SPMS</h1>
                 <p class="text-xl md:text-2xl text-accent italic font-medium mb-8">The Official Final-Year Project Submission Portal</p>
                 <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-10 font-light leading-relaxed">Designed to simplify project submission, supervisor approval, and library clearance through one secure digital platform.</p>
-                <button onclick="openAuthModal('login')" class="bg-primary text-white px-8 py-4 rounded-lg text-sm font-bold hover:bg-emerald-700 transition premium-shadow">
-                    Login to Portal <i class="fas fa-arrow-right ml-2"></i>
-                </button>
+                <button onclick="openAuthModal('login')" class="bg-primary text-white px-8 py-4 rounded-lg text-sm font-bold hover:bg-emerald-700 transition premium-shadow">Login to Portal <i class="fas fa-arrow-right ml-2"></i></button>
             </div>
         </section>
-
-        <!-- Process Flow -->
         <section class="py-20 bg-white border-y border-slate-200">
             <div class="max-w-5xl mx-auto px-4 text-center">
                 <h2 class="text-3xl md:text-4xl font-display font-semibold text-primary mb-12">The Clearance Process</h2>
@@ -90,8 +88,6 @@
                 </div>
             </div>
         </section>
-
-        <!-- Statistics -->
         <section class="bg-primary py-20">
             <div class="max-w-7xl mx-auto px-4">
                 <h2 class="text-center text-3xl md:text-4xl font-display font-bold text-white mb-12">Institutional Impact</h2>
@@ -103,41 +99,11 @@
                 </div>
             </div>
         </section>
-
-        <!-- Features Section -->
-        <section class="py-24 bg-slate-50">
-            <div class="max-w-7xl mx-auto px-4">
-                <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-display font-semibold text-primary">Platform Features</h2>
-                    <p class="text-slate-500 mt-2">Everything you need for a seamless final year.</p>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div class="bg-white p-8 rounded-xl premium-shadow border border-slate-100">
-                        <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-primary mb-6"><i class="fas fa-shield-alt text-xl"></i></div>
-                        <h3 class="text-lg font-display font-bold text-primary mb-3">Secure PDF Vault</h3>
-                        <p class="text-slate-500 text-sm">All uploads are automatically validated, watermarked, and securely stored in the university cloud.</p>
-                    </div>
-                    <div class="bg-white p-8 rounded-xl premium-shadow border border-slate-100">
-                        <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-accent mb-6"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
-                        <h3 class="text-lg font-display font-bold text-primary mb-3">Automated Clearance</h3>
-                        <p class="text-slate-500 text-sm">Say goodbye to printing 5 copies. Pay your digital fee and generate your clearance receipt instantly.</p>
-                    </div>
-                    <div class="bg-white p-8 rounded-xl premium-shadow border border-slate-100">
-                        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-6"><i class="fas fa-project-diagram text-xl"></i></div>
-                        <h3 class="text-lg font-display font-bold text-primary mb-3">Global DOI Indexing</h3>
-                        <p class="text-slate-500 text-sm">Exceptional research is issued a Digital Object Identifier, making KASU research globally citable.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Public Repository (Anonymous) -->
         <section id="repo" class="py-24 bg-white border-t border-slate-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-12">
                     <span class="text-xs font-bold text-accent uppercase tracking-widest">Public Repository</span>
                     <h2 class="text-3xl md:text-4xl font-display font-semibold text-primary mt-2">Browse Past Research</h2>
-                    <p class="text-slate-500 mt-2 max-w-2xl mx-auto">Read abstracts for free. Create an account to download full PDFs from your department.</p>
                 </div>
                 <div id="public-project-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
@@ -147,8 +113,6 @@
     <!-- VIEW 2: STUDENT -->
     <div id="student" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
         <div class="max-w-5xl mx-auto">
-            
-            <!-- Profile Header -->
             <div class="glass-card rounded-xl p-6 premium-shadow mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 <img src="https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b" alt="Student Profile" class="w-24 h-24 rounded-full border-4 border-accent object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Musa+Abdullahi&background=065F46&color=fff'">
                 <div class="text-center sm:text-left flex-1">
@@ -160,8 +124,6 @@
                     <p class="text-sm text-slate-500">BSc Computer Science | 2023/2024 Session</p>
                 </div>
             </div>
-
-            <!-- Upload Section -->
             <div class="glass-card rounded-xl p-6 premium-shadow mb-6">
                 <h2 class="text-lg font-display font-bold text-primary mb-4">1. Upload Final Thesis</h2>
                 <label class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-slate-50 flex flex-col items-center justify-center">
@@ -176,27 +138,10 @@
                 <div class="mb-4 md:mb-0 text-center md:text-left"><p class="text-sm font-bold text-white">2. Digital Repository Fee</p><p class="text-xs text-emerald-100 font-light">Required for graduation clearance.</p></div>
                 <button id="pay-btn" onclick="processUpload()" class="bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition w-full md:w-auto">Pay ₦2,000 & Submit</button>
             </div>
-
-            <!-- Department Download Section -->
-            <div class="glass-card rounded-xl p-6 premium-shadow mb-8">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-slate-200 pb-4">
-                    <div class="mb-2 sm:mb-0">
-                        <h2 class="text-lg font-display font-bold text-primary">Browse Department Projects</h2>
-                        <p class="text-xs text-slate-500">Computer Science Projects Archive</p>
-                    </div>
-                    <span id="dl-badge" class="bg-amber-50 text-amber-700 text-xs font-bold px-3 py-1 rounded-full uppercase">Locked</span>
-                </div>
-                <div id="dept-projects" class="space-y-4"></div>
-            </div>
-
-            <!-- Receipt Section -->
             <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-6 premium-shadow text-center">
                 <i class="fas fa-check-circle text-4xl text-emerald-600 mb-3"></i>
                 <h3 class="text-lg font-display font-bold text-primary mb-2">Digital Clearance Receipt</h3>
-                <p class="text-sm text-slate-500 mb-4">Congratulations! Your project has been approved. Download your official PDF receipt.</p>
-                <button onclick="generateReceipt()" class="bg-primary text-white px-8 py-3 rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full md:w-auto">
-                    <i class="fas fa-download mr-2"></i> Download Clearance Receipt (PDF)
-                </button>
+                <button onclick="generateReceipt()" class="bg-primary text-white px-8 py-3 rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full md:w-auto"><i class="fas fa-download mr-2"></i> Download Clearance Receipt (PDF)</button>
             </div>
         </div>
     </div>
@@ -216,168 +161,239 @@
         </div>
     </div>
 
-    <!-- VIEW 4: LIBRARY -->
+    <!-- VIEW 4: LIBRARY (WORLD-CLASS CATALOG) -->
     <div id="library" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
-        <div class="max-w-6xl mx-auto">
-            <h1 class="text-3xl font-display font-bold text-primary mb-8">Library Verification Unit</h1>
-            <div class="glass-card rounded-xl p-6 premium-shadow text-center">
-                <i class="fas fa-book-reader text-4xl text-primary mb-4"></i>
-                <h3 class="text-xl font-display font-bold text-primary">Cataloging Interface Ready</h3>
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-display font-bold text-primary">Library Catalog & Verification</h1>
+                    <p class="text-slate-500 font-light mt-1">Comprehensive archive of all submitted research across KASU.</p>
+                </div>
+                <div class="mt-4 md:mt-0 bg-white p-4 rounded-xl premium-shadow border border-slate-200 text-center">
+                    <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Verification Queue</p>
+                    <p class="text-2xl font-display font-bold text-accent mt-1">50 Projects</p>
+                </div>
             </div>
+
+            <!-- Filters Toolbar -->
+            <div class="glass-card p-4 rounded-xl premium-shadow mb-8 flex flex-col md:flex-row gap-4 items-center">
+                <div class="relative flex-1 w-full">
+                    <i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i>
+                    <input id="lib-search" type="text" placeholder="Search title, author, or keyword..." class="w-full pl-10 pr-4 py-2.5 glass-input rounded-lg text-sm" onkeyup="filterLibrary()">
+                </div>
+                <select id="lib-dept" class="p-2.5 glass-input rounded-lg text-sm w-full md:w-auto" onchange="filterLibrary()">
+                    <option value="All">All Departments</option>
+                </select>
+                <select id="lib-degree" class="p-2.5 glass-input rounded-lg text-sm w-full md:w-auto" onchange="filterLibrary()">
+                    <option value="All">All Degrees</option>
+                    <option value="BSc">BSc</option>
+                    <option value="PGD">PGD</option>
+                    <option value="MSc">MSc</option>
+                    <option value="PhD">PhD</option>
+                </select>
+                <!-- Grid / List Toggle -->
+                <div class="flex items-center space-x-2 bg-slate-100 p-1 rounded-lg">
+                    <button onclick="setLibraryView('grid')" id="btn-grid-view" class="p-2 rounded-md text-primary bg-white shadow-sm"><i class="fas fa-th-large"></i></button>
+                    <button onclick="setLibraryView('list')" id="btn-list-view" class="p-2 rounded-md text-slate-500"><i class="fas fa-list"></i></button>
+                </div>
+            </div>
+
+            <!-- Projects Grid/List -->
+            <div id="library-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
         </div>
     </div>
 
-    <!-- VIEW 5: ADMIN (Fully Restored) -->
+    <!-- VIEW 5: ADMIN (Multi-Section) -->
     <div id="admin" class="view min-h-screen">
+        <!-- Mobile Top Bar -->
+        <div class="md:hidden bg-white p-4 flex justify-between items-center border-b sticky top-0 z-30">
+            <button onclick="toggleSidebar()"><i class="fas fa-bars text-xl text-primary"></i></button>
+            <span class="font-display font-bold text-lg text-primary">Admin Panel</span>
+        </div>
+        
         <div class="flex min-h-screen">
             <!-- Sidebar -->
-            <aside class="w-64 admin-sidebar hidden md:flex flex-col flex-shrink-0">
-                <div class="h-20 flex items-center justify-center border-b border-slate-800"><span class="font-display font-bold text-white text-lg">Admin Panel</span></div>
+            <aside id="admin-sidebar" class="w-64 admin-sidebar fixed md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition duration-200 ease-in-out z-50 flex flex-col flex-shrink-0 min-h-screen">
+                <div class="h-20 flex items-center justify-center border-b border-slate-800 hidden md:flex"><span class="font-display font-bold text-white text-lg">Admin Panel</span></div>
                 <nav class="flex-1 p-4 space-y-1">
-                    <a href="#" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-tachometer-alt w-5"></i> Dashboard</a>
-                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-user-graduate w-5"></i> Students</a>
-                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chalkboard-teacher w-5"></i> Supervisors</a>
-                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-building w-5"></i> Departments</a>
-                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-file-upload w-5"></i> Uploads</a>
-                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-money-bill-wave w-5"></i> Payments</a>
-                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chart-line w-5"></i> Reports</a>
-                    <a href="#" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-cog w-5"></i> System Settings</a>
+                    <a onclick="showAdminSection('dashboard')" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-tachometer-alt w-5"></i> Dashboard</a>
+                    <a onclick="showAdminSection('students')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-user-graduate w-5"></i> Students</a>
+                    <a onclick="showAdminSection('supervisors')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chalkboard-teacher w-5"></i> Supervisors</a>
+                    <a onclick="showAdminSection('departments')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-building w-5"></i> Departments</a>
+                    <a onclick="showAdminSection('uploads')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-file-upload w-5"></i> Uploads</a>
+                    <a onclick="showAdminSection('payments')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-money-bill-wave w-5"></i> Payments</a>
+                    <a onclick="showAdminSection('reports')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chart-line w-5"></i> Reports</a>
                 </nav>
             </aside>
-            
+
             <!-- Main Content -->
             <main class="flex-1 p-4 md:p-8 bg-slate-50 overflow-y-auto">
-                <h1 class="text-3xl font-display font-bold text-primary mb-8">Analytics Hub</h1>
                 
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Students</p><p class="text-3xl font-display font-bold text-primary mt-1">18,425</p></div>
-                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Revenue</p><p class="text-3xl font-display font-bold text-emerald-600 mt-1">₦9.0M</p></div>
-                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Uploads</p><p class="text-3xl font-display font-bold text-primary mt-1">4,021</p></div>
-                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Approvals</p><p class="text-3xl font-display font-bold text-accent mt-1">209</p></div>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                    <!-- Charts -->
-                    <div class="lg:col-span-2 bg-white p-6 rounded-xl premium-shadow border border-slate-200">
-                        <h3 class="text-lg font-display font-bold text-primary mb-6">Departmental Uploads</h3>
-                        <div class="space-y-4">
-                            <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Computer Science</span><span>850</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 85%"></div></div></div>
-                            <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Engineering</span><span>620</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 62%"></div></div></div>
-                            <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Sciences</span><span>450</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 45%"></div></div></div>
-                            <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Arts</span><span>300</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 30%"></div></div></div>
-                        </div>
+                <!-- Dashboard Section -->
+                <div id="admin-dashboard" class="admin-section active">
+                    <h1 class="text-3xl font-display font-bold text-primary mb-8">Analytics Hub</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Students</p><p class="text-3xl font-display font-bold text-primary mt-1">18,425</p></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Revenue</p><p class="text-3xl font-display font-bold text-emerald-600 mt-1">₦9.0M</p></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Uploads</p><p class="text-3xl font-display font-bold text-primary mt-1">4,021</p></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Approvals</p><p class="text-3xl font-display font-bold text-accent mt-1">209</p></div>
                     </div>
-
-                    <!-- System Rules Panel -->
-                    <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 space-y-6">
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-bell mr-2 text-accent"></i> Notifications</h4>
-                            <ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside">
-                                <li><strong>Student:</strong> Upload OK, Super. Approve/Reject, Lib. Approve/Reject</li>
-                                <li><strong>Supervisor:</strong> Student Uploads</li>
-                                <li><strong>Library:</strong> Super. Approves</li>
-                            </ul>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                            <h3 class="text-lg font-display font-bold text-primary mb-6">Departmental Uploads</h3>
+                            <div class="space-y-4">
+                                <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Computer Science</span><span>850</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 85%"></div></div></div>
+                                <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Engineering</span><span>620</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 62%"></div></div></div>
+                                <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Sciences</span><span>450</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 45%"></div></div></div>
+                                <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Arts</span><span>300</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 30%"></div></div></div>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-file-pdf mr-2 text-red-500"></i> PDF Rules</h4>
-                            <ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside">
-                                <li>Format: PDF Only</li>
-                                <li>Max Size: 100MB</li>
-                                <li>Auto-Rename: Enabled</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-shield-alt mr-2 text-primary"></i> Role Permissions</h4>
-                            <ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside">
-                                <li><strong>Supervisor:</strong> Review, Approve, Reject, Comment</li>
-                                <li><strong>Library:</strong> Verify, Approve, Clearance</li>
-                                <li><strong>Admin:</strong> Users, Reports, Settings</li>
-                            </ul>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 space-y-6">
+                            <div><h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-bell mr-2 text-accent"></i> Notifications</h4><ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside"><li><strong>Student:</strong> Upload OK, Approve/Reject</li><li><strong>Supervisor:</strong> Student Uploads</li><li><strong>Library:</strong> Super. Approves</li></ul></div>
+                            <div><h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-file-pdf mr-2 text-red-500"></i> PDF Rules</h4><ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside"><li>Format: PDF Only</li><li>Max Size: 100MB</li><li>Auto-Rename: Enabled</li></ul></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Payments Table -->
-                <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden mb-8">
-                    <div class="p-6 border-b border-slate-200 flex justify-between items-center">
-                        <h3 class="text-lg font-display font-bold text-primary">Recent Payments</h3>
-                        <button class="text-xs text-primary font-bold hover:underline">View All</button>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[600px]">
-                            <thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Amount</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Status</th><th class="p-4 font-bold text-right">Receipt</th></tr></thead>
-                            <tbody class="text-sm divide-y divide-slate-200">
-                                <tr><td class="p-4 text-slate-700">Musa Abdullahi</td><td class="p-4 text-slate-700">₦2,500</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Success</span></td><td class="p-4 text-right"><button class="text-primary hover:text-accent"><i class="fas fa-download"></i></button></td></tr>
-                                <tr><td class="p-4 text-slate-700">Aisha Bello</td><td class="p-4 text-slate-700">₦2,000</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Success</span></td><td class="p-4 text-right"><button class="text-primary hover:text-accent"><i class="fas fa-download"></i></button></td></tr>
-                                <tr><td class="p-4 text-slate-700">Ibrahim Yusuf</td><td class="p-4 text-slate-700">₦1,000</td><td class="p-4 text-slate-500">2024-05-19</td><td class="p-4"><span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">Pending</span></td><td class="p-4 text-right"><button class="text-slate-300 cursor-not-allowed"><i class="fas fa-download"></i></button></td></tr>
-                            </tbody>
-                        </table>
+                <!-- Students Section -->
+                <div id="admin-students" class="admin-section">
+                    <h1 class="text-3xl font-display font-bold text-primary mb-8">Student Management</h1>
+                    <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Name</th><th class="p-4 font-bold">Matric</th><th class="p-4 font-bold">Dept</th><th class="p-4 font-bold">Status</th></tr></thead><tbody class="text-sm divide-y divide-slate-200">
+                            <tr><td class="p-4 text-slate-700">Musa Abdullahi</td><td class="p-4 text-slate-500">KASU/SCI/20/123</td><td class="p-4 text-slate-500">Comp Science</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Cleared</span></td></tr>
+                            <tr><td class="p-4 text-slate-700">Aisha Bello</td><td class="p-4 text-slate-500">KASU/SS/20/045</td><td class="p-4 text-slate-500">Economics</td><td class="p-4"><span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">Pending</span></td></tr>
+                            <tr><td class="p-4 text-slate-700">John Paul</td><td class="p-4 text-slate-500">KASU/SCI/20/088</td><td class="p-4 text-slate-500">Microbiology</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Cleared</span></td></tr>
+                        </tbody></table></div>
                     </div>
                 </div>
 
-                <!-- PROJECT CATALOGUE (KASU Faculties & Courses) -->
-                <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
-                    <div class="p-6 border-b border-slate-200">
-                        <h3 class="text-lg font-display font-bold text-primary">Project Catalogue (Faculties & Courses)</h3>
-                        <p class="text-sm text-slate-500 mt-1">Comprehensive list of all undergraduate and postgraduate courses.</p>
+                <!-- Supervisors Section (UPDATED TO LIST LAYOUT & USER PICTURES) -->
+                <div id="admin-supervisors" class="admin-section">
+                    <h1 class="text-3xl font-display font-bold text-primary mb-8">Supervisor Management</h1>
+                    <div class="flex flex-col space-y-4">
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 flex items-center space-x-4">
+                            <img src="https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b" alt="Supervisor" class="w-16 h-16 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Sani+Musa&background=065F46&color=fff'">
+                            <div class="flex-1">
+                                <p class="font-bold text-dark">Dr. Sani Musa</p>
+                                <p class="text-xs text-slate-500">Computer Science</p>
+                            </div>
+                            <span class="text-xs text-primary font-bold bg-emerald-50 px-3 py-1 rounded-full">10 Students</span>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 flex items-center space-x-4">
+                            <img src="https://z-cdn-media.chatglm.cn/files/71860306-1785-4afa-a0f6-338175b9e560.jpeg?auth_key=1883957539-8565334395d048d4a7d1d03681ae48eb-0-49015e5172e587679758df694c27d457" alt="Supervisor" class="w-16 h-16 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Aisha+Bello&background=065F46&color=fff'">
+                            <div class="flex-1">
+                                <p class="font-bold text-dark">Prof. Aisha Bello</p>
+                                <p class="text-xs text-slate-500">Economics</p>
+                            </div>
+                            <span class="text-xs text-primary font-bold bg-emerald-50 px-3 py-1 rounded-full">8 Students</span>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 flex items-center space-x-4">
+                            <img src="https://z-cdn-media.chatglm.cn/files/038e70a5-a254-4092-9e6f-6d362d906ebf.jpeg?auth_key=1883957539-009c4473ff994f6c81a7092b7a4f57f9-0-2ea383c896a826d607daea3cb9c56731" alt="Supervisor" class="w-16 h-16 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Ibrahim+Yusuf&background=065F46&color=fff'">
+                            <div class="flex-1">
+                                <p class="font-bold text-dark">Dr. Ibrahim Yusuf</p>
+                                <p class="text-xs text-slate-500">Geography</p>
+                            </div>
+                            <span class="text-xs text-primary font-bold bg-emerald-50 px-3 py-1 rounded-full">5 Students</span>
+                        </div>
                     </div>
-                    <div class="p-6 space-y-8" id="catalogue-container"></div>
+                </div>
+
+                <!-- Departments Section (Contains the massive Catalogue) -->
+                <div id="admin-departments" class="admin-section">
+                    <h1 class="text-3xl font-display font-bold text-primary mb-8">Departments & Catalogue</h1>
+                    <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden mb-8">
+                        <div class="p-6 border-b border-slate-200"><h3 class="text-lg font-display font-bold text-primary">Project Catalogue (Faculties & Courses)</h3><p class="text-sm text-slate-500 mt-1">Comprehensive list of all undergraduate and postgraduate courses.</p></div>
+                        <div class="p-6 space-y-8" id="catalogue-container"></div>
+                    </div>
+                </div>
+
+                <!-- Uploads Section -->
+                <div id="admin-uploads" class="admin-section">
+                    <h1 class="text-3xl font-display font-bold text-primary mb-8">Recent Uploads</h1>
+                    <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Title</th><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Status</th></tr></thead><tbody class="text-sm divide-y divide-slate-200">
+                            <tr><td class="p-4 text-slate-700">E-Voting System</td><td class="p-4 text-slate-500">Musa A.</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">Pending</span></td></tr>
+                            <tr><td class="p-4 text-slate-700">ML Algorithms</td><td class="p-4 text-slate-500">Aisha B.</td><td class="p-4 text-slate-500">2024-05-19</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Approved</span></td></tr>
+                        </tbody></table></div>
+                    </div>
+                </div>
+
+                <!-- Payments Section -->
+                <div id="admin-payments" class="admin-section">
+                    <h1 class="text-3xl font-display font-bold text-primary mb-8">Payment Records</h1>
+                    <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Amount</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Status</th><th class="p-4 font-bold text-right">Receipt</th></tr></thead><tbody class="text-sm divide-y divide-slate-200">
+                            <tr><td class="p-4 text-slate-700">Musa Abdullahi</td><td class="p-4 text-slate-700">₦2,500</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Success</span></td><td class="p-4 text-right"><button class="text-primary hover:text-accent"><i class="fas fa-download"></i></button></td></tr>
+                            <tr><td class="p-4 text-slate-700">Aisha Bello</td><td class="p-4 text-slate-700">₦2,000</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Success</span></td><td class="p-4 text-right"><button class="text-primary hover:text-accent"><i class="fas fa-download"></i></button></td></tr>
+                        </tbody></table></div>
+                    </div>
+                </div>
+
+                <!-- Reports Section -->
+                <div id="admin-reports" class="admin-section">
+                    <h1 class="text-3xl font-display font-bold text-primary mb-8">System Reports</h1>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-export text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Export Student Data</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Download CSV</button></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-invoice-dollar text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Financial Report</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Download PDF</button></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-archive text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Archive Log</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">View Log</button></div>
+                    </div>
                 </div>
 
             </main>
         </div>
     </div>
 
-    <!-- AUTH MODAL (Login & Signup) -->
+    <!-- AUTH MODAL -->
     <div id="auth-modal" class="modal-overlay">
         <div class="glass-card rounded-2xl premium-shadow w-full max-w-md mx-4 overflow-hidden">
-            <div class="bg-primary p-6 flex justify-between items-center">
-                <span id="auth-title" class="text-white font-display font-bold text-lg">Login to Portal</span>
-                <button onclick="closeAuthModal()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
-            </div>
+            <div class="bg-primary p-6 flex justify-between items-center"><span id="auth-title" class="text-white font-display font-bold text-lg">Login to Portal</span><button onclick="closeAuthModal()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button></div>
             <div class="p-8">
-                <!-- Login Form -->
                 <div id="login-form">
                     <div class="space-y-4">
                         <input id="login-email" type="text" placeholder="Email (e.g. student@kasu.edu.ng)" class="w-full p-3 glass-input rounded-lg text-sm">
                         <input id="login-password" type="password" placeholder="Password" class="w-full p-3 glass-input rounded-lg text-sm">
                         <button onclick="handleLogin()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign In</button>
                     </div>
-                    <div class="mt-6 text-center">
-                        <p class="text-xs text-slate-500 mb-2">Demo: admin@kasu.edu.ng / password</p>
-                        <p class="text-sm text-slate-500">Don't have an account? <button onclick="openAuthModal('signup')" class="text-primary font-bold hover:underline">Sign Up</button></p>
-                    </div>
+                    <p class="text-xs text-slate-500 mt-6 text-center">Demo: admin@kasu.edu.ng / password</p>
                 </div>
-
-                <!-- Signup Form -->
                 <div id="signup-form" class="hidden">
-                    <p class="text-sm text-slate-500 mb-6 text-center">Enter your Matric Number. We will auto-fetch your details from the KASU portal.</p>
+                    <p class="text-sm text-slate-500 mb-6 text-center">Enter your Matric Number to auto-fetch details.</p>
                     <div class="space-y-4">
                         <input id="signup-matric" type="text" placeholder="e.g. KASU/SCI/20/123" class="w-full p-3 glass-input rounded-lg text-sm">
-                        <button onclick="handleSignup()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Fetch Portal Data & Sign Up</button>
-                    </div>
-                    <div class="mt-6 text-center">
-                        <p class="text-sm text-slate-500">Already have an account? <button onclick="openAuthModal('login')" class="text-primary font-bold hover:underline">Login</button></p>
+                        <button onclick="handleSignup()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign Up</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ABSTRACT MODAL -->
-    <div id="abstract-modal" class="modal-overlay">
-        <div class="glass-card rounded-2xl premium-shadow w-full max-w-lg mx-4 overflow-hidden">
+    <!-- LIBRARY DETAIL MODAL -->
+    <div id="library-modal" class="modal-overlay">
+        <div class="glass-card rounded-2xl premium-shadow w-full max-w-2xl mx-4 overflow-hidden">
             <div class="bg-primary p-6 flex justify-between items-center">
-                <span class="text-white font-display font-bold text-lg">Project Abstract</span>
-                <button onclick="closeAbstract()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
+                <span class="text-white font-display font-bold text-lg">Project Verification Details</span>
+                <button onclick="closeLibraryModal()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button>
             </div>
             <div class="p-8">
-                <h3 id="abs-title" class="text-lg font-display font-bold text-primary mb-4"></h3>
-                <p id="abs-body" class="text-sm text-slate-600 leading-relaxed"></p>
-                <div class="mt-6 pt-6 border-t border-slate-200 text-center">
-                    <p class="text-xs text-slate-500 mb-3">To download the full PDF, please create an account.</p>
-                    <button onclick="closeAbstract(); openAuthModal('signup');" class="bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700">Create Account</button>
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <span id="lib-modal-degree" class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase"></span>
+                        <h3 id="lib-modal-title" class="text-xl font-display font-bold text-primary mt-2"></h3>
+                    </div>
+                    <span id="lib-modal-status" class="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full font-bold uppercase">Pending</span>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-6 text-sm">
+                    <div><p class="text-xs text-slate-400 uppercase font-bold">Author</p><p id="lib-modal-author" class="text-slate-700 font-medium"></p></div>
+                    <div><p class="text-xs text-slate-400 uppercase font-bold">Department</p><p id="lib-modal-dept" class="text-slate-700 font-medium"></p></div>
+                </div>
+                <div class="mb-8">
+                    <p class="text-xs text-slate-400 uppercase font-bold mb-2">Abstract</p>
+                    <p id="lib-modal-abstract" class="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200"></p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <button class="bg-slate-100 text-primary px-4 py-3 rounded-lg text-xs font-bold hover:bg-slate-200 transition"><i class="fas fa-check-circle mr-1"></i> Verify Metadata</button>
+                    <button class="bg-slate-100 text-primary px-4 py-3 rounded-lg text-xs font-bold hover:bg-slate-200 transition"><i class="fas fa-qrcode mr-1"></i> Generate QR</button>
+                    <button class="bg-emerald-600 text-white px-4 py-3 rounded-lg text-xs font-bold hover:bg-emerald-700 transition"><i class="fas fa-book mr-1"></i> Publish to Catalog</button>
                 </div>
             </div>
         </div>
@@ -400,40 +416,18 @@
             <img src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg" alt="KASU Logo" style="width: 80px; height: 80px; margin-right: 20px;">
             <div>
                 <h1 style="color: #065F46; font-size: 24px; margin: 0; font-family: 'Fraunces', serif;">Kaduna State University</h1>
-                <p style="color: #334155; font-size: 14px; margin: 5px 0 0 0;">Student Project Management System (SPMS)</p>
                 <p style="color: #F59E0B; font-size: 16px; font-weight: bold; margin: 5px 0 0 0;">Official Digital Clearance Receipt</p>
             </div>
         </div>
-        <p style="font-size: 14px; color: #64748b; margin-bottom: 20px;">This document serves as official proof that the student has successfully completed the digital requirements for final-year project clearance.</p>
-        <div style="background: #F8FAFC; padding: 20px; border-radius: 8px; border: 1px solid #E5E7EB; margin-bottom: 30px;">
-            <table style="width: 100%; font-size: 14px; color: #334155;">
-                <tr><td style="padding: 8px 0; font-weight: bold; width: 35%;">Student Name:</td><td style="padding: 8px 0;">Musa Abdullahi</td></tr>
-                <tr><td style="padding: 8px 0; font-weight: bold;">Reg Number:</td><td style="padding: 8px 0;">KASU/SCI/20/123</td></tr>
-                <tr><td style="padding: 8px 0; font-weight: bold;">Project Title:</td><td style="padding: 8px 0;">Web-Based E-Voting System using Blockchain</td></tr>
-                <tr><td style="padding: 8px 0; font-weight: bold;">Supervisor Name:</td><td style="padding: 8px 0;">Dr. Sani Musa</td></tr>
-                <tr><td style="padding: 8px 0; font-weight: bold;">Submission Date:</td><td style="padding: 8px 0;">May 20, 2024</td></tr>
-                <tr><td style="padding: 8px 0; font-weight: bold;">Supervisor Approval:</td><td style="padding: 8px 0; color: #059669; font-weight: bold;">Approved (May 22, 2024)</td></tr>
-                <tr><td style="padding: 8px 0; font-weight: bold;">Library Clearance:</td><td style="padding: 8px 0; color: #059669; font-weight: bold;">Cleared (May 24, 2024)</td></tr>
-            </table>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; border-top: 2px solid #065F46; padding-top: 20px;">
-            <div style="font-size: 12px; color: #64748b;">
-                <p style="margin: 0;">Verification Code: KASU-SPMS-2024-00123</p>
-                <p style="margin: 5px 0 0 0;">Generated on: May 24, 2024, 10:00 AM</p>
-            </div>
-            <div style="text-align: center;">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https://kasu.edu.ng/verify/KASU-SPMS-2024-00123" alt="QR Code" style="width: 80px; height: 80px;">
-                <p style="font-size: 10px; color: #64748b; margin: 5px 0 0 0;">Scan to verify authenticity</p>
-            </div>
-        </div>
+        <p style="font-size: 14px; color: #64748b;">This document serves as official proof that the student has successfully completed the digital requirements for final-year project clearance.</p>
     </div>
 
     <script>
         let currentUserRole = null;
         let selectedFile = null;
-        let hasPaidDownloadFee = false;
+        let currentLibraryView = 'grid'; // 'grid' or 'list'
 
-        // User Provided Pictures
+        // Official User Provided Pictures
         const pic1 = "https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b";
         const pic2 = "https://z-cdn-media.chatglm.cn/files/71860306-1785-4afa-a0f6-338175b9e560.jpeg?auth_key=1883957539-8565334395d048d4a7d1d03681ae48eb-0-49015e5172e587679758df694c27d457";
         const pic3 = "https://z-cdn-media.chatglm.cn/files/038e70a5-a254-4092-9e6f-6d362d906ebf.jpeg?auth_key=1883957539-009c4473ff994f6c81a7092b7a4f57f9-0-2ea383c896a826d607daea3cb9c56731";
@@ -450,31 +444,17 @@
             { college: "College of Computing, Engineering and Sciences", faculties: [{ name: "Faculty of Life Sciences", courses: ["Biochemistry", "Biotechnology", "Biology", "Microbiology"] }, { name: "Faculty of Physical Sciences", courses: ["Pure and Applied Chemistry", "Physics", "Mathematics", "Statistics"] }, { name: "Faculty of Earth Sciences and Sustainability Studies", courses: ["Geography and Sustainability Studies", "Geophysics", "Geology", "Environmental Standards"] }, { name: "Faculty of Computing", courses: ["Computer Science", "Cyber Security", "Data Science"] }, { name: "Faculty of Engineering", courses: ["Computer Engineering", "Mechanical Engineering", "Electrical and Electronics Engineering"] }] }
         ];
 
-        // 20 PROJECTS (Anonymous on Landing Page)
+        // 6 PROJECTS FOR PUBLIC REPO
         const projects = [
-            { id: 1, degree: "BSc", dept: "Computer Science", title: "Web-Based E-Voting System", abstract: "Explores decentralized e-voting using Ethereum blockchain.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 2, degree: "MSc", dept: "Economics", title: "Impact of Inflation on Manufacturing", abstract: "Empirical analysis of inflationary trends in Nigeria.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 3, degree: "PhD", dept: "Geography", title: "Climate Change Adaptation in N. Nigeria", abstract: "Strategies for agricultural resilience.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 4, degree: "BSc", dept: "Microbiology", title: "Antimicrobial Resistance of Bacterial Isolates", abstract: "Study of water sources in Kaduna metropolis.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 5, degree: "BSc", dept: "Mass Comm", title: "Role of Social Media in Political Campaigns", abstract: "How digital platforms shape voter behavior.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 6, degree: "BSc", dept: "Architecture", title: "Integration of Smart Home Technology", abstract: "Sustainable building designs with IoT.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 7, degree: "PGD", dept: "Education", title: "Challenges of Teaching Mathematics in JSS", abstract: "Pedagogical approaches for junior secondary.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 8, degree: "BSc", dept: "Architecture", title: "Sustainable Building Materials", abstract: "Low-cost housing materials for rural areas.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 9, degree: "MSc", dept: "Economics", title: "Impact of Inflation on Manufacturing", abstract: "Empirical study of economic policies.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 10, degree: "LLB", dept: "Law", title: "Legal Framework for Cybercrime", abstract: "Appraisal of the Cybercrime Act 2015.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 11, degree: "BSc", dept: "Accounting", title: "Electronic Payment Systems on Banking", abstract: "Efficiency of digital banking in Nigeria.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 12, degree: "PhD", dept: "Biochemistry", title: "Phytochemical Analysis of Moringa Oleifera", abstract: "Medicinal properties of local plants.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 13, degree: "BSc", dept: "Electrical Eng.", title: "Solar-Powered Inverter System", abstract: "Design of a 3.5kVA off-grid inverter.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 14, degree: "BSc", dept: "Pol Science", title: "Electoral Violence and Democratic Consolidation", abstract: "Case study of local government elections.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 15, degree: "PhD", dept: "Agronomy", title: "Effects of Organic Fertilizers on Tomatoes", abstract: "Yield comparison between NPK and compost.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 16, degree: "MSc", dept: "Business Admin", title: "Leadership Styles on Employee Productivity", abstract: "Impact of transformational leadership.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 17, degree: "BSc", dept: "Civil Engineering", title: "Structural Analysis of RC Bridges", abstract: "Load capacity of rural bridges.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 18, degree: "BSc", dept: "Sociology", title: "Effect of Banditry on Rural Education", abstract: "Out-of-school children in conflict zones.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 19, degree: "PGD", dept: "Public Admin", title: "Challenges of Revenue Generation in LG", abstract: "Internal revenue generation mechanisms.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" },
-            { id: 20, degree: "BSc", dept: "Computer Science", title: "Appraisal of Legal Framework for Cybercrime", abstract: "Cybersecurity frameworks in Nigeria.", pdf: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf" }
+            { id: 1, degree: "BSc", dept: "Computer Science", title: "Web-Based E-Voting System", abstract: "Explores decentralized e-voting using Ethereum blockchain.", pdf: "#" },
+            { id: 2, degree: "MSc", dept: "Economics", title: "Impact of Inflation on Manufacturing", abstract: "Empirical analysis of inflationary trends in Nigeria.", pdf: "#" },
+            { id: 3, degree: "PhD", dept: "Geography", title: "Climate Change Adaptation in N. Nigeria", abstract: "Strategies for agricultural resilience.", pdf: "#" },
+            { id: 4, degree: "BSc", dept: "Microbiology", title: "Antimicrobial Resistance of Bacterial Isolates", abstract: "Study of water sources in Kaduna metropolis.", pdf: "#" },
+            { id: 5, degree: "BSc", dept: "Mass Comm", title: "Role of Social Media in Political Campaigns", abstract: "How digital platforms shape voter behavior.", pdf: "#" },
+            { id: 6, degree: "BSc", dept: "Architecture", title: "Integration of Smart Home Technology", abstract: "Sustainable building designs with IoT.", pdf: "#" }
         ];
 
-        // 10 STUDENTS FOR TEACHER VIEW (Using Official Pics)
+        // 10 STUDENTS FOR TEACHER VIEW (Restored)
         const assignedStudents = [
             { id: 1, name: "Musa Abdullahi", matric: "KASU/SCI/20/123", degree: "BSc", topic: "Web-Based E-Voting System", status: "Pending", img: pic1 },
             { id: 2, name: "Aisha Bello", matric: "KASU/PG/21/045", degree: "MSc", topic: "ML Algorithms for Crop Yield", status: "Pending", img: pic2 },
@@ -488,17 +468,65 @@
             { id: 10, name: "Sani Garba", matric: "KASU/SS/20/078", degree: "BSc", topic: "Electronic Payment Systems", status: "Approved", img: pic1 }
         ];
 
+        // 50 PROJECTS FOR LIBRARY CATALOG
+        const libraryProjects = [
+            { id: 1, title: "Decentralized E-Voting System using Blockchain", author: "Musa Abdullahi", dept: "Computer Science", degree: "BSc", abstract: "This research explores the implementation of a decentralized e-voting system leveraging Ethereum blockchain technology to ensure transparency, immutability, and prevention of electoral fraud in Nigerian elections." },
+            { id: 2, title: "Antimicrobial Resistance of Bacterial Isolates from Water Sources", author: "John Paul", dept: "Microbiology", degree: "BSc", abstract: "A cross-sectional study analyzing water samples from Kaduna metropolis to identify bacterial strains and their resistance patterns to commonly used antibiotics, highlighting public health risks." },
+            { id: 3, title: "Impact of Inflation on the Manufacturing Sector in Nigeria", author: "Aisha Bello", dept: "Economics", degree: "MSc", abstract: "An empirical analysis of how inflationary trends affect the cost of production and profitability of manufacturing firms in Nigeria, using data from 2010 to 2022." },
+            { id: 4, title: "Climate Change Adaptation Strategies in Northern Nigeria", author: "Ibrahim Yusuf", dept: "Geography", degree: "PhD", abstract: "This thesis investigates the agricultural resilience strategies employed by rural farmers in Northern Nigeria to mitigate the adverse effects of climate change on crop yield." },
+            { id: 5, title: "Role of Social Media in Political Campaigns", author: "Fatima Sani", dept: "Mass Communication", degree: "BSc", abstract: "A study on how digital platforms like Twitter and Facebook shape voter behavior and political participation among youths in Kaduna State during the 2023 general elections." },
+            { id: 6, title: "Integration of Smart Home Technology in Sustainable Architecture", author: "Daniel Ojo", dept: "Architecture", degree: "BSc", abstract: "Explores the design principles of integrating IoT devices into residential buildings to optimize energy consumption, enhance security, and promote sustainable living." },
+            { id: 7, title: "Phytochemical Analysis of Moringa Oleifera Leaves", author: "Joy Adeleke", dept: "Biochemistry", degree: "PhD", abstract: "A comprehensive analysis of the medicinal properties of Moringa Oleifera, focusing on its antioxidant properties and potential application in modern pharmacology." },
+            { id: 8, title: "Design of a 3.5kVA Solar-Powered Inverter System", author: "Tunde Bello", dept: "Electrical Engineering", degree: "BSc", abstract: "Details the design and construction of a hybrid solar inverter system capable of providing uninterrupted power supply to rural clinics using locally sourced components." },
+            { id: 9, title: "Legal Framework for Cybercrime Prosecution in Nigeria", author: "Blessing Eze", dept: "Law", degree: "LLB", abstract: "An appraisal of the Cybercrime (Prohibition, Prevention, etc.) Act 2015, examining its effectiveness in prosecuting cybercriminals and protecting digital rights in Nigeria." },
+            { id: 10, title: "Pedagogical Approaches for Teaching Mathematics in JSS", author: "Grace Okoro", dept: "Education", degree: "PGD", abstract: "Investigates the effectiveness of interactive, student-centered teaching methods compared to traditional rote learning in junior secondary schools." },
+            { id: 11, title: "Machine Learning Algorithms for Predicting Crop Yield", author: "Chinedu Okafor", dept: "Computer Science", degree: "MSc", abstract: "Develops a predictive model using random forest and neural networks to estimate crop yields based on environmental variables and historical data." },
+            { id: 12, title: "Sustainable Building Materials for Rural Housing", author: "David Okon", dept: "Architecture", degree: "BSc", abstract: "Evaluates the structural integrity and cost-effectiveness of using compressed earth blocks and bamboo as alternative building materials." },
+            { id: 13, title: "Effect of Banditry on Rural Educational Development", author: "Ngozi Eze", dept: "Sociology", degree: "BSc", abstract: "Examines the socio-economic impact of banditry on out-of-school children in conflict zones, proposing frameworks for educational continuity." },
+            { id: 14, title: "Anatomic Variations of the Circle of Willis in Human Brains", author: "Abdulaziz Musa", dept: "Human Anatomy", degree: "MSc", abstract: "A cadaveric study identifying morphological variations in the Circle of Willis and their clinical implications for neurosurgery." },
+            { id: 15, title: "Impact of Electronic Payment Systems on Banking Efficiency", author: "Sani Garba", dept: "Accounting", degree: "BSc", abstract: "Assesses how the adoption of digital payment gateways has reduced operational costs and improved service delivery in commercial banks." },
+            { id: 16, title: "Effects of Organic Fertilizers on Tomato Growth", author: "Yakubu Aliyu", dept: "Agronomy", degree: "PhD", abstract: "A comparative study of crop yield and soil health when using NPK fertilizers versus organic compost in greenhouse farming." },
+            { id: 17, title: "Electoral Violence and Democratic Consolidation", author: "Mary Onu", dept: "Political Science", degree: "BSc", abstract: "Analyzes the root causes of electoral violence in local government elections and its threat to democratic stability." },
+            { id: 18, title: "Leadership Styles and Employee Productivity", author: "Sarah Williams", dept: "Business Admin", degree: "MSc", abstract: "Investigates the correlation between transformational leadership styles and organizational commitment in the Nigerian petroleum sector." },
+            { id: 19, title: "Structural Analysis of Reinforced Concrete Bridges", author: "Abdulaziz Musa", dept: "Civil Engineering", degree: "BSc", abstract: "Evaluates the load-bearing capacity and structural fatigue of rural bridges constructed in the 1990s." },
+            { id: 20, title: "Challenges of Revenue Generation in Local Governments", author: "Emeka Obi", dept: "Public Admin", degree: "PGD", abstract: "Identifies the administrative bottlenecks hindering effective internal revenue generation in local government councils." },
+            { id: 21, title: "Appraisal of Cybersecurity Frameworks in Nigerian SMEs", author: "Rita Eze", dept: "Computer Science", degree: "BSc", abstract: "A study on the vulnerabilities of small and medium enterprises to cyber attacks and the implementation of affordable security protocols." },
+            { id: 22, title: "Radiographic Assessment of Tuberculosis in Kaduna", author: "Halima Idris", dept: "Radiography", degree: "BSc", abstract: "Reviews chest radiographs of TB patients to identify patterns of pulmonary infection and evaluate diagnostic accuracy." },
+            { id: 23, title: "Nurses' Knowledge of Pain Management in Post-Op Care", author: "Amina Yusuf", dept: "Nursing", degree: "BSc", abstract: "Assesses the competency and knowledge of nursing staff in managing acute pain in surgical wards." },
+            { id: 24, title: "Physiotherapy Interventions for Stroke Patients", author: "Peter Obi", dept: "Physiotherapy", degree: "MSc", abstract: "Evaluates the efficacy of early mobilization techniques in improving motor function in ischemic stroke patients." },
+            { id: 25, title: "Pharmacognosy of Local Anti-Malarial Plants", author: "Fatima Abba", dept: "Pharmacognosy", degree: "PhD", abstract: "Isolation and characterization of active compounds from local plant extracts used in traditional malaria treatment." },
+            { id: 26, title: "Pure and Applied Chemistry of Local Clay", author: "James Aden", dept: "Chemistry", degree: "BSc", abstract: "Analyzes the chemical composition of clay deposits in Kaduna for industrial application in ceramics." },
+            { id: 27, title: "Statistical Modeling of Unemployment Rates", author: "Linda Bawa", dept: "Statistics", degree: "MSc", abstract: "Applies time-series analysis to model and forecast unemployment trends in Nigeria using ARIMA models." },
+            { id: 28, title: "Geophysical Survey of Groundwater Potentials", author: "Yusuf Omar", dept: "Geophysics", degree: "BSc", abstract: "Uses electrical resistivity methods to map aquifers and assess groundwater quality in rural Kaduna." },
+            { id: 29, title: "Environmental Standards and Industrial Compliance", author: "Grace Eze", dept: "Environmental Mgt", degree: "MSc", abstract: "Investigates the level of compliance of textile industries to environmental protection regulations in Kaduna." },
+            { id: 30, title: "Data Science for Predictive Healthcare Diagnostics", author: "David Mark", dept: "Data Science", degree: "MSc", abstract: "Develops a machine learning classifier to predict diabetes onset based on patient historical data." },
+            { id: 31, title: "Mechanical Properties of Locally Sourced Alloys", author: "Aliyu Bello", dept: "Mechanical Eng.", degree: "BSc", abstract: "Tests the tensile strength and thermal resistance of aluminum alloys produced from local scrap metals." },
+            { id: 32, title: "Theatre Arts as a Tool for Social Change", author: "Janet Eze", dept: "Theatre Arts", degree: "BSc", abstract: "Explores the use of stage drama in sensitizing rural communities against gender-based violence." },
+            { id: 33, title: "Linguistic Analysis of Hausa Proverbs", author: "Musa Bello", dept: "Linguistics", degree: "MSc", abstract: "A semantic and pragmatic analysis of proverbs in Northern Nigeria and their role in conflict resolution." },
+            { id: 34, title: "Strategic Studies in Border Security Management", author: "Ibrahim Sani", dept: "History & Strategic Studies", degree: "PhD", abstract: "Examines the strategic policies required to curb illegal arms trafficking across Nigeria's northern borders." },
+            { id: 35, title: "French Language Proficiency in West African Trade", author: "Chloe Obi", dept: "French", degree: "BSc", abstract: "Assesses the role of French language skills in facilitating cross-border trade within ECOWAS." },
+            { id: 36, title: "Entrepreneurship Education and Graduate Employability", author: "John Dan", dept: "Entrepreneurship", degree: "MSc", abstract: "Investigates the impact of entrepreneurship courses on reducing youth unemployment." },
+            { id: 37, title: "Procurement Management in the Public Sector", author: "Sarah Ibrahim", dept: "Procurement Mgt", degree: "BSc", abstract: "Analyzes the bottlenecks in public procurement processes and their effect on project delivery." },
+            { id: 38, title: "International Relations and Nigeria's Foreign Policy", author: "Tahir Omar", dept: "Int. Relations", degree: "MSc", abstract: "A critical review of Nigeria's foreign policy shifts under democratic rule." },
+            { id: 39, title: "Broadcasting Regulations in the Digital Age", author: "Lola John", dept: "Broadcasting", degree: "BSc", abstract: "Examines the challenges of regulating digital broadcasting platforms in Nigeria." },
+            { id: 40, title: "Biotechnology in Crop Disease Resistance", author: "Aisha Garba", dept: "Biotechnology", degree: "PhD", abstract: "Genetic modification of local tomato varieties to resist fungal wilt diseases." },
+            { id: 41, title: "Quantity Surveying: Cost Optimization in Building", author: "Emeka John", dept: "Quantity Surveying", degree: "BSc", abstract: "Strategies for minimizing cost overruns in large-scale residential construction projects." },
+            { id: 42, title: "Animal Science: Nutritional Value of Alternative Feeds", author: "Usman Ali", dept: "Animal Science", degree: "MSc", abstract: "Evaluates the use of insect meal as a protein substitute in poultry feed." },
+            { id: 43, title: "Soil Science: Erosion Control in Southern Kaduna", author: "Grace Dan", dept: "Soil Science", degree: "BSc", abstract: "Assesses the effectiveness of vetiver grass in controlling gully erosion." },
+            { id: 44, title: "Haematology: Sickle Cell Disease Prevalence", author: "Mary Ali", dept: "Haematology", degree: "MSc", abstract: "A demographic study of sickle cell trait prevalence among students in Kaduna State University." },
+            { id: 45, title: "Psychiatry: Substance Abuse Among Youths", author: "Peter Adebayo", dept: "Psychiatry", degree: "MSc", abstract: "Investigates the psychological triggers of codeine abuse among secondary school students." },
+            { id: 46, title: "Opthalmology: Visual Impairment in the Elderly", author: "Johnbull Eze", dept: "Opthalmology", degree: "PhD", abstract: "A clinical study of cataract prevalence and surgical intervention outcomes in rural camps." },
+            { id: 47, title: "Christian Religious Studies: Ethics in Governance", author: "Faith Okon", dept: "CRS", degree: "BSc", abstract: "Analyzes the application of Christian ethical principles in Nigerian public governance." },
+            { id: 48, title: "Islamic Studies: Zakat as a Tool for Poverty Alleviation", author: "Ahmed Sani", dept: "Islamic Studies", degree: "MSc", abstract: "Examines the institutionalization of Zakat and its potential impact on poverty reduction." },
+            { id: 49, title: "Education & Biology: Improving Practical Teaching", author: "Glory Effiong", dept: "Education", degree: "PGD", abstract: "Evaluates the use of virtual labs in teaching biology in schools lacking physical laboratory equipment." },
+            { id: 50, title: "Library and Information Sciences: Digital Archiving", author: "Hauwa Bello", dept: "Library Science", degree: "MSc", abstract: "Investigates the challenges of digitizing academic repositories in Nigerian university libraries." }
+        ];
+
         // --- AUTH MODAL LOGIC ---
         function openAuthModal(mode) {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('signup-form').classList.add('hidden');
-            if (mode === 'login') {
-                document.getElementById('auth-title').innerText = 'Login to Portal';
-                document.getElementById('login-form').classList.remove('hidden');
-            } else {
-                document.getElementById('auth-title').innerText = 'Create Account';
-                document.getElementById('signup-form').classList.remove('hidden');
-            }
+            document.getElementById('login-form').classList.toggle('hidden', mode !== 'login');
+            document.getElementById('signup-form').classList.toggle('hidden', mode !== 'signup');
+            document.getElementById('auth-title').innerText = mode === 'login' ? 'Login to Portal' : 'Create Account';
             document.getElementById('auth-modal').classList.add('active');
         }
         function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); }
@@ -506,22 +534,14 @@
         function handleLogin() {
             const email = document.getElementById('login-email').value.trim();
             const pass = document.getElementById('login-password').value;
-            if (email === 'student@kasu.edu.ng' && pass === 'password') { currentUserRole = 'student'; closeAuthModal(); navigate('student'); loadDeptProjects(); }
+            if (email === 'student@kasu.edu.ng' && pass === 'password') { currentUserRole = 'student'; closeAuthModal(); navigate('student'); }
             else if (email === 'teacher@kasu.edu.ng' && pass === 'password') { currentUserRole = 'teacher'; closeAuthModal(); navigate('teacher'); loadTeacherStudents(); }
-            else if (email === 'library@kasu.edu.ng' && pass === 'password') { currentUserRole = 'library'; closeAuthModal(); navigate('library'); }
+            else if (email === 'library@kasu.edu.ng' && pass === 'password') { currentUserRole = 'library'; closeAuthModal(); navigate('library'); initLibrary(); }
             else if (email === 'admin@kasu.edu.ng' && pass === 'password') { currentUserRole = 'admin'; closeAuthModal(); navigate('admin'); loadCatalogue(); }
             else { alert("Invalid credentials. Use student@kasu.edu.ng / password"); }
         }
 
-        function handleSignup() {
-            const matric = document.getElementById('signup-matric').value.trim();
-            if (!matric) { alert("Please enter your Matric Number."); return; }
-            alert("Portal data fetched successfully! Account created. You are now logged in.");
-            currentUserRole = 'student';
-            closeAuthModal();
-            navigate('student');
-            loadDeptProjects();
-        }
+        function handleSignup() { alert("Portal data fetched successfully! Account created."); currentUserRole = 'student'; closeAuthModal(); navigate('student'); }
 
         // --- NAVIGATION ---
         function navigate(viewId) {
@@ -531,11 +551,7 @@
             updateNav();
             if (viewId === 'landing') loadPublicProjects();
         }
-        function logout() {
-            currentUserRole = null;
-            hasPaidDownloadFee = false;
-            navigate('landing');
-        }
+        function logout() { currentUserRole = null; navigate('landing'); }
         function updateNav() {
             const navLinks = document.getElementById('nav-links');
             const navActions = document.getElementById('nav-actions');
@@ -546,6 +562,19 @@
                 navLinks.innerHTML = '<span class="text-sm font-bold text-primary uppercase">' + currentUserRole + ' Dashboard</span>';
                 navActions.innerHTML = '<button onclick="logout()" class="bg-red-50 text-red-600 px-5 py-2.5 rounded-lg text-sm font-semibold">Logout</button>';
             }
+        }
+
+        // --- ADMIN SIDEBAR LOGIC ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('admin-sidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+        function showAdminSection(id) {
+            document.querySelectorAll('.admin-section').forEach(el => el.classList.remove('active'));
+            document.getElementById('admin-'+id).classList.add('active');
+            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+            event.target.closest('a').classList.add('active');
+            if (window.innerWidth < 768) { toggleSidebar(); } // close sidebar on mobile
         }
 
         // --- LANDING PAGE PUBLIC REPO ---
@@ -559,57 +588,107 @@
                     </div>
                     <h3 class="text-base font-display font-bold text-primary mb-3">${p.title}</h3>
                     <div class="mt-auto pt-4 flex space-x-2 border-t border-slate-200">
-                        <button onclick="viewAbstract('${p.title}', '${p.abstract}')" class="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">View Abstract</button>
-                        <button onclick="openAuthModal('signup')" class="flex-1 bg-primary text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 flex items-center justify-center"><i class="fas fa-lock mr-1"></i> Download</button>
+                        <button onclick="alert('${p.abstract}')" class="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">View Abstract</button>
+                        <button onclick="openAuthModal('signup')" class="flex-1 bg-primary text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700"><i class="fas fa-lock mr-1"></i> Download</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function viewAbstract(title, abstract) {
-            document.getElementById('abs-title').innerText = title;
-            document.getElementById('abs-body').innerText = abstract;
-            document.getElementById('abstract-modal').classList.add('active');
+        // --- LIBRARY CATALOG LOGIC ---
+        function initLibrary() {
+            const deptSelect = document.getElementById('lib-dept');
+            const departments = [...new Set(libraryProjects.map(p => p.dept))].sort();
+            deptSelect.innerHTML = '<option value="All">All Departments</option>' + departments.map(d => `<option value="${d}">${d}</option>`).join('');
+            filterLibrary();
         }
-        function closeAbstract() { document.getElementById('abstract-modal').classList.remove('active'); }
 
-        // --- STUDENT DASHBOARD: DEPARTMENT PROJECTS ---
-        function loadDeptProjects() {
-            const container = document.getElementById('dept-projects');
-            const badge = document.getElementById('dl-badge');
-            if (hasPaidDownloadFee) {
-                badge.innerText = 'Unlocked';
-                badge.classList.remove('bg-amber-50', 'text-amber-700');
-                badge.classList.add('bg-emerald-50', 'text-emerald-700');
+        function setLibraryView(mode) {
+            currentLibraryView = mode;
+            document.getElementById('btn-grid-view').classList.toggle('bg-white', mode === 'grid');
+            document.getElementById('btn-grid-view').classList.toggle('shadow-sm', mode === 'grid');
+            document.getElementById('btn-grid-view').classList.toggle('text-primary', mode === 'grid');
+            document.getElementById('btn-grid-view').classList.toggle('text-slate-500', mode !== 'grid');
+            
+            document.getElementById('btn-list-view').classList.toggle('bg-white', mode === 'list');
+            document.getElementById('btn-list-view').classList.toggle('shadow-sm', mode === 'list');
+            document.getElementById('btn-list-view').classList.toggle('text-primary', mode === 'list');
+            document.getElementById('btn-list-view').classList.toggle('text-slate-500', mode !== 'list');
+            
+            filterLibrary();
+        }
+
+        function filterLibrary() {
+            const search = document.getElementById('lib-search').value.toLowerCase();
+            const dept = document.getElementById('lib-dept').value;
+            const degree = document.getElementById('lib-degree').value;
+
+            const filtered = libraryProjects.filter(p => {
+                const matchesSearch = p.title.toLowerCase().includes(search) || p.author.toLowerCase().includes(search) || p.abstract.toLowerCase().includes(search);
+                const matchesDept = (dept === 'All' || p.dept === dept);
+                const matchesDegree = (degree === 'All' || p.degree === degree);
+                return matchesSearch && matchesDept && matchesDegree;
+            });
+
+            const grid = document.getElementById('library-grid');
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p class="text-slate-500 text-center col-span-full py-8">No projects found matching your criteria.</p>';
+                return;
             }
-            const deptProjects = projects.filter(p => p.dept === 'Computer Science');
-            container.innerHTML = deptProjects.map(p => `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <div class="mb-3 sm:mb-0">
-                        <p class="text-sm font-bold text-dark">${p.title}</p>
-                        <p class="text-xs text-slate-500">${p.degree} Final Year Project</p>
+
+            if (currentLibraryView === 'grid') {
+                grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+                grid.innerHTML = filtered.map(p => `
+                    <div class="glass-card p-6 rounded-xl flex flex-col card-hover border border-slate-200 premium-shadow cursor-pointer" onclick="viewLibraryProject(${p.id})">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${p.degree}</span>
+                            <span class="text-[10px] text-slate-400 font-medium uppercase">${p.dept}</span>
+                        </div>
+                        <h3 class="text-base font-display font-bold text-primary mb-2">${p.title}</h3>
+                        <p class="text-xs text-slate-500 mb-3 font-light">By ${p.author}</p>
+                        <p class="text-xs text-slate-600 mb-4 flex-grow">${p.abstract.substring(0, 100)}...</p>
+                        <div class="mt-auto pt-4 border-t border-slate-200 flex justify-between items-center">
+                            <span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">Pending Review</span>
+                            <button class="text-primary text-xs font-bold hover:underline">View Details</button>
+                        </div>
                     </div>
-                    ${hasPaidDownloadFee ? `
-                        <a href="${p.pdf}" target="_blank" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 text-center">
-                            <i class="fas fa-download mr-1"></i> Download PDF
-                        </a>
-                    ` : `
-                        <button onclick="payDownloadFee()" class="bg-accent text-dark px-4 py-2 rounded-lg text-xs font-bold hover:bg-amber-400">
-                            <i class="fas fa-lock mr-1"></i> Pay ₦500 to Unlock
-                        </button>
-                    `}
-                </div>
-            `).join('');
+                `).join('');
+            } else {
+                grid.className = 'flex flex-col gap-4';
+                grid.innerHTML = filtered.map(p => `
+                    <div class="glass-card p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-200 premium-shadow cursor-pointer card-hover" onclick="viewLibraryProject(${p.id})">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3 mb-1">
+                                <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">${p.degree}</span>
+                                <span class="text-[10px] text-slate-400 font-medium uppercase">${p.dept}</span>
+                            </div>
+                            <h3 class="text-md font-display font-bold text-primary">${p.title}</h3>
+                            <p class="text-xs text-slate-500">By ${p.author}</p>
+                        </div>
+                        <div class="sm:w-1/2 lg:w-1/3">
+                            <p class="text-xs text-slate-600 line-clamp-2">${p.abstract}</p>
+                        </div>
+                        <div class="flex flex-row sm:flex-col items-end space-x-2 sm:space-y-2">
+                            <span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">Pending</span>
+                            <button class="text-primary text-xs font-bold hover:underline">View Details</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
 
-        function payDownloadFee() {
-            alert("Redirecting to Paystack for ₦500 one-time access fee...");
-            setTimeout(() => {
-                alert("Payment Successful! You now have unlimited access to download projects in your department.");
-                hasPaidDownloadFee = true;
-                loadDeptProjects();
-            }, 1000);
+        function viewLibraryProject(id) {
+            const p = libraryProjects.find(x => x.id === id);
+            if (p) {
+                document.getElementById('lib-modal-degree').innerText = p.degree;
+                document.getElementById('lib-modal-title').innerText = p.title;
+                document.getElementById('lib-modal-author').innerText = p.author;
+                document.getElementById('lib-modal-dept').innerText = p.dept;
+                document.getElementById('lib-modal-abstract').innerText = p.abstract;
+                document.getElementById('library-modal').classList.add('active');
+            }
         }
+        function closeLibraryModal() { document.getElementById('library-modal').classList.remove('active'); }
 
         // --- ADMIN CATALOGUE LOADER ---
         function loadCatalogue() {
@@ -633,12 +712,9 @@
             const file = event.target.files[0];
             if (!file) return;
             if (file.type !== 'application/pdf') { alert("Error: Only PDF files are allowed."); event.target.value = ''; return; }
-            const maxSize = 100 * 1024 * 1024; 
-            if (file.size > maxSize) { alert("Error: File size exceeds the 100MB limit."); event.target.value = ''; return; }
             selectedFile = file;
             document.getElementById('file-name').innerText = file.name;
         }
-
         function processUpload() {
             if (!selectedFile) { alert("Please upload a PDF first."); return; }
             const btn = document.getElementById('pay-btn');
@@ -654,14 +730,7 @@
         // --- PDF RECEIPT GENERATOR ---
         function generateReceipt() {
             const element = document.getElementById('receipt-template');
-            const opt = {
-                margin: 0,
-                filename: 'KASU_Clearance_Receipt_Musa_Abdullahi.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'px', format: 'a4', orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(element).save();
+            html2pdf().from(element).save();
         }
 
         // --- TEACHER LOGIC ---
