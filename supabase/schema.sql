@@ -79,6 +79,22 @@ CREATE TRIGGER on_auth_user_created
 -- Row Level Security
 -- ---------------------------------------------------------------------------
 
+-- SECURITY DEFINER bypasses RLS so admin checks never recurse into profiles policies.
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE students_registry ENABLE ROW LEVEL SECURITY;
 

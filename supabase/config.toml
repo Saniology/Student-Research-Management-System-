@@ -1,0 +1,6 @@
+# Deploy: supabase link --project-ref tejkksgyqltudpfuzjdo
+# Secrets:  supabase secrets set PAYSTACK_SECRET_KEY=sk_test_...
+# Deploy:   supabase functions deploy verify-paystack
+
+[functions.verify-paystack]
+verify_jwt = true

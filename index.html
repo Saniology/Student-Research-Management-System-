@@ -7,6 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23065F46'/><text x='50' y='68' font-size='48' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>K</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
     <script src="js/config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -117,14 +118,14 @@
     <div id="student" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
         <div class="max-w-5xl mx-auto">
             <div class="glass-card rounded-xl p-6 premium-shadow mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                <img src="https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b" alt="Student Profile" class="w-24 h-24 rounded-full border-4 border-accent object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Musa+Abdullahi&background=065F46&color=fff'">
+                <img id="student-avatar" src="https://ui-avatars.com/api/?name=Student&background=065F46&color=fff" alt="Student Profile" class="w-24 h-24 rounded-full border-4 border-accent object-cover">
                 <div class="text-center sm:text-left flex-1">
                     <div class="flex items-center justify-center sm:justify-start space-x-2 mb-1">
-                        <h2 class="text-xl font-display font-bold text-primary">Musa Abdullahi</h2>
-                        <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Auto-Fetched</span>
+                        <h2 id="student-name" class="text-xl font-display font-bold text-primary">Loading...</h2>
+                        <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Verified</span>
                     </div>
-                    <p class="text-sm text-slate-500">Matric: KASU/SCI/20/123</p>
-                    <p class="text-sm text-slate-500">BSc Computer Science | 2023/2024 Session</p>
+                    <p id="student-matric" class="text-sm text-slate-500">Matric: —</p>
+                    <p id="student-dept" class="text-sm text-slate-500">Department —</p>
                 </div>
             </div>
             <div class="glass-card rounded-xl p-6 premium-shadow mb-6">
@@ -138,10 +139,17 @@
                 </label>
             </div>
             <div class="bg-primary rounded-xl p-6 flex flex-col md:flex-row items-center justify-between premium-shadow mb-10">
-                <div class="mb-4 md:mb-0 text-center md:text-left"><p class="text-sm font-bold text-white">2. Digital Repository Fee</p><p class="text-xs text-emerald-100 font-light">Required for graduation clearance.</p></div>
-                <button id="pay-btn" onclick="processUpload()" class="bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition w-full md:w-auto">Pay ₦2,000 & Submit</button>
+                <div class="mb-4 md:mb-0 text-center md:text-left">
+                    <p class="text-sm font-bold text-white">2. Digital Repository Fee</p>
+                    <p class="text-xs text-emerald-100 font-light">Required for graduation clearance. Secured by Paystack.</p>
+                </div>
+                <button id="pay-btn" onclick="processUpload()" class="bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition w-full md:w-auto disabled:opacity-60 disabled:cursor-not-allowed">Pay ₦2,000 & Submit</button>
             </div>
-            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-6 premium-shadow text-center">
+            <div id="payment-status" class="hidden mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
+                <p class="text-sm text-emerald-800 font-medium"><i class="fas fa-check-circle mr-1"></i> Payment confirmed</p>
+                <p id="payment-ref" class="text-xs text-emerald-600 mt-1"></p>
+            </div>
+            <div id="receipt-section" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-6 premium-shadow text-center">
                 <i class="fas fa-check-circle text-4xl text-emerald-600 mb-3"></i>
                 <h3 class="text-lg font-display font-bold text-primary mb-2">Digital Clearance Receipt</h3>
                 <button onclick="generateReceipt()" class="bg-primary text-white px-8 py-3 rounded-lg text-sm font-bold hover:bg-emerald-700 transition w-full md:w-auto"><i class="fas fa-download mr-2"></i> Download Clearance Receipt (PDF)</button>
@@ -325,9 +333,8 @@
                 <div id="admin-payments" class="admin-section">
                     <h1 class="text-3xl font-display font-bold text-primary mb-8">Payment Records</h1>
                     <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
-                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Amount</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Status</th><th class="p-4 font-bold text-right">Receipt</th></tr></thead><tbody class="text-sm divide-y divide-slate-200">
-                            <tr><td class="p-4 text-slate-700">Musa Abdullahi</td><td class="p-4 text-slate-700">₦2,500</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Success</span></td><td class="p-4 text-right"><button class="text-primary hover:text-accent"><i class="fas fa-download"></i></button></td></tr>
-                            <tr><td class="p-4 text-slate-700">Aisha Bello</td><td class="p-4 text-slate-700">₦2,000</td><td class="p-4 text-slate-500">2024-05-20</td><td class="p-4"><span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-1 rounded font-bold uppercase">Success</span></td><td class="p-4 text-right"><button class="text-primary hover:text-accent"><i class="fas fa-download"></i></button></td></tr>
+                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Amount</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Reference</th><th class="p-4 font-bold">Status</th></tr></thead><tbody id="admin-payments-body" class="text-sm divide-y divide-slate-200">
+                            <tr><td colspan="5" class="p-8 text-center text-slate-400">Loading payments...</td></tr>
                         </tbody></table></div>
                     </div>
                 </div>
@@ -426,6 +433,7 @@
             </div>
         </div>
         <p style="font-size: 14px; color: #64748b;">This document serves as official proof that the student has successfully completed the digital requirements for final-year project clearance.</p>
+        <div id="receipt-details" style="margin-top: 24px; font-size: 14px; color: #334155;"></div>
     </div>
 
     <script>
@@ -439,8 +447,11 @@
 
         let currentUserRole = null;
         let currentUser = null;
+        let currentUserProfile = null;
+        let currentPayment = null;
         let selectedFile = null;
         let currentLibraryView = 'grid'; // 'grid' or 'list'
+        const REPOSITORY_FEE_KOBO = 200000; // ₦2,000
 
         // Official User Provided Pictures
         const pic1 = "https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b";
@@ -577,15 +588,17 @@
             if (error || !profile) {
                 throw new Error(error?.message || 'Could not load your profile.');
             }
+            currentUserProfile = profile;
             return profile;
         }
 
         function navigateToRole(role) {
             closeAuthModal();
             navigate(role);
-            if (role === 'teacher') loadTeacherStudents();
+            if (role === 'student') loadStudentDashboard();
+            else if (role === 'teacher') loadTeacherStudents();
             else if (role === 'library') initLibrary();
-            else if (role === 'admin') loadCatalogue();
+            else if (role === 'admin') { loadCatalogue(); loadAdminPayments(); }
         }
 
         async function handleLogin() {
@@ -744,7 +757,8 @@
             document.getElementById('admin-'+id).classList.add('active');
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             event.target.closest('a').classList.add('active');
-            if (window.innerWidth < 768) { toggleSidebar(); } // close sidebar on mobile
+            if (window.innerWidth < 768) { toggleSidebar(); }
+            if (id === 'payments') loadAdminPayments();
         }
 
         // --- LANDING PAGE PUBLIC REPO ---
@@ -877,7 +891,7 @@
             container.innerHTML = html;
         }
 
-        // --- STUDENT UPLOAD ---
+        // --- STUDENT UPLOAD & PAYSTACK PAYMENT ---
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -885,22 +899,204 @@
             selectedFile = file;
             document.getElementById('file-name').innerText = file.name;
         }
-        function processUpload() {
-            if (!selectedFile) { alert("Please upload a PDF first."); return; }
+
+        function formatNaira(kobo) {
+            return '₦' + (kobo / 100).toLocaleString('en-NG');
+        }
+
+        function generatePaymentReference() {
+            return 'KASU-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+        }
+
+        function markPaymentSuccess(payment) {
+            currentPayment = payment;
             const btn = document.getElementById('pay-btn');
-            btn.innerText = 'Processing...';
-            setTimeout(() => {
-                btn.innerText = 'Submission Successful!';
-                btn.classList.remove('bg-accent');
-                btn.classList.add('bg-emerald-600', 'text-white');
-                alert("Success! Project submitted to Dr. Sani Musa.");
-            }, 1000);
+            btn.innerText = 'Submission Successful!';
+            btn.disabled = true;
+            btn.classList.remove('bg-accent', 'hover:bg-amber-400');
+            btn.classList.add('bg-emerald-600', 'text-white');
+
+            document.getElementById('payment-status').classList.remove('hidden');
+            document.getElementById('payment-ref').innerText = 'Reference: ' + payment.paystack_reference;
+            document.getElementById('receipt-section').classList.remove('hidden');
+        }
+
+        async function loadStudentDashboard() {
+            if (!currentUser || currentUserRole !== 'student') return;
+
+            try {
+                const profile = await loadUserProfile(currentUser.id);
+                document.getElementById('student-name').innerText = profile.full_name || 'Student';
+                document.getElementById('student-matric').innerText = 'Matric: ' + (profile.matric || 'N/A');
+                document.getElementById('student-dept').innerText = profile.department || 'Department not set';
+                document.getElementById('student-avatar').src =
+                    'https://ui-avatars.com/api/?name=' + encodeURIComponent(profile.full_name || 'Student') + '&background=065F46&color=fff';
+
+                const { data: payment } = await supabaseClient
+                    .from('payments')
+                    .select('*')
+                    .eq('student_id', currentUser.id)
+                    .eq('status', 'success')
+                    .order('paid_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (payment) markPaymentSuccess(payment);
+            } catch (err) {
+                console.error('Failed to load student dashboard:', err.message);
+            }
+        }
+
+        async function handlePaymentSuccess(reference) {
+            const btn = document.getElementById('pay-btn');
+            btn.innerText = 'Verifying payment...';
+            btn.disabled = true;
+
+            try {
+                const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const filePath = currentUser.id + '/' + Date.now() + '-' + safeName;
+
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('thesis-pdfs')
+                    .upload(filePath, selectedFile, { contentType: 'application/pdf', upsert: false });
+
+                if (uploadError) throw uploadError;
+
+                const { data, error } = await supabaseClient.functions.invoke('verify-paystack', {
+                    body: {
+                        reference,
+                        file_name: selectedFile.name,
+                        file_path: uploadData.path
+                    }
+                });
+
+                if (error) {
+                    let message = error.message;
+                    if (error.context && typeof error.context.json === 'function') {
+                        const body = await error.context.json();
+                        if (body?.error) message = body.error;
+                    }
+                    throw new Error(message);
+                }
+                if (data?.error) throw new Error(data.error);
+                if (!data?.payment) throw new Error('Payment verification did not return a receipt.');
+
+                markPaymentSuccess(data.payment);
+                alert('Payment verified! Your thesis has been submitted to your supervisor.');
+            } catch (err) {
+                alert('Payment verification failed: ' + err.message + '. Save this reference: ' + reference);
+                btn.disabled = false;
+                btn.innerText = 'Pay ₦2,000 & Submit';
+            }
+        }
+
+        function processUpload() {
+            if (!selectedFile) {
+                alert('Please upload your thesis PDF first.');
+                return;
+            }
+            if (!currentUser || currentUserRole !== 'student') {
+                alert('Please log in as a student to submit.');
+                return;
+            }
+            if (!window.PAYSTACK_PUBLIC_KEY || window.PAYSTACK_PUBLIC_KEY.includes('YOUR_PAYSTACK')) {
+                alert('Paystack is not configured. Add your public key in js/config.js');
+                return;
+            }
+            if (typeof PaystackPop === 'undefined') {
+                alert('Paystack failed to load. Check your internet connection and refresh.');
+                return;
+            }
+
+            const btn = document.getElementById('pay-btn');
+            const profile = currentUserProfile;
+            const reference = generatePaymentReference();
+
+            btn.disabled = true;
+            btn.innerText = 'Opening Paystack...';
+
+            const handler = PaystackPop.setup({
+                key: window.PAYSTACK_PUBLIC_KEY,
+                email: currentUser.email,
+                amount: REPOSITORY_FEE_KOBO,
+                currency: 'NGN',
+                ref: reference,
+                metadata: {
+                    custom_fields: [
+                        { display_name: 'Student ID', variable_name: 'student_id', value: currentUser.id },
+                        { display_name: 'Matric', variable_name: 'matric', value: profile?.matric || '' },
+                        { display_name: 'File', variable_name: 'file_name', value: selectedFile.name }
+                    ]
+                },
+                callback: function(response) {
+                    handlePaymentSuccess(response.reference);
+                },
+                onClose: function() {
+                    if (!currentPayment) {
+                        btn.disabled = false;
+                        btn.innerText = 'Pay ₦2,000 & Submit';
+                    }
+                }
+            });
+
+            handler.openIframe();
+        }
+
+        async function loadAdminPayments() {
+            const tbody = document.getElementById('admin-payments-body');
+            if (!tbody) return;
+
+            const { data: payments, error } = await supabaseClient
+                .from('payments')
+                .select('amount, currency, paystack_reference, status, paid_at, created_at, profiles(full_name, matric)')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-red-500">Could not load payments. Run supabase/payments.sql first.</td></tr>';
+                return;
+            }
+
+            if (!payments || payments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">No payments recorded yet.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = payments.map(p => {
+                const studentName = p.profiles?.full_name || 'Unknown';
+                const date = p.paid_at || p.created_at;
+                const formattedDate = date ? new Date(date).toLocaleDateString('en-NG') : '—';
+                const statusClass = p.status === 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700';
+                return `
+                    <tr>
+                        <td class="p-4 text-slate-700">${studentName}</td>
+                        <td class="p-4 text-slate-700">${formatNaira(p.amount)}</td>
+                        <td class="p-4 text-slate-500">${formattedDate}</td>
+                        <td class="p-4 text-slate-500 font-mono text-xs">${p.paystack_reference}</td>
+                        <td class="p-4"><span class="text-[10px] ${statusClass} px-2 py-1 rounded font-bold uppercase">${p.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // --- PDF RECEIPT GENERATOR ---
         function generateReceipt() {
+            if (!currentPayment || !currentUserProfile) {
+                alert('Complete your payment first to download a receipt.');
+                return;
+            }
+
+            const details = document.getElementById('receipt-details');
+            details.innerHTML = `
+                <p><strong>Student:</strong> ${currentUserProfile.full_name || '—'}</p>
+                <p><strong>Matric:</strong> ${currentUserProfile.matric || '—'}</p>
+                <p><strong>Department:</strong> ${currentUserProfile.department || '—'}</p>
+                <p><strong>Amount Paid:</strong> ${formatNaira(currentPayment.amount)}</p>
+                <p><strong>Payment Reference:</strong> ${currentPayment.paystack_reference}</p>
+                <p><strong>Date:</strong> ${new Date(currentPayment.paid_at || currentPayment.created_at).toLocaleString('en-NG')}</p>
+            `;
+
             const element = document.getElementById('receipt-template');
-            html2pdf().from(element).save();
+            html2pdf().from(element).save('KASU-Clearance-Receipt.pdf');
         }
 
         // --- TEACHER LOGIC ---
