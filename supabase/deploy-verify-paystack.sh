@@ -24,7 +24,7 @@ echo "Setting Paystack secret..."
 supabase secrets set "PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY}"
 
 echo "Deploying verify-paystack..."
-supabase functions deploy verify-paystack
+supabase functions deploy verify-paystack --no-verify-jwt --use-api
 
 echo "Done. Test with:"
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verify-paystack\""

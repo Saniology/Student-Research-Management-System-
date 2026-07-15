@@ -950,14 +950,19 @@
                     .limit(1)
                     .maybeSingle();
 
-                if (payment) markPaymentSuccess(payment);
+                if (payment) {
+                    hideVerificationRetry();
+                    markPaymentSuccess(payment);
+                } else {
+                    restorePendingVerification();
+                }
             } catch (err) {
                 console.error('Failed to load student dashboard:', err.message);
             }
         }
 
         function showVerificationRetry(reference) {
-            pendingVerification = pendingVerification || { reference };
+            pendingVerification = { ...(pendingVerification || {}), reference, userId: currentUser?.id || pendingVerification?.userId };
             sessionStorage.setItem('pendingVerification', JSON.stringify(pendingVerification));
             document.getElementById('verification-retry-ref').innerText = 'Reference: ' + reference;
             document.getElementById('verification-ref-input').value = reference;
@@ -974,6 +979,11 @@
             if (!raw) return;
             try {
                 pendingVerification = JSON.parse(raw);
+                if (pendingVerification?.userId && pendingVerification.userId !== currentUser?.id) {
+                    pendingVerification = null;
+                    sessionStorage.removeItem('pendingVerification');
+                    return;
+                }
                 if (pendingVerification?.reference) {
                     showVerificationRetry(pendingVerification.reference);
                 }
@@ -998,9 +1008,15 @@
                     throw new Error('Thesis file is missing. Re-select your PDF and retry.');
                 }
 
-                if (!skipUpload) {
+                if (!filePath && !skipUpload) {
+                    if (!selectedFile) {
+                        throw new Error('Thesis file is missing. Re-select your PDF and retry.');
+                    }
+
                     const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
                     filePath = currentUser.id + '/' + Date.now() + '-' + safeName;
+                    pendingVerification = { reference, fileName, filePath: null, userId: currentUser.id };
+                    sessionStorage.setItem('pendingVerification', JSON.stringify(pendingVerification));
 
                     const { data: uploadData, error: uploadError } = await supabaseClient.storage
                         .from('thesis-pdfs')
@@ -1014,7 +1030,7 @@
                     throw new Error('Uploaded file path is missing. Re-select your PDF and retry.');
                 }
 
-                pendingVerification = { reference, fileName, filePath };
+                pendingVerification = { reference, fileName, filePath, userId: currentUser.id };
 
                 const { data, error } = await supabaseClient.functions.invoke('verify-paystack', {
                     body: {
@@ -1027,8 +1043,12 @@
                 if (error) {
                     let message = error.message;
                     if (error.context && typeof error.context.json === 'function') {
-                        const body = await error.context.json();
-                        if (body?.error) message = body.error;
+                        try {
+                            const body = await error.context.json();
+                            if (body?.error) message = body.error;
+                        } catch (_) {
+                            // Keep the Supabase client error when the response body is not JSON.
+                        }
                     }
                     throw new Error(message);
                 }
@@ -1060,12 +1080,14 @@
         }
 
         async function retryPaymentVerification() {
-            if (!pendingVerification?.reference) {
+            const enteredReference = document.getElementById('verification-ref-input').value.trim();
+            const reference = enteredReference || pendingVerification?.reference;
+            if (!reference) {
                 alert('No pending payment to verify.');
                 return;
             }
             try {
-                await verifyPaymentWithBackend(pendingVerification.reference, { skipUpload: true });
+                await verifyPaymentWithBackend(reference, { skipUpload: Boolean(pendingVerification?.filePath) });
             } catch (err) {
                 alert('Retry failed: ' + err.message);
             }
