@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KASU SPMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -348,19 +350,22 @@
         <div class="glass-card rounded-2xl premium-shadow w-full max-w-md mx-4 overflow-hidden">
             <div class="bg-primary p-6 flex justify-between items-center"><span id="auth-title" class="text-white font-display font-bold text-lg">Login to Portal</span><button onclick="closeAuthModal()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button></div>
             <div class="p-8">
+                <p id="auth-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-center"></p>
                 <div id="login-form">
                     <div class="space-y-4">
-                        <input id="login-email" type="text" placeholder="Email (e.g. student@kasu.edu.ng)" class="w-full p-3 glass-input rounded-lg text-sm">
+                        <input id="login-email" type="email" placeholder="Email (e.g. student@kasu.edu.ng)" class="w-full p-3 glass-input rounded-lg text-sm">
                         <input id="login-password" type="password" placeholder="Password" class="w-full p-3 glass-input rounded-lg text-sm">
-                        <button onclick="handleLogin()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign In</button>
+                        <button id="login-btn" onclick="handleLogin()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign In</button>
                     </div>
-                    <p class="text-xs text-slate-500 mt-6 text-center">Demo: admin@kasu.edu.ng / password</p>
+                    <p class="text-xs text-slate-500 mt-6 text-center">Demo: student@kasu.edu.ng / password</p>
                 </div>
                 <div id="signup-form" class="hidden">
-                    <p class="text-sm text-slate-500 mb-6 text-center">Enter your Matric Number to auto-fetch details.</p>
+                    <p class="text-sm text-slate-500 mb-6 text-center">Enter your matric number to verify enrollment, then create your account.</p>
                     <div class="space-y-4">
                         <input id="signup-matric" type="text" placeholder="e.g. KASU/SCI/20/123" class="w-full p-3 glass-input rounded-lg text-sm">
-                        <button onclick="handleSignup()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign Up</button>
+                        <input id="signup-email" type="email" placeholder="Email address" class="w-full p-3 glass-input rounded-lg text-sm">
+                        <input id="signup-password" type="password" placeholder="Password (min. 6 characters)" class="w-full p-3 glass-input rounded-lg text-sm">
+                        <button id="signup-btn" onclick="handleSignup()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign Up</button>
                     </div>
                 </div>
             </div>
@@ -423,7 +428,16 @@
     </div>
 
     <script>
+        if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY ||
+            window.SUPABASE_URL.includes('YOUR_PROJECT') ||
+            window.SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')) {
+            console.error('Set your Supabase URL and anon key in js/config.js before using login.');
+        }
+
+        const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
         let currentUserRole = null;
+        let currentUser = null;
         let selectedFile = null;
         let currentLibraryView = 'grid'; // 'grid' or 'list'
 
@@ -523,25 +537,175 @@
         ];
 
         // --- AUTH MODAL LOGIC ---
+        function showAuthError(message) {
+            const el = document.getElementById('auth-error');
+            if (!message) {
+                el.classList.add('hidden');
+                el.innerText = '';
+                return;
+            }
+            el.innerText = message;
+            el.classList.remove('hidden');
+        }
+
+        function setAuthLoading(buttonId, loading, defaultText) {
+            const btn = document.getElementById(buttonId);
+            btn.disabled = loading;
+            btn.innerText = loading ? 'Please wait...' : defaultText;
+        }
+
         function openAuthModal(mode) {
+            showAuthError('');
             document.getElementById('login-form').classList.toggle('hidden', mode !== 'login');
             document.getElementById('signup-form').classList.toggle('hidden', mode !== 'signup');
             document.getElementById('auth-title').innerText = mode === 'login' ? 'Login to Portal' : 'Create Account';
             document.getElementById('auth-modal').classList.add('active');
         }
-        function closeAuthModal() { document.getElementById('auth-modal').classList.remove('active'); }
-
-        function handleLogin() {
-            const email = document.getElementById('login-email').value.trim();
-            const pass = document.getElementById('login-password').value;
-            if (email === 'student@kasu.edu.ng' && pass === 'password') { currentUserRole = 'student'; closeAuthModal(); navigate('student'); }
-            else if (email === 'teacher@kasu.edu.ng' && pass === 'password') { currentUserRole = 'teacher'; closeAuthModal(); navigate('teacher'); loadTeacherStudents(); }
-            else if (email === 'library@kasu.edu.ng' && pass === 'password') { currentUserRole = 'library'; closeAuthModal(); navigate('library'); initLibrary(); }
-            else if (email === 'admin@kasu.edu.ng' && pass === 'password') { currentUserRole = 'admin'; closeAuthModal(); navigate('admin'); loadCatalogue(); }
-            else { alert("Invalid credentials. Use student@kasu.edu.ng / password"); }
+        function closeAuthModal() {
+            showAuthError('');
+            document.getElementById('auth-modal').classList.remove('active');
         }
 
-        function handleSignup() { alert("Portal data fetched successfully! Account created."); currentUserRole = 'student'; closeAuthModal(); navigate('student'); }
+        async function loadUserProfile(userId) {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('role, full_name, matric, department, email')
+                .eq('id', userId)
+                .single();
+
+            if (error || !profile) {
+                throw new Error(error?.message || 'Could not load your profile.');
+            }
+            return profile;
+        }
+
+        function navigateToRole(role) {
+            closeAuthModal();
+            navigate(role);
+            if (role === 'teacher') loadTeacherStudents();
+            else if (role === 'library') initLibrary();
+            else if (role === 'admin') loadCatalogue();
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            showAuthError('');
+
+            if (!email || !password) {
+                showAuthError('Please enter your email and password.');
+                return;
+            }
+
+            setAuthLoading('login-btn', true, 'Sign In');
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+
+                const profile = await loadUserProfile(data.user.id);
+                currentUser = data.user;
+                currentUserRole = profile.role;
+                navigateToRole(profile.role);
+            } catch (err) {
+                showAuthError(err.message || 'Login failed. Check your credentials and try again.');
+            } finally {
+                setAuthLoading('login-btn', false, 'Sign In');
+            }
+        }
+
+        async function handleSignup() {
+            const matric = document.getElementById('signup-matric').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            showAuthError('');
+
+            if (!matric || !email || !password) {
+                showAuthError('Please fill in all fields.');
+                return;
+            }
+            if (password.length < 6) {
+                showAuthError('Password must be at least 6 characters.');
+                return;
+            }
+
+            setAuthLoading('signup-btn', true, 'Sign Up');
+            try {
+                const { data: registry, error: registryError } = await supabase
+                    .from('students_registry')
+                    .select('matric, full_name, department')
+                    .eq('matric', matric)
+                    .maybeSingle();
+
+                if (registryError) throw registryError;
+                if (!registry) {
+                    showAuthError('Matric number not found. Contact your department admin.');
+                    return;
+                }
+
+                const { data, error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            role: 'student',
+                            full_name: registry.full_name,
+                            matric: registry.matric,
+                            department: registry.department
+                        }
+                    }
+                });
+                if (error) throw error;
+
+                if (data.session) {
+                    const profile = await loadUserProfile(data.user.id);
+                    currentUser = data.user;
+                    currentUserRole = profile.role;
+                    navigateToRole(profile.role);
+                } else {
+                    closeAuthModal();
+                    alert('Account created. Check your email to confirm, then log in.');
+                }
+            } catch (err) {
+                showAuthError(err.message || 'Sign up failed. Please try again.');
+            } finally {
+                setAuthLoading('signup-btn', false, 'Sign Up');
+            }
+        }
+
+        async function restoreSession() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            try {
+                const profile = await loadUserProfile(session.user.id);
+                currentUser = session.user;
+                currentUserRole = profile.role;
+                updateNav();
+            } catch (err) {
+                console.error('Session restore failed:', err.message);
+                await supabase.auth.signOut();
+                currentUser = null;
+                currentUserRole = null;
+                updateNav();
+            }
+        }
+
+        supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                currentUserRole = null;
+                updateNav();
+            } else if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+                try {
+                    const profile = await loadUserProfile(session.user.id);
+                    currentUser = session.user;
+                    currentUserRole = profile.role;
+                    updateNav();
+                } catch (err) {
+                    console.error('Auth state sync failed:', err.message);
+                }
+            }
+        });
 
         // --- NAVIGATION ---
         function navigate(viewId) {
@@ -551,7 +715,12 @@
             updateNav();
             if (viewId === 'landing') loadPublicProjects();
         }
-        function logout() { currentUserRole = null; navigate('landing'); }
+        async function logout() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            currentUserRole = null;
+            navigate('landing');
+        }
         function updateNav() {
             const navLinks = document.getElementById('nav-links');
             const navActions = document.getElementById('nav-actions');
@@ -769,8 +938,10 @@
             if (student) { student.status = "Approved"; loadTeacherStudents(); closeModal(); alert(student.name + " approved!"); }
         }
 
-        updateNav();
-        loadPublicProjects();
+        restoreSession().finally(() => {
+            updateNav();
+            loadPublicProjects();
+        });
     </script>
 </body>
 </html>
