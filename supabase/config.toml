@@ -3,4 +3,6 @@
 # Deploy:   supabase functions deploy verify-paystack
 
 [functions.verify-paystack]
-verify_jwt = true
+# JWT is validated inside the function via auth.getUser().
+# Gateway JWT verification blocks browser CORS preflight (OPTIONS) requests.
+verify_jwt = false

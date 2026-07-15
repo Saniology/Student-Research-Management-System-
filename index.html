@@ -149,6 +149,14 @@
                 <p class="text-sm text-emerald-800 font-medium"><i class="fas fa-check-circle mr-1"></i> Payment confirmed</p>
                 <p id="payment-ref" class="text-xs text-emerald-600 mt-1"></p>
             </div>
+            <div id="verification-retry" class="hidden mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p class="text-sm text-amber-900 font-medium"><i class="fas fa-exclamation-triangle mr-1"></i> Payment received, but verification could not finish.</p>
+                <p id="verification-retry-ref" class="text-xs text-amber-700 mt-1 font-mono"></p>
+                <p class="text-xs text-amber-700 mt-2">Your Paystack payment is saved. Retry verification once the server function is available — no need to pay again.</p>
+                <label class="block mt-3 text-xs font-bold text-amber-900">Payment reference</label>
+                <input id="verification-ref-input" type="text" placeholder="KASU-..." class="mt-1 w-full rounded-lg border border-amber-200 px-3 py-2 text-sm font-mono">
+                <button id="retry-verify-btn" onclick="retryPaymentVerification()" class="mt-3 bg-amber-500 text-white px-5 py-2 rounded-lg text-sm font-bold hover:bg-amber-600 transition">Retry verification</button>
+            </div>
             <div id="receipt-section" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-6 premium-shadow text-center">
                 <i class="fas fa-check-circle text-4xl text-emerald-600 mb-3"></i>
                 <h3 class="text-lg font-display font-bold text-primary mb-2">Digital Clearance Receipt</h3>
@@ -450,6 +458,7 @@
         let currentUserProfile = null;
         let currentPayment = null;
         let selectedFile = null;
+        let pendingVerification = null;
         let currentLibraryView = 'grid'; // 'grid' or 'list'
         const REPOSITORY_FEE_KOBO = 200000; // ₦2,000
 
@@ -947,26 +956,71 @@
             }
         }
 
-        async function handlePaymentSuccess(reference) {
+        function showVerificationRetry(reference) {
+            pendingVerification = pendingVerification || { reference };
+            sessionStorage.setItem('pendingVerification', JSON.stringify(pendingVerification));
+            document.getElementById('verification-retry-ref').innerText = 'Reference: ' + reference;
+            document.getElementById('verification-ref-input').value = reference;
+            document.getElementById('verification-retry').classList.remove('hidden');
+        }
+
+        function hideVerificationRetry() {
+            sessionStorage.removeItem('pendingVerification');
+            document.getElementById('verification-retry').classList.add('hidden');
+        }
+
+        function restorePendingVerification() {
+            const raw = sessionStorage.getItem('pendingVerification');
+            if (!raw) return;
+            try {
+                pendingVerification = JSON.parse(raw);
+                if (pendingVerification?.reference) {
+                    showVerificationRetry(pendingVerification.reference);
+                }
+            } catch (_) {
+                sessionStorage.removeItem('pendingVerification');
+            }
+        }
+
+        async function verifyPaymentWithBackend(reference, options = {}) {
+            const { skipUpload = false } = options;
             const btn = document.getElementById('pay-btn');
+            const retryBtn = document.getElementById('retry-verify-btn');
             btn.innerText = 'Verifying payment...';
             btn.disabled = true;
+            if (retryBtn) retryBtn.disabled = true;
 
             try {
-                const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-                const filePath = currentUser.id + '/' + Date.now() + '-' + safeName;
+                let fileName = pendingVerification?.fileName || selectedFile?.name;
+                let filePath = pendingVerification?.filePath;
 
-                const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                    .from('thesis-pdfs')
-                    .upload(filePath, selectedFile, { contentType: 'application/pdf', upsert: false });
+                if (!fileName) {
+                    throw new Error('Thesis file is missing. Re-select your PDF and retry.');
+                }
 
-                if (uploadError) throw uploadError;
+                if (!skipUpload) {
+                    const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    filePath = currentUser.id + '/' + Date.now() + '-' + safeName;
+
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                        .from('thesis-pdfs')
+                        .upload(filePath, selectedFile, { contentType: 'application/pdf', upsert: false });
+
+                    if (uploadError) throw uploadError;
+                    filePath = uploadData.path;
+                }
+
+                if (!filePath) {
+                    throw new Error('Uploaded file path is missing. Re-select your PDF and retry.');
+                }
+
+                pendingVerification = { reference, fileName, filePath };
 
                 const { data, error } = await supabaseClient.functions.invoke('verify-paystack', {
                     body: {
                         reference,
-                        file_name: selectedFile.name,
-                        file_path: uploadData.path
+                        file_name: fileName,
+                        file_path: filePath
                     }
                 });
 
@@ -981,12 +1035,39 @@
                 if (data?.error) throw new Error(data.error);
                 if (!data?.payment) throw new Error('Payment verification did not return a receipt.');
 
+                pendingVerification = null;
+                hideVerificationRetry();
                 markPaymentSuccess(data.payment);
                 alert('Payment verified! Your thesis has been submitted to your supervisor.');
             } catch (err) {
+                showVerificationRetry(reference);
+                throw err;
+            } finally {
+                if (retryBtn) retryBtn.disabled = false;
+                if (!currentPayment) {
+                    btn.disabled = false;
+                    btn.innerText = 'Pay ₦2,000 & Submit';
+                }
+            }
+        }
+
+        async function handlePaymentSuccess(reference) {
+            try {
+                await verifyPaymentWithBackend(reference);
+            } catch (err) {
                 alert('Payment verification failed: ' + err.message + '. Save this reference: ' + reference);
-                btn.disabled = false;
-                btn.innerText = 'Pay ₦2,000 & Submit';
+            }
+        }
+
+        async function retryPaymentVerification() {
+            if (!pendingVerification?.reference) {
+                alert('No pending payment to verify.');
+                return;
+            }
+            try {
+                await verifyPaymentWithBackend(pendingVerification.reference, { skipUpload: true });
+            } catch (err) {
+                alert('Retry failed: ' + err.message);
             }
         }
 
