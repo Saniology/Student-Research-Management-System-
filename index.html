@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KASU SPMS</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23065F46'/><text x='50' y='68' font-size='48' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>K</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
@@ -434,7 +435,7 @@
             console.error('Set your Supabase URL and anon key in js/config.js before using login.');
         }
 
-        const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 
         let currentUserRole = null;
         let currentUser = null;
@@ -567,7 +568,7 @@
         }
 
         async function loadUserProfile(userId) {
-            const { data: profile, error } = await supabase
+            const { data: profile, error } = await supabaseClient
                 .from('profiles')
                 .select('role, full_name, matric, department, email')
                 .eq('id', userId)
@@ -599,7 +600,7 @@
 
             setAuthLoading('login-btn', true, 'Sign In');
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) throw error;
 
                 const profile = await loadUserProfile(data.user.id);
@@ -630,7 +631,7 @@
 
             setAuthLoading('signup-btn', true, 'Sign Up');
             try {
-                const { data: registry, error: registryError } = await supabase
+                const { data: registry, error: registryError } = await supabaseClient
                     .from('students_registry')
                     .select('matric, full_name, department')
                     .eq('matric', matric)
@@ -642,7 +643,7 @@
                     return;
                 }
 
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
                     options: {
@@ -673,7 +674,7 @@
         }
 
         async function restoreSession() {
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) return;
 
             try {
@@ -683,14 +684,14 @@
                 updateNav();
             } catch (err) {
                 console.error('Session restore failed:', err.message);
-                await supabase.auth.signOut();
+                await supabaseClient.auth.signOut();
                 currentUser = null;
                 currentUserRole = null;
                 updateNav();
             }
         }
 
-        supabase.auth.onAuthStateChange(async (event, session) => {
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (event === 'SIGNED_OUT') {
                 currentUser = null;
                 currentUserRole = null;
@@ -716,7 +717,7 @@
             if (viewId === 'landing') loadPublicProjects();
         }
         async function logout() {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             currentUser = null;
             currentUserRole = null;
             navigate('landing');
