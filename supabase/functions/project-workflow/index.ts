@@ -117,6 +117,37 @@ async function handleSupervisorDecision(
     auditAction: `project_${reviewAction}`,
   });
 
+  if (toStatus === "revision_requested") {
+    await notifyUsers(supabaseUrl, serviceRoleKey, {
+      recipientIds: [project.student_id],
+      actorId: actor.id,
+      institutionId: project.institution_id || null,
+      projectId,
+      title: "Revision requested",
+      message: `${actor.full_name || "Your supervisor"} requested revisions for "${project.title}".`,
+      metadata: { status: toStatus, comment },
+    });
+  } else {
+    await notifyUsers(supabaseUrl, serviceRoleKey, {
+      recipientIds: [project.student_id],
+      actorId: actor.id,
+      institutionId: project.institution_id || null,
+      projectId,
+      title: "Supervisor approval complete",
+      message: `"${project.title}" has been approved and routed to library verification.`,
+      metadata: { status: toStatus },
+    });
+    await notifyRole(supabaseUrl, serviceRoleKey, {
+      role: "library",
+      actorId: actor.id,
+      institutionId: project.institution_id || null,
+      projectId,
+      title: "Project ready for library review",
+      message: `"${project.title}" is ready for metadata verification and catalog publishing.`,
+      metadata: { status: toStatus },
+    });
+  }
+
   return jsonResponse({ success: true, project: updated });
 }
 
@@ -178,6 +209,16 @@ async function handleLibraryPublish(
     fromStatus: project.status,
     toStatus: "published",
     auditAction: "project_published_to_catalog",
+  });
+
+  await notifyUsers(supabaseUrl, serviceRoleKey, {
+    recipientIds: compactIds([project.student_id, project.supervisor_id]),
+    actorId: actor.id,
+    institutionId: project.institution_id || null,
+    projectId,
+    title: "Project published",
+    message: `"${project.title}" is now published in the institutional repository.`,
+    metadata: { status: "published", shelf_number: shelfNumber, doi: doi || project.doi || null },
   });
 
   return jsonResponse({ success: true, project: updated });
@@ -258,6 +299,16 @@ async function handleIssueReceipt(
     fromStatus: project.status,
     toStatus: "cleared",
     auditAction: "clearance_receipt_issued",
+  });
+
+  await notifyUsers(supabaseUrl, serviceRoleKey, {
+    recipientIds: [project.student_id],
+    actorId: actor.id,
+    institutionId: project.institution_id || null,
+    projectId,
+    title: "Clearance receipt issued",
+    message: `Your clearance receipt for "${project.title}" is ready for verification and download.`,
+    metadata: { status: "cleared", verification_code: verificationCode },
   });
 
   return jsonResponse({ success: true, receipt, project: updated });
@@ -369,6 +420,88 @@ async function writeReviewAndAudit(
   );
 }
 
+async function notifyRole(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  notification: {
+    role: Profile["role"];
+    actorId: string;
+    institutionId?: string | null;
+    projectId?: string | null;
+    title: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  },
+) {
+  let path = `/profiles?role=eq.${encodeURIComponent(notification.role)}&select=id`;
+  if (notification.institutionId) {
+    path += `&institution_id=eq.${encodeURIComponent(notification.institutionId)}`;
+  }
+
+  let recipients: Array<{ id?: string }> = [];
+  try {
+    recipients = await supabaseRest(supabaseUrl, serviceRoleKey, path);
+  } catch (err) {
+    console.warn("Role notification recipient lookup skipped:", err);
+    return;
+  }
+
+  await notifyUsers(supabaseUrl, serviceRoleKey, {
+    recipientIds: compactIds(recipients.map((recipient) => recipient.id)),
+    actorId: notification.actorId,
+    institutionId: notification.institutionId || null,
+    projectId: notification.projectId || null,
+    title: notification.title,
+    message: notification.message,
+    metadata: notification.metadata || {},
+  });
+}
+
+async function notifyUsers(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  notification: {
+    recipientIds: string[];
+    actorId?: string | null;
+    institutionId?: string | null;
+    projectId?: string | null;
+    title: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  },
+) {
+  const recipientIds = [...new Set(notification.recipientIds)].filter(Boolean);
+  if (!recipientIds.length) return;
+
+  try {
+    await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      "/notifications",
+      {
+        method: "POST",
+        body: recipientIds.map((recipientId) => ({
+          recipient_id: recipientId,
+          actor_id: notification.actorId || null,
+          institution_id: notification.institutionId || null,
+          project_id: notification.projectId || null,
+          category: "workflow",
+          title: notification.title,
+          message: notification.message,
+          action_url: notification.projectId ? `project:${notification.projectId}` : null,
+          metadata: notification.metadata || {},
+        })),
+      },
+    );
+  } catch (err) {
+    console.warn("Notification insert skipped:", err);
+  }
+}
+
+function compactIds(values: Array<string | null | undefined>) {
+  return values.filter((value): value is string => Boolean(value));
+}
+
 async function getAuthenticatedUser(
   supabaseUrl: string,
   supabaseAnonKey: string,
@@ -391,7 +524,7 @@ async function supabaseRest(
   path: string,
   options: {
     method?: string;
-    body?: Record<string, unknown>;
+    body?: Record<string, unknown> | Array<Record<string, unknown>>;
   } = {},
 ) {
   const res = await fetch(`${supabaseUrl}/rest/v1${path}`, {

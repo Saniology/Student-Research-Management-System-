@@ -1,3 +1,5 @@
+import qrcode from "https://esm.sh/qrcode-generator@2.0.4";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -25,6 +27,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const type = typeof body.type === "string" ? body.type : "";
+
+    if (type === "qr_svg") {
+      const payload = requireString(body.payload, "payload");
+      const size = typeof body.size === "number" ? body.size : 160;
+      return svgResponse(renderQrSvg(payload, size));
+    }
 
     if (type === "receipt") {
       const verificationCode = requireString(body.verification_code, "verification_code");
@@ -146,6 +154,30 @@ function requireString(value: unknown, field: string) {
     throw new Error(`${field} is required`);
   }
   return value.trim();
+}
+
+function renderQrSvg(payload: string, size: number) {
+  const qr = qrcode(0, "M");
+  qr.addData(payload);
+  qr.make();
+  const moduleCount = qr.getModuleCount();
+  const margin = 4;
+  const cellSize = Math.max(2, Math.floor(size / (moduleCount + margin * 2)));
+  const svg = qr.createSvgTag({ cellSize, margin, scalable: true });
+  return svg
+    .replace("<svg", '<svg role="img" aria-label="SPMS verification QR code"')
+    .replace(/<title>.*?<\/title>/, "");
+}
+
+function svgResponse(svg: string, status = 200) {
+  return new Response(svg, {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "image/svg+xml; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
 }
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {

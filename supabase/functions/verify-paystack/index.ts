@@ -41,6 +41,16 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
+    const body = await req.json();
+    if (body.action === "initialize_clearance") {
+      return await initializeClearancePayment(
+        supabaseUrl,
+        supabaseServiceKey,
+        paystackSecret,
+        user,
+      );
+    }
+
     const {
       reference,
       file_name,
@@ -49,7 +59,7 @@ Deno.serve(async (req) => {
       abstract,
       degree,
       file_size_bytes,
-    } = await req.json();
+    } = body;
     if (!reference || !file_name) {
       return jsonResponse({ error: "Missing payment reference or file name" }, 400);
     }
@@ -113,6 +123,11 @@ Deno.serve(async (req) => {
         { error: "Payment email does not match logged-in account" },
         403,
       );
+    }
+
+    const metadata = normalizePaystackMetadata(transaction.metadata);
+    if (metadata.payment_type && metadata.payment_type !== "clearance_fee") {
+      return jsonResponse({ error: "Payment reference is not for clearance" }, 400);
     }
 
     const [submission] = await supabaseRest(
@@ -228,6 +243,19 @@ Deno.serve(async (req) => {
         },
       );
 
+      await notifyUsers(supabaseUrl, supabaseServiceKey, {
+        recipientIds: compactIds([user.id, project.supervisor_id]),
+        actorId: user.id,
+        institutionId: project.institution_id || profile?.institution_id || null,
+        projectId: project.id,
+        title: "Project submitted",
+        message: `"${project.title}" has been submitted for supervisor review.`,
+        metadata: {
+          status: "supervisor_review",
+          payment_reference: reference,
+        },
+      });
+
       return jsonResponse({ success: true, payment, submission, project });
     } catch (err) {
       if (createdProjectId) {
@@ -298,6 +326,91 @@ async function insertLegacyPayment(
   );
 }
 
+async function initializeClearancePayment(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  paystackSecret: string,
+  user: { id: string; email?: string },
+) {
+  if (!user.email) return jsonResponse({ error: "Authenticated user has no email address" }, 400);
+
+  const profile = await getStudentProfile(supabaseUrl, serviceRoleKey, user.id);
+  const paymentConfig = await getPaymentConfig(supabaseUrl, serviceRoleKey, profile?.institution_id);
+  const reference = `SPMS-CLR-${Date.now()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  const split = calculateSplit(paymentConfig.clearance_fee_kobo, paymentConfig);
+  const payload = buildPaystackInitializePayload({
+    email: user.email,
+    amount: paymentConfig.clearance_fee_kobo,
+    currency: paymentConfig.currency,
+    reference,
+    config: paymentConfig,
+    metadata: {
+      payment_type: "clearance_fee",
+      user_id: user.id,
+      matric: profile?.matric || null,
+      institution_id: profile?.institution_id || null,
+      institution_share_kobo: split.institutionShareKobo,
+      provider_share_kobo: split.providerShareKobo,
+    },
+  });
+
+  const paystackData = await initializePaystackTransaction(paystackSecret, payload);
+  return jsonResponse({
+    success: true,
+    reference,
+    amount: paymentConfig.clearance_fee_kobo,
+    currency: paymentConfig.currency,
+    access_code: paystackData.access_code,
+    authorization_url: paystackData.authorization_url,
+    split_applied: describePaystackSplit(payload),
+  });
+}
+
+async function notifyUsers(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  notification: {
+    recipientIds: string[];
+    actorId?: string | null;
+    institutionId?: string | null;
+    projectId?: string | null;
+    title: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  },
+) {
+  const recipientIds = [...new Set(notification.recipientIds)].filter(Boolean);
+  if (!recipientIds.length) return;
+
+  try {
+    await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      "/notifications",
+      {
+        method: "POST",
+        body: recipientIds.map((recipientId) => ({
+          recipient_id: recipientId,
+          actor_id: notification.actorId || null,
+          institution_id: notification.institutionId || null,
+          project_id: notification.projectId || null,
+          category: "workflow",
+          title: notification.title,
+          message: notification.message,
+          action_url: notification.projectId ? `project:${notification.projectId}` : null,
+          metadata: notification.metadata || {},
+        })),
+      },
+    );
+  } catch (err) {
+    console.warn("Notification insert skipped:", err);
+  }
+}
+
+function compactIds(values: Array<string | null | undefined>) {
+  return values.filter((value): value is string => Boolean(value));
+}
+
 async function getStudentProfile(
   supabaseUrl: string,
   serviceRoleKey: string,
@@ -330,7 +443,7 @@ async function getPaymentConfig(
       const configs = await supabaseRest(
         supabaseUrl,
         serviceRoleKey,
-        `/system_configs?institution_id=eq.${encodeURIComponent(institutionId)}&select=clearance_fee_kobo,currency,institution_share_percent,provider_share_percent,paystack_institution_subaccount,paystack_provider_subaccount`,
+        `/system_configs?institution_id=eq.${encodeURIComponent(institutionId)}&select=clearance_fee_kobo,currency,institution_share_percent,provider_share_percent,paystack_split_code,paystack_institution_subaccount,paystack_provider_subaccount`,
       );
       if (configs[0]) return normalizePaymentConfig(configs[0]);
     } catch (err) {
@@ -350,6 +463,10 @@ function normalizePaymentConfig(config: Record<string, unknown>) {
     currency: String(config.currency || "NGN"),
     institution_share_percent: Number.isFinite(institutionSharePercent) ? institutionSharePercent : 50,
     provider_share_percent: Number.isFinite(providerSharePercent) ? providerSharePercent : 50,
+    paystack_split_code:
+      typeof config.paystack_split_code === "string"
+        ? config.paystack_split_code
+        : null,
     paystack_institution_subaccount:
       typeof config.paystack_institution_subaccount === "string"
         ? config.paystack_institution_subaccount
@@ -359,6 +476,98 @@ function normalizePaymentConfig(config: Record<string, unknown>) {
         ? config.paystack_provider_subaccount
         : null,
   };
+}
+
+async function initializePaystackTransaction(
+  paystackSecret: string,
+  payload: Record<string, unknown>,
+) {
+  const res = await fetch("https://api.paystack.co/transaction/initialize", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${paystackSecret}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const body = await res.json();
+
+  if (!res.ok || !body.status) {
+    throw new Error(body.message || "Paystack transaction initialization failed");
+  }
+
+  return body.data || {};
+}
+
+function buildPaystackInitializePayload(options: {
+  email: string;
+  amount: number;
+  currency: string;
+  reference: string;
+  config: ReturnType<typeof normalizePaymentConfig>;
+  metadata: Record<string, unknown>;
+}) {
+  const payload: Record<string, unknown> = {
+    email: options.email,
+    amount: String(options.amount),
+    currency: options.currency,
+    reference: options.reference,
+    metadata: JSON.stringify(options.metadata),
+  };
+
+  Object.assign(payload, paystackSplitPayload(options.amount, options.config));
+  return payload;
+}
+
+function paystackSplitPayload(amountKobo: number, config: ReturnType<typeof normalizePaymentConfig>) {
+  if (config.paystack_split_code) return { split_code: config.paystack_split_code };
+
+  const institutionSubaccount = config.paystack_institution_subaccount;
+  const providerSubaccount = config.paystack_provider_subaccount;
+  const split = calculateSplit(amountKobo, config);
+
+  if (institutionSubaccount && providerSubaccount) {
+    return {
+      split: {
+        type: "flat",
+        bearer_type: "account",
+        subaccounts: [
+          { subaccount: institutionSubaccount, share: split.institutionShareKobo },
+          { subaccount: providerSubaccount, share: split.providerShareKobo },
+        ],
+      },
+    };
+  }
+
+  if (institutionSubaccount) {
+    return {
+      subaccount: institutionSubaccount,
+      transaction_charge: split.providerShareKobo,
+      bearer: "account",
+    };
+  }
+
+  return {};
+}
+
+function describePaystackSplit(payload: Record<string, unknown>) {
+  if (payload.split_code) return "split_code";
+  if (payload.split) return "dynamic_split";
+  if (payload.subaccount) return "subaccount";
+  return "none";
+}
+
+function normalizePaystackMetadata(metadata: unknown) {
+  if (!metadata) return {};
+  if (typeof metadata === "string") {
+    try {
+      return JSON.parse(metadata) as Record<string, unknown>;
+    } catch (_) {
+      return {};
+    }
+  }
+  if (typeof metadata === "object") return metadata as Record<string, unknown>;
+  return {};
 }
 
 function calculateSplit(amountKobo: number, config: ReturnType<typeof normalizePaymentConfig>) {
@@ -414,7 +623,7 @@ async function supabaseRest(
   path: string,
   options: {
     method?: string;
-    body?: Record<string, unknown>;
+    body?: Record<string, unknown> | Array<Record<string, unknown>>;
   } = {},
 ) {
   const res = await fetch(`${supabaseUrl}/rest/v1${path}`, {

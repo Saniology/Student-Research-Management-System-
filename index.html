@@ -7,7 +7,7 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23065F46'/><text x='50' y='68' font-size='48' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>K</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <script src="https://js.paystack.co/v2/inline.js"></script>
     <script src="js/config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -418,11 +418,14 @@
                 <!-- Reports Section -->
                 <div id="admin-reports" class="admin-section">
                     <h1 class="text-3xl font-display font-bold text-primary mb-8">System Reports</h1>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-export text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Export Student Data</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Download CSV</button></div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-invoice-dollar text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Financial Report</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Download PDF</button></div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-archive text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Archive Log</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">View Log</button></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-export text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Student Register</h3><p class="text-xs text-slate-500 mb-4">Profiles and matric registry for departmental review.</p><button onclick="exportStudentReport()" class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Download CSV</button></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-diagram-project text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Project Lifecycle</h3><p class="text-xs text-slate-500 mb-4">Submission status, supervisors, catalog metadata, and clearance state.</p><button onclick="exportProjectReport()" class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Download CSV</button></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-invoice-dollar text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Financial Report</h3><p class="text-xs text-slate-500 mb-4">Payment totals, Paystack references, and revenue split accounting.</p><div class="flex flex-wrap gap-2 justify-center"><button onclick="exportFinancialReport('pdf')" class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">PDF</button><button onclick="exportFinancialReport('csv')" class="mt-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">CSV</button></div></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-archive text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Archive Log</h3><p class="text-xs text-slate-500 mb-4">Audit trail for lifecycle, payment, catalog, and repository events.</p><div class="flex flex-wrap gap-2 justify-center"><button onclick="viewArchiveLog()" class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">View</button><button onclick="exportArchiveLog()" class="mt-2 bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold">CSV</button></div></div>
                     </div>
+                    <p id="reports-status" class="text-sm text-slate-500 mt-4"></p>
+                    <div id="reports-output" class="mt-6 bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden hidden"></div>
                 </div>
 
                 <!-- Settings Section -->
@@ -438,6 +441,7 @@
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Repository Download Fee (₦)</label><input id="settings-download-fee" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" step="100"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Institution Share (%)</label><input id="settings-institution-share" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" max="100" step="0.01"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">SPMS Provider Share (%)</label><input id="settings-provider-share" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" max="100" step="0.01"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Paystack Split Code</label><input id="settings-paystack-split-code" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" placeholder="SPL_xxxxx"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Institution Subaccount Code</label><input id="settings-institution-subaccount" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" placeholder="ACCT_xxxxx"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Provider Subaccount Code</label><input id="settings-provider-subaccount" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" placeholder="ACCT_xxxxx"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Max PDF Size (MB)</label><input id="settings-max-pdf" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="1" step="1"></div>
@@ -602,6 +606,7 @@
         let publicCatalogItems = [];
         let selectedLibraryProject = null;
         let academicHierarchy = { colleges: [], faculties: [], departments: [] };
+        let userNotifications = [];
         let currentLibraryView = 'grid'; // 'grid' or 'list'
         const REPOSITORY_FEE_KOBO = 200000; // ₦2,000
         const REPOSITORY_DOWNLOAD_FEE_KOBO = 50000; // ₦500
@@ -804,11 +809,37 @@
             return map[status] || 'No active thesis workflow yet.';
         }
 
-        function renderQrCode(elementId, text, size = 128) {
+        async function renderQrCode(elementId, text, size = 128) {
             const el = document.getElementById(elementId);
             if (!el) return;
             el.innerHTML = '';
             if (!text) return;
+
+            try {
+                const res = await fetch(window.SUPABASE_URL + '/functions/v1/verification-lookup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        apikey: window.SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({ type: 'qr_svg', payload: text, size })
+                });
+                if (res.ok) {
+                    const svg = await res.text();
+                    if (svg.includes('<svg')) {
+                        el.innerHTML = svg;
+                        const rendered = el.querySelector('svg');
+                        if (rendered) {
+                            rendered.setAttribute('width', String(size));
+                            rendered.setAttribute('height', String(size));
+                        }
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Server QR render unavailable:', err.message);
+            }
+
             if (typeof QRCode === 'undefined') {
                 el.innerHTML = '<p class="text-xs text-red-500">QR library unavailable</p>';
                 return;
@@ -1010,6 +1041,7 @@
                 'settings-download-fee': (config?.download_fee_kobo || REPOSITORY_DOWNLOAD_FEE_KOBO) / 100,
                 'settings-institution-share': config?.institution_share_percent ?? 50,
                 'settings-provider-share': config?.provider_share_percent ?? 50,
+                'settings-paystack-split-code': config?.paystack_split_code || '',
                 'settings-institution-subaccount': config?.paystack_institution_subaccount || '',
                 'settings-provider-subaccount': config?.paystack_provider_subaccount || '',
                 'settings-max-pdf': Math.round((config?.max_pdf_size_bytes || 104857600) / 1048576),
@@ -1057,6 +1089,7 @@
                 download_fee_kobo: Math.round(Number(document.getElementById('settings-download-fee').value || 0) * 100),
                 institution_share_percent: institutionShare,
                 provider_share_percent: providerShare,
+                paystack_split_code: document.getElementById('settings-paystack-split-code').value.trim() || null,
                 paystack_institution_subaccount: document.getElementById('settings-institution-subaccount').value.trim() || null,
                 paystack_provider_subaccount: document.getElementById('settings-provider-subaccount').value.trim() || null,
                 max_pdf_size_bytes: Math.round(Number(document.getElementById('settings-max-pdf').value || 100) * 1048576),
@@ -1205,6 +1238,8 @@
             if (event === 'SIGNED_OUT') {
                 currentUser = null;
                 currentUserRole = null;
+                currentUserProfile = null;
+                userNotifications = [];
                 updateNav();
             } else if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
                 try {
@@ -1240,8 +1275,158 @@
                 navActions.innerHTML = '<button onclick="openAuthModal(\'login\')" class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold">Login</button>';
             } else {
                 navLinks.innerHTML = '<span class="text-sm font-bold text-primary uppercase">' + currentUserRole + ' Dashboard</span>';
-                navActions.innerHTML = '<button onclick="logout()" class="bg-red-50 text-red-600 px-5 py-2.5 rounded-lg text-sm font-semibold">Logout</button>';
+                navActions.innerHTML = `
+                    <div class="relative">
+                        <button onclick="toggleNotifications()" class="relative bg-white border border-slate-200 text-slate-700 w-10 h-10 rounded-lg flex items-center justify-center hover:bg-slate-50" title="Notifications">
+                            <i class="fas fa-bell text-sm"></i>
+                            <span id="notification-badge" class="hidden absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center"></span>
+                        </button>
+                        <div id="notification-panel" class="hidden absolute right-0 mt-3 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden z-50">
+                            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                                <p class="text-sm font-bold text-primary">Notifications</p>
+                                <button onclick="markNotificationsRead()" class="text-xs font-bold text-slate-500 hover:text-primary">Mark read</button>
+                            </div>
+                            <div id="notification-list" class="max-h-96 overflow-y-auto"></div>
+                        </div>
+                    </div>
+                    <button onclick="logout()" class="bg-red-50 text-red-600 px-5 py-2.5 rounded-lg text-sm font-semibold">Logout</button>
+                `;
+                loadNotifications();
             }
+        }
+
+        async function loadNotifications() {
+            if (!currentUser) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('notifications')
+                    .select('id, title, message, category, read_at, created_at, project_id, metadata')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                if (error) throw error;
+                userNotifications = data || [];
+                renderNotifications();
+            } catch (err) {
+                console.warn('Notifications unavailable:', err.message);
+                userNotifications = [];
+                renderNotifications();
+            }
+        }
+
+        function renderNotifications() {
+            const list = document.getElementById('notification-list');
+            const badge = document.getElementById('notification-badge');
+            if (!list || !badge) return;
+
+            const unreadCount = userNotifications.filter(n => !n.read_at).length;
+            badge.classList.toggle('hidden', unreadCount === 0);
+            badge.innerText = unreadCount > 9 ? '9+' : String(unreadCount);
+
+            if (!userNotifications.length) {
+                list.innerHTML = '<div class="p-6 text-center text-sm text-slate-500">No notifications yet.</div>';
+                return;
+            }
+
+            list.innerHTML = userNotifications.map(notification => `
+                <button onclick="openNotification('${notification.id}')" class="w-full text-left p-4 border-b border-slate-100 hover:bg-slate-50 ${notification.read_at ? '' : 'bg-emerald-50/60'}">
+                    <div class="flex items-start gap-3">
+                        <span class="mt-1 w-2 h-2 rounded-full ${notification.read_at ? 'bg-slate-300' : 'bg-primary'} flex-shrink-0"></span>
+                        <span class="min-w-0">
+                            <span class="block text-sm font-bold text-slate-800">${escapeHtml(notification.title)}</span>
+                            <span class="block text-xs text-slate-600 mt-1 leading-relaxed">${escapeHtml(notification.message)}</span>
+                            <span class="block text-[11px] text-slate-400 mt-2">${new Date(notification.created_at).toLocaleString('en-NG')}</span>
+                        </span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        async function markNotificationsRead() {
+            const unreadIds = userNotifications.filter(n => !n.read_at).map(n => n.id);
+            if (!unreadIds.length) return;
+            const readAt = new Date().toISOString();
+            userNotifications = userNotifications.map(n => unreadIds.includes(n.id) ? { ...n, read_at: readAt } : n);
+            renderNotifications();
+
+            try {
+                const { error } = await supabaseClient
+                    .from('notifications')
+                    .update({ read_at: readAt })
+                    .in('id', unreadIds);
+                if (error) throw error;
+            } catch (err) {
+                console.warn('Could not mark notifications read:', err.message);
+                loadNotifications();
+            }
+        }
+
+        async function openNotification(notificationId) {
+            const notification = userNotifications.find(n => String(n.id) === String(notificationId));
+            if (!notification) return;
+            if (!notification.read_at) {
+                const readAt = new Date().toISOString();
+                notification.read_at = readAt;
+                renderNotifications();
+                try {
+                    await supabaseClient
+                        .from('notifications')
+                        .update({ read_at: readAt })
+                        .eq('id', notification.id);
+                } catch (err) {
+                    console.warn('Could not update notification:', err.message);
+                }
+            }
+
+            const panel = document.getElementById('notification-panel');
+            if (panel) panel.classList.add('hidden');
+            if (currentUserRole) navigateToRole(currentUserRole);
+        }
+
+        function toggleNotifications() {
+            const panel = document.getElementById('notification-panel');
+            if (!panel) return;
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) loadNotifications();
+        }
+
+        function resumePaystackCheckout(accessCode, handlers = {}, authorizationUrl = '') {
+            if (typeof PaystackPop === 'undefined') {
+                throw new Error('Paystack failed to load. Check your internet connection and refresh.');
+            }
+
+            if (typeof PaystackPop.resumeTransaction === 'function') {
+                PaystackPop.resumeTransaction(accessCode, {
+                    onSuccess: handlers.onSuccess,
+                    onCancel: handlers.onCancel,
+                    onError: handlers.onError
+                });
+                return;
+            }
+
+            try {
+                const popup = new PaystackPop();
+                if (typeof popup.resumeTransaction === 'function') {
+                    popup.resumeTransaction(accessCode, {
+                        onSuccess: handlers.onSuccess,
+                        onCancel: handlers.onCancel,
+                        onError: handlers.onError
+                    });
+                    return;
+                }
+            } catch (_) {
+                // Older Paystack Inline versions expose static helpers only.
+            }
+
+            if (authorizationUrl) {
+                window.open(authorizationUrl, '_blank', 'noopener');
+                return;
+            }
+
+            throw new Error('This Paystack script cannot resume server-initialized transactions.');
+        }
+
+        function paystackReference(response, fallbackReference = '') {
+            return response?.reference || response?.trxref || response?.transaction || fallbackReference;
         }
 
         // --- ADMIN SIDEBAR LOGIC ---
@@ -1258,7 +1443,271 @@
             if (id === 'dashboard') loadAdminDashboard();
             if (id === 'departments') loadCatalogue();
             if (id === 'payments') loadAdminPayments();
+            if (id === 'reports') loadReportsSummary();
             if (id === 'settings') loadAdminSettings();
+        }
+
+        function setReportsStatus(message, tone = 'info') {
+            const status = document.getElementById('reports-status');
+            if (!status) return;
+            const colors = {
+                info: 'text-slate-500',
+                success: 'text-emerald-700',
+                error: 'text-red-600'
+            };
+            status.className = `text-sm mt-4 ${colors[tone] || colors.info}`;
+            status.innerText = message || '';
+        }
+
+        function loadReportsSummary() {
+            setReportsStatus('Choose a report to generate. Exports use live Supabase data visible to admins.');
+            const output = document.getElementById('reports-output');
+            if (output) {
+                output.classList.add('hidden');
+                output.innerHTML = '';
+            }
+        }
+
+        async function exportStudentReport() {
+            if (!ensureAdminReportAccess()) return;
+            setReportsStatus('Preparing student register...');
+            try {
+                const { data: profiles, error } = await supabaseClient
+                    .from('profiles')
+                    .select('full_name, matric, email, department, role, created_at')
+                    .eq('role', 'student')
+                    .order('department', { ascending: true });
+                if (error) throw error;
+
+                const rows = (profiles || []).map(profile => ({
+                    full_name: profile.full_name || '',
+                    matric: profile.matric || '',
+                    email: profile.email || '',
+                    department: profile.department || '',
+                    role: profile.role || 'student',
+                    registered_at: profile.created_at || ''
+                }));
+
+                downloadCsv('spms-student-register.csv', rows, [
+                    'full_name', 'matric', 'email', 'department', 'role', 'registered_at'
+                ]);
+                setReportsStatus(`Student register exported (${rows.length} rows).`, 'success');
+            } catch (err) {
+                setReportsStatus('Student export failed: ' + err.message, 'error');
+            }
+        }
+
+        async function exportProjectReport() {
+            if (!ensureAdminReportAccess()) return;
+            setReportsStatus('Preparing project lifecycle report...');
+            try {
+                const { data: rows, error } = await supabaseClient
+                    .from('projects')
+                    .select('title, degree, status, shelf_number, doi, published_at, cleared_at, created_at, profiles!projects_student_id_fkey(full_name, matric), departments(name)')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+
+                const reportRows = (rows || []).map(project => ({
+                    title: project.title || '',
+                    student: project.profiles?.full_name || '',
+                    matric: project.profiles?.matric || '',
+                    department: project.departments?.name || '',
+                    degree: project.degree || '',
+                    status: statusLabel(project.status),
+                    shelf_number: project.shelf_number || '',
+                    doi: project.doi || '',
+                    submitted_at: project.created_at || '',
+                    published_at: project.published_at || '',
+                    cleared_at: project.cleared_at || ''
+                }));
+
+                downloadCsv('spms-project-lifecycle.csv', reportRows, [
+                    'title', 'student', 'matric', 'department', 'degree', 'status',
+                    'shelf_number', 'doi', 'submitted_at', 'published_at', 'cleared_at'
+                ]);
+                setReportsStatus(`Project lifecycle report exported (${reportRows.length} rows).`, 'success');
+            } catch (err) {
+                setReportsStatus('Project report failed: ' + err.message, 'error');
+            }
+        }
+
+        async function exportFinancialReport(format = 'csv') {
+            if (!ensureAdminReportAccess()) return;
+            setReportsStatus('Preparing financial report...');
+            try {
+                const payments = await fetchFinancialRows();
+                const rows = payments.map(payment => ({
+                    student: payment.profiles?.full_name || '',
+                    matric: payment.profiles?.matric || '',
+                    type: statusLabel(payment.transaction_type || 'clearance_fee'),
+                    amount: Number(payment.amount || 0) / 100,
+                    currency: payment.currency || 'NGN',
+                    institution_share: Number(payment.institution_share_kobo || 0) / 100,
+                    provider_share: Number(payment.provider_share_kobo || 0) / 100,
+                    paystack_reference: payment.paystack_reference || '',
+                    status: payment.status || '',
+                    paid_at: payment.paid_at || payment.created_at || ''
+                }));
+
+                if (format === 'pdf') {
+                    await downloadFinancialPdf(rows);
+                    setReportsStatus(`Financial PDF generated (${rows.length} payments).`, 'success');
+                } else {
+                    downloadCsv('spms-financial-report.csv', rows, [
+                        'student', 'matric', 'type', 'amount', 'currency',
+                        'institution_share', 'provider_share', 'paystack_reference', 'status', 'paid_at'
+                    ]);
+                    setReportsStatus(`Financial CSV exported (${rows.length} payments).`, 'success');
+                }
+            } catch (err) {
+                setReportsStatus('Financial report failed: ' + err.message, 'error');
+            }
+        }
+
+        async function viewArchiveLog() {
+            if (!ensureAdminReportAccess()) return;
+            setReportsStatus('Loading archive log...');
+            try {
+                const rows = await fetchArchiveRows(25);
+                renderArchiveLog(rows);
+                setReportsStatus(`Showing latest ${rows.length} audit events.`, 'success');
+            } catch (err) {
+                setReportsStatus('Archive log failed: ' + err.message, 'error');
+            }
+        }
+
+        async function exportArchiveLog() {
+            if (!ensureAdminReportAccess()) return;
+            setReportsStatus('Preparing archive CSV...');
+            try {
+                const rows = await fetchArchiveRows(1000);
+                const reportRows = rows.map(log => ({
+                    created_at: log.created_at || '',
+                    actor: log.profiles?.full_name || '',
+                    actor_matric: log.profiles?.matric || '',
+                    action: log.action || '',
+                    entity_type: log.entity_type || '',
+                    entity_id: log.entity_id || '',
+                    metadata: JSON.stringify(log.metadata || {})
+                }));
+                downloadCsv('spms-archive-log.csv', reportRows, [
+                    'created_at', 'actor', 'actor_matric', 'action', 'entity_type', 'entity_id', 'metadata'
+                ]);
+                setReportsStatus(`Archive CSV exported (${reportRows.length} rows).`, 'success');
+            } catch (err) {
+                setReportsStatus('Archive export failed: ' + err.message, 'error');
+            }
+        }
+
+        async function fetchFinancialRows() {
+            const { data, error } = await supabaseClient
+                .from('payments')
+                .select('amount, currency, transaction_type, institution_share_kobo, provider_share_kobo, paystack_reference, status, paid_at, created_at, profiles(full_name, matric)')
+                .order('created_at', { ascending: false })
+                .limit(1000);
+            if (error) throw error;
+            return data || [];
+        }
+
+        async function fetchArchiveRows(limit = 100) {
+            const { data, error } = await supabaseClient
+                .from('audit_logs')
+                .select('created_at, action, entity_type, entity_id, metadata, profiles!audit_logs_actor_id_fkey(full_name, matric)')
+                .order('created_at', { ascending: false })
+                .limit(limit);
+            if (error) throw error;
+            return data || [];
+        }
+
+        function renderArchiveLog(rows) {
+            const output = document.getElementById('reports-output');
+            if (!output) return;
+            output.classList.remove('hidden');
+            output.innerHTML = `
+                <div class="p-5 border-b border-slate-200 flex items-center justify-between">
+                    <h3 class="font-display text-lg font-bold text-primary">Latest Archive Events</h3>
+                    <button onclick="exportArchiveLog()" class="bg-slate-100 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold">Download CSV</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[720px]">
+                        <thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4">Date</th><th class="p-4">Actor</th><th class="p-4">Action</th><th class="p-4">Entity</th></tr></thead>
+                        <tbody class="text-sm divide-y divide-slate-200">
+                            ${rows.length ? rows.map(log => `
+                                <tr>
+                                    <td class="p-4 text-slate-500">${new Date(log.created_at).toLocaleString('en-NG')}</td>
+                                    <td class="p-4 text-slate-700">${escapeHtml(log.profiles?.full_name || 'System')}</td>
+                                    <td class="p-4 text-slate-700">${escapeHtml(statusLabel(log.action))}</td>
+                                    <td class="p-4 text-slate-500">${escapeHtml(log.entity_type || '')}</td>
+                                </tr>
+                            `).join('') : '<tr><td colspan="4" class="p-8 text-center text-slate-400">No archive events found.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        async function downloadFinancialPdf(rows) {
+            if (typeof html2pdf === 'undefined') {
+                throw new Error('PDF export library is unavailable. Check your internet connection and refresh.');
+            }
+
+            const total = rows.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+            const institutionTotal = rows.reduce((sum, row) => sum + Number(row.institution_share || 0), 0);
+            const providerTotal = rows.reduce((sum, row) => sum + Number(row.provider_share || 0), 0);
+            const report = document.createElement('div');
+            report.style.padding = '32px';
+            report.style.fontFamily = 'Inter, Arial, sans-serif';
+            report.style.color = '#0f172a';
+            report.innerHTML = `
+                <h1 style="font-size: 24px; margin: 0 0 4px;">SPMS Financial Report</h1>
+                <p style="font-size: 12px; margin: 0 0 20px; color: #64748b;">Generated ${new Date().toLocaleString('en-NG')}</p>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
+                    <div style="border: 1px solid #e2e8f0; padding: 12px;"><strong>Total Revenue</strong><br>${formatNaira(total * 100)}</div>
+                    <div style="border: 1px solid #e2e8f0; padding: 12px;"><strong>Institution Share</strong><br>${formatNaira(institutionTotal * 100)}</div>
+                    <div style="border: 1px solid #e2e8f0; padding: 12px;"><strong>Provider Share</strong><br>${formatNaira(providerTotal * 100)}</div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                    <thead><tr style="background: #f8fafc;"><th style="border: 1px solid #e2e8f0; padding: 6px; text-align: left;">Student</th><th style="border: 1px solid #e2e8f0; padding: 6px; text-align: left;">Type</th><th style="border: 1px solid #e2e8f0; padding: 6px; text-align: left;">Amount</th><th style="border: 1px solid #e2e8f0; padding: 6px; text-align: left;">Reference</th><th style="border: 1px solid #e2e8f0; padding: 6px; text-align: left;">Date</th></tr></thead>
+                    <tbody>
+                        ${rows.slice(0, 100).map(row => `<tr><td style="border: 1px solid #e2e8f0; padding: 6px;">${escapeHtml(row.student || 'Unknown')}</td><td style="border: 1px solid #e2e8f0; padding: 6px;">${escapeHtml(row.type)}</td><td style="border: 1px solid #e2e8f0; padding: 6px;">${formatNaira(row.amount * 100)}</td><td style="border: 1px solid #e2e8f0; padding: 6px;">${escapeHtml(row.paystack_reference)}</td><td style="border: 1px solid #e2e8f0; padding: 6px;">${escapeHtml(row.paid_at)}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            await html2pdf()
+                .set({ margin: 0.35, filename: 'spms-financial-report.pdf', html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } })
+                .from(report)
+                .save();
+        }
+
+        function ensureAdminReportAccess() {
+            if (currentUserRole === 'admin') return true;
+            setReportsStatus('Only admins can generate system reports.', 'error');
+            return false;
+        }
+
+        function downloadCsv(filename, rows, columns) {
+            const header = columns.join(',');
+            const body = rows.map(row => columns.map(column => csvEscape(row[column])).join(',')).join('\n');
+            const csv = '\uFEFF' + header + '\n' + body;
+            downloadBlob(filename, csv, 'text/csv;charset=utf-8');
+        }
+
+        function downloadBlob(filename, content, type) {
+            const blob = new Blob([content], { type });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        function csvEscape(value) {
+            const text = String(value ?? '');
+            return /[",\n\r]/.test(text) ? '"' + text.replace(/"/g, '""') + '"' : text;
         }
 
         // --- LANDING PAGE PUBLIC REPO ---
@@ -1323,11 +1772,6 @@
                 alert('Log in or create an account before downloading repository PDFs.');
                 return;
             }
-            if (!window.PAYSTACK_PUBLIC_KEY || window.PAYSTACK_PUBLIC_KEY.includes('YOUR_PAYSTACK')) {
-                alert('Paystack is not configured. Add your public key in js/config.js');
-                return;
-            }
-
             try {
                 const { data, error } = await supabaseClient.functions.invoke('repository-access', {
                     body: {
@@ -1339,41 +1783,46 @@
                 if (error || data?.error) throw new Error(data?.error || error.message);
                 if (data?.signed_url) {
                     openSignedDownload(data.signed_url);
+                    alert('Your private watermarked repository copy is opening. The link expires in 5 minutes.');
                     return;
                 }
 
-                const amount = data?.amount || REPOSITORY_DOWNLOAD_FEE_KOBO;
-                openRepositoryPaystack(item, amount);
+                openRepositoryPaystack(item);
             } catch (err) {
                 alert('Could not start repository download: ' + err.message);
             }
         }
 
-        function openRepositoryPaystack(item, amount) {
-            if (typeof PaystackPop === 'undefined') {
-                alert('Paystack failed to load. Check your internet connection and refresh.');
-                return;
-            }
-
-            const reference = 'KASU-DL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
-            const handler = PaystackPop.setup({
-                key: window.PAYSTACK_PUBLIC_KEY,
-                email: currentUser.email,
-                amount,
-                currency: 'NGN',
-                ref: reference,
-                metadata: {
-                    custom_fields: [
-                        { display_name: 'Project', variable_name: 'project_id', value: item.project_id },
-                        { display_name: 'Download Fee', variable_name: 'fee_type', value: 'repository_download' }
-                    ]
-                },
-                callback: function(response) {
-                    verifyRepositoryDownload(item, response.reference);
+        async function openRepositoryPaystack(item) {
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('repository-access', {
+                    body: {
+                        action: 'initialize_download',
+                        project_id: item.project_id
+                    }
+                });
+                if (error || data?.error) throw new Error(data?.error || error.message);
+                if (data?.signed_url) {
+                    openSignedDownload(data.signed_url);
+                    alert('Your private watermarked repository copy is opening. The link expires in 5 minutes.');
+                    return;
                 }
-            });
+                if (!data?.access_code) throw new Error('Payment initialization did not return an access code.');
 
-            handler.openIframe();
+                resumePaystackCheckout(data.access_code, {
+                    onSuccess: function(response) {
+                        verifyRepositoryDownload(item, paystackReference(response, data.reference));
+                    },
+                    onCancel: function() {
+                        alert('Repository payment was cancelled. You can retry anytime.');
+                    },
+                    onError: function(error) {
+                        alert('Paystack could not open: ' + (error?.message || 'Unknown error'));
+                    }
+                }, data.authorization_url);
+            } catch (err) {
+                alert('Could not initialize repository payment: ' + err.message);
+            }
         }
 
         async function verifyRepositoryDownload(item, reference) {
@@ -1389,7 +1838,7 @@
                 if (error || data?.error) throw new Error(data?.error || error.message);
                 if (!data?.signed_url) throw new Error('Download link was not returned.');
                 openSignedDownload(data.signed_url);
-                alert('Repository access unlocked. Your private download link expires in 5 minutes.');
+                alert('Repository access unlocked. Your private watermarked copy is opening. The link expires in 5 minutes.');
             } catch (err) {
                 alert('Download verification failed: ' + err.message + '. Save this reference: ' + reference);
             }
@@ -1975,7 +2424,7 @@
             }
         }
 
-        function processUpload() {
+        async function processUpload() {
             const projectTitle = document.getElementById('project-title-input').value.trim();
             const projectAbstract = document.getElementById('project-abstract-input').value.trim();
             if (!projectTitle) {
@@ -1994,48 +2443,57 @@
                 alert('Please log in as a student to submit.');
                 return;
             }
-            if (!window.PAYSTACK_PUBLIC_KEY || window.PAYSTACK_PUBLIC_KEY.includes('YOUR_PAYSTACK')) {
-                alert('Paystack is not configured. Add your public key in js/config.js');
-                return;
-            }
             if (typeof PaystackPop === 'undefined') {
                 alert('Paystack failed to load. Check your internet connection and refresh.');
                 return;
             }
 
             const btn = document.getElementById('pay-btn');
-            const profile = currentUserProfile;
-            const reference = generatePaymentReference();
-            const clearanceFeeKobo = getClearanceFeeKobo();
-
             btn.disabled = true;
-            btn.innerText = 'Opening Paystack...';
+            btn.innerText = 'Initializing payment...';
 
-            const handler = PaystackPop.setup({
-                key: window.PAYSTACK_PUBLIC_KEY,
-                email: currentUser.email,
-                amount: clearanceFeeKobo,
-                currency: getTenantCurrency(),
-                ref: reference,
-                metadata: {
-                    custom_fields: [
-                        { display_name: 'Student ID', variable_name: 'student_id', value: currentUser.id },
-                        { display_name: 'Matric', variable_name: 'matric', value: profile?.matric || '' },
-                        { display_name: 'File', variable_name: 'file_name', value: selectedFile.name }
-                    ]
-                },
-                callback: function(response) {
-                    handlePaymentSuccess(response.reference);
-                },
-                onClose: function() {
-                    if (!currentPayment) {
+            try {
+                pendingVerification = {
+                    reference: null,
+                    fileName: selectedFile.name,
+                    filePath: null,
+                    title: projectTitle,
+                    abstract: projectAbstract,
+                    degree: document.getElementById('project-degree-input').value,
+                    userId: currentUser.id
+                };
+
+                const { data, error } = await supabaseClient.functions.invoke('verify-paystack', {
+                    body: { action: 'initialize_clearance' }
+                });
+                if (error || data?.error) throw new Error(data?.error || error.message);
+                if (!data?.access_code || !data?.reference) {
+                    throw new Error('Payment initialization did not return an access code.');
+                }
+
+                pendingVerification.reference = data.reference;
+                sessionStorage.setItem('pendingVerification', JSON.stringify(pendingVerification));
+                btn.innerText = 'Opening Paystack...';
+
+                resumePaystackCheckout(data.access_code, {
+                    onSuccess: function(response) {
+                        handlePaymentSuccess(paystackReference(response, data.reference));
+                    },
+                    onCancel: function() {
                         btn.disabled = false;
                         refreshStudentPaymentCta();
+                    },
+                    onError: function(error) {
+                        btn.disabled = false;
+                        refreshStudentPaymentCta();
+                        alert('Paystack could not open: ' + (error?.message || 'Unknown error'));
                     }
-                }
-            });
-
-            handler.openIframe();
+                }, data.authorization_url);
+            } catch (err) {
+                btn.disabled = false;
+                refreshStudentPaymentCta();
+                alert('Could not initialize payment: ' + err.message);
+            }
         }
 
         async function loadAdminPayments() {
