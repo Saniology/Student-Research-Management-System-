@@ -129,7 +129,26 @@
                 </div>
             </div>
             <div class="glass-card rounded-xl p-6 premium-shadow mb-6">
-                <h2 class="text-lg font-display font-bold text-primary mb-4">1. Upload Final Thesis</h2>
+                <h2 class="text-lg font-display font-bold text-primary mb-4">1. Project Metadata & Final Thesis</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Project Title</label>
+                        <input id="project-title-input" type="text" placeholder="Enter approved project title" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 uppercase">Degree</label>
+                        <select id="project-degree-input" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                            <option value="BSc">BSc</option>
+                            <option value="PGD">PGD</option>
+                            <option value="MSc">MSc</option>
+                            <option value="PhD">PhD</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Abstract</label>
+                        <textarea id="project-abstract-input" rows="4" placeholder="Paste the final abstract for supervisor and library review" class="mt-1 w-full p-3 glass-input rounded-lg text-sm"></textarea>
+                    </div>
+                </div>
                 <label class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-accent transition cursor-pointer bg-slate-50 flex flex-col items-center justify-center">
                     <i class="fas fa-file-pdf text-3xl text-red-500 mb-2"></i>
                     <p class="text-sm font-bold text-primary">Main Thesis PDF</p>
@@ -148,6 +167,17 @@
             <div id="payment-status" class="hidden mb-6 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
                 <p class="text-sm text-emerald-800 font-medium"><i class="fas fa-check-circle mr-1"></i> Payment confirmed</p>
                 <p id="payment-ref" class="text-xs text-emerald-600 mt-1"></p>
+            </div>
+            <div id="project-status-card" class="hidden mb-6 glass-card rounded-xl p-5 premium-shadow border border-slate-200">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Current Project Workflow</p>
+                        <h3 id="project-status-title" class="text-lg font-display font-bold text-primary mt-1">No project submitted yet</h3>
+                        <p id="project-status-meta" class="text-sm text-slate-500 mt-1"></p>
+                    </div>
+                    <span id="project-status-badge" class="self-start md:self-center text-[10px] px-3 py-1 rounded font-bold uppercase bg-slate-100 text-slate-600">Draft</span>
+                </div>
+                <p id="project-status-note" class="text-sm text-slate-600 mt-4"></p>
             </div>
             <div id="verification-retry" class="hidden mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p class="text-sm text-amber-900 font-medium"><i class="fas fa-exclamation-triangle mr-1"></i> Payment received, but verification could not finish.</p>
@@ -411,10 +441,14 @@
                     <p class="text-xs text-slate-400 uppercase font-bold mb-2">Abstract</p>
                     <p id="lib-modal-abstract" class="text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-200"></p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <button class="bg-slate-100 text-primary px-4 py-3 rounded-lg text-xs font-bold hover:bg-slate-200 transition"><i class="fas fa-check-circle mr-1"></i> Verify Metadata</button>
-                    <button class="bg-slate-100 text-primary px-4 py-3 rounded-lg text-xs font-bold hover:bg-slate-200 transition"><i class="fas fa-qrcode mr-1"></i> Generate QR</button>
-                    <button class="bg-emerald-600 text-white px-4 py-3 rounded-lg text-xs font-bold hover:bg-emerald-700 transition"><i class="fas fa-book mr-1"></i> Publish to Catalog</button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    <input id="lib-shelf-input" type="text" placeholder="Shelf number e.g. KASU/CSC/2026/001" class="p-3 glass-input rounded-lg text-sm">
+                    <input id="lib-doi-input" type="text" placeholder="Optional DOI" class="p-3 glass-input rounded-lg text-sm">
+                </div>
+                <textarea id="lib-comment-input" rows="3" placeholder="Cataloging note" class="w-full p-3 glass-input rounded-lg text-sm mb-4"></textarea>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button onclick="publishLibraryProject()" class="bg-emerald-600 text-white px-4 py-3 rounded-lg text-xs font-bold hover:bg-emerald-700 transition"><i class="fas fa-book mr-1"></i> Verify & Publish</button>
+                    <button onclick="closeLibraryModal()" class="bg-slate-100 text-primary px-4 py-3 rounded-lg text-xs font-bold hover:bg-slate-200 transition"><i class="fas fa-times mr-1"></i> Close</button>
                 </div>
             </div>
         </div>
@@ -426,7 +460,17 @@
             <div class="bg-primary p-6 flex justify-between items-center"><span class="text-white font-display font-bold text-lg">Student Profile</span><button onclick="closeModal()" class="text-white/70 hover:text-white"><i class="fas fa-times text-xl"></i></button></div>
             <div class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="md:col-span-1 flex flex-col items-center text-center"><img id="modal-img" src="" class="w-32 h-32 rounded-full border-4 border-accent object-cover mb-3 premium-shadow"><h3 id="modal-name" class="text-xl font-display font-bold text-primary"></h3><p id="modal-matric" class="text-sm text-slate-500 font-light"></p></div>
-                <div class="md:col-span-2 md:border-l border-slate-200 md:pl-8"><h4 class="text-xs font-bold text-slate-500 uppercase mb-1">Project Title</h4><p id="modal-topic" class="text-lg font-medium text-dark mb-4"></p><button onclick="approveStudent()" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700">Approve Project</button></div>
+                <div class="md:col-span-2 md:border-l border-slate-200 md:pl-8">
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-1">Project Title</h4>
+                    <p id="modal-topic" class="text-lg font-medium text-dark mb-4"></p>
+                    <h4 class="text-xs font-bold text-slate-500 uppercase mb-1">Abstract</h4>
+                    <p id="modal-abstract" class="text-sm text-slate-600 mb-4 max-h-36 overflow-y-auto"></p>
+                    <textarea id="modal-review-comment" rows="3" placeholder="Revision comment or approval note" class="w-full p-3 glass-input rounded-lg text-sm mb-3"></textarea>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button onclick="approveStudent()" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700">Approve Project</button>
+                        <button onclick="requestStudentRevision()" class="w-full bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-600">Request Revision</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -457,8 +501,12 @@
         let currentUser = null;
         let currentUserProfile = null;
         let currentPayment = null;
+        let currentProject = null;
         let selectedFile = null;
         let pendingVerification = null;
+        let supervisorProjects = [];
+        let libraryQueueProjects = [];
+        let selectedLibraryProject = null;
         let currentLibraryView = 'grid'; // 'grid' or 'list'
         const REPOSITORY_FEE_KOBO = 200000; // ₦2,000
 

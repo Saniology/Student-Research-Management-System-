@@ -41,7 +41,15 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
-    const { reference, file_name, file_path } = await req.json();
+    const {
+      reference,
+      file_name,
+      file_path,
+      title,
+      abstract,
+      degree,
+      file_size_bytes,
+    } = await req.json();
     if (!reference || !file_name) {
       return jsonResponse({ error: "Missing payment reference or file name" }, 400);
     }
@@ -100,6 +108,12 @@ Deno.serve(async (req) => {
       );
     }
 
+    const [profile] = await supabaseRest(
+      supabaseUrl,
+      supabaseServiceKey,
+      `/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,institution_id,department_id,department,supervisor_id,matric`,
+    );
+
     const [submission] = await supabaseRest(
       supabaseUrl,
       supabaseServiceKey,
@@ -115,7 +129,39 @@ Deno.serve(async (req) => {
       },
     );
 
+    const projectTitle =
+      typeof title === "string" && title.trim()
+        ? title.trim()
+        : file_name.replace(/\.pdf$/i, "").replace(/[_-]+/g, " ");
+
+    let createdProjectId: string | null = null;
+
     try {
+      const [project] = await supabaseRest(
+        supabaseUrl,
+        supabaseServiceKey,
+        "/projects?select=*",
+        {
+          method: "POST",
+          body: {
+            institution_id: profile?.institution_id || null,
+            student_id: user.id,
+            supervisor_id: profile?.supervisor_id || null,
+            department_id: profile?.department_id || null,
+            submission_id: submission.id,
+            title: projectTitle,
+            abstract: typeof abstract === "string" && abstract.trim() ? abstract.trim() : null,
+            degree: typeof degree === "string" && degree.trim() ? degree.trim() : null,
+            file_name,
+            file_path,
+            file_size_bytes: Number.isFinite(file_size_bytes) ? file_size_bytes : null,
+            mime_type: "application/pdf",
+            status: "supervisor_review",
+          },
+        },
+      );
+      createdProjectId = project.id;
+
       const [payment] = await supabaseRest(
         supabaseUrl,
         supabaseServiceKey,
@@ -125,18 +171,65 @@ Deno.serve(async (req) => {
           body: {
             student_id: user.id,
             submission_id: submission.id,
+            project_id: project.id,
+            payer_id: user.id,
             amount: transaction.amount,
             currency: transaction.currency || "NGN",
             paystack_reference: reference,
             paystack_transaction_id: String(transaction.id),
             status: "success",
+            transaction_type: "clearance_fee",
             paid_at: transaction.paid_at || new Date().toISOString(),
+            metadata: {
+              channel: transaction.channel || null,
+              customer_email: transaction.customer?.email || null,
+            },
           },
         },
       );
 
-      return jsonResponse({ success: true, payment, submission });
+      await supabaseRest(
+        supabaseUrl,
+        supabaseServiceKey,
+        "/project_reviews",
+        {
+          method: "POST",
+          body: {
+            project_id: project.id,
+            actor_id: user.id,
+            action: "submitted",
+            comment: "Project submitted after successful clearance fee payment.",
+            to_status: "supervisor_review",
+          },
+        },
+      );
+
+      await supabaseRest(
+        supabaseUrl,
+        supabaseServiceKey,
+        "/audit_logs",
+        {
+          method: "POST",
+          body: {
+            actor_id: user.id,
+            action: "clearance_payment_verified",
+            entity_type: "project",
+            entity_id: project.id,
+            metadata: { reference, amount: transaction.amount },
+          },
+        },
+      );
+
+      return jsonResponse({ success: true, payment, submission, project });
     } catch (err) {
+      if (createdProjectId) {
+        await supabaseRest(
+          supabaseUrl,
+          supabaseServiceKey,
+          `/projects?id=eq.${encodeURIComponent(createdProjectId)}`,
+          { method: "DELETE" },
+        );
+      }
       await supabaseRest(
         supabaseUrl,
         supabaseServiceKey,
