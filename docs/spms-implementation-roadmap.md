@@ -113,20 +113,27 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Logged-in users have a notification center with unread badges and mark-as-read support.
 - Admin reports can export student registers, project lifecycle/accreditation data, payment split records, financial PDFs, and archive/audit logs.
 - Admin report automation can create recurring schedules, store report recipients, run due reports, generate one-off report files, email private signed links when configured, and download generated CSV artifacts.
+- Production email deliverability handover is documented for SPF, DKIM, DMARC, authenticated sender alignment, bounces, complaints, suppression lists, and provider rollback.
 - Admin analytics now include workflow funnel, revenue split, monthly revenue trend, publication progress, and workflow signal panels backed by live records.
 - Frontend tenant resolution supports URL slug selection, configured default tenant slug, custom domain lookup through `institutions.allowed_domains`, and tenant-specific branding/config.
+- Public portal UI now uses a visual first screen, restrained card radius, clear action hierarchy, and mobile-first viewport behavior.
 - Cloudflare DNS tenant provisioning can be previewed or applied through `npm run dns:cloudflare`.
 - Health monitoring is available through the `health-check` Edge Function.
 - `npm run verify:a11y` checks static accessibility basics: document metadata, image alt text, form labels, named buttons, focus safety, and responsive type guardrails.
+- `npm run verify:db` checks SQL run order, RLS coverage, foreign keys, indexes, constraints, private storage buckets, and `SECURITY DEFINER` search paths.
+- `npm run verify:email` checks production email deliverability handover, mail-secret safety, signed report links, and scheduled report fallback behavior.
+- `npm run verify:render` captures Chrome/Chromium desktop and mobile screenshots from the local app and validates that rendered pages are non-trivial PNGs.
+- `npm run verify:roles` renders local-only student, supervisor, library, and admin preview surfaces in Chrome/Chromium and checks role-specific DOM content plus screenshots.
 - `npm run verify:security` checks secret hygiene, RLS coverage, private storage, Edge Function CORS/auth patterns, and payment safety.
 - `npm run verify:ui` checks role dashboard surfaces, inline actions, duplicate ids, and admin UI regression guards.
+- `npm run verify:workflow` checks frontend/Edge Function action contracts, verification types, workflow statuses, transaction types, report types, and role checklist coverage.
 - `npm run verify:release` checks release docs, env template coverage, and obvious private secret leaks.
 - `npm run verify:lifecycle` validates the static app, Edge Functions, schema capabilities, deploy script, and local server smoke status.
-- GitHub Actions workflow runs the lifecycle verifier for pushes and pull requests.
+- GitHub Actions workflow runs rendered UI screenshots, role rendering, and lifecycle verification for pushes and pull requests.
 
 ## Still Remaining
 
-- Email domain authentication and deliverability monitoring for production mail.
+- Real provider-side email domain authentication and deliverability monitoring with institution DNS access.
 - Provider-specific production DNS credentials and hosting target values for each institution.
 - Full frontend migration from one large `index.html` into a maintainable React/Next.js app.
 - Full Playwright role automation against seeded Supabase test data.

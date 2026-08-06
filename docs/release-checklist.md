@@ -10,9 +10,15 @@ Use this checklist before a production handover or institutional demo.
 - Copy `.env.production.example` to `.env.production.local` for owner deployment
   work, then fill in real values locally.
 - Run `npm run verify:a11y`.
+- Run `npm run verify:db`.
+- Run `npm run verify:email`.
+- Start the local server and run `npm run verify:render`.
+- With the local server still running, run `npm run verify:roles`.
 - Run `npm run verify:security`.
+- Run `npm run verify:workflow`.
 - Run `npm run verify:release`.
 - Run `npm run verify:lifecycle`.
+- Confirm the GitHub Actions `Verify SPMS` workflow passes on the release branch.
 
 ## Database
 
@@ -44,6 +50,8 @@ Use this checklist before a production handover or institutional demo.
 
 ## Roles
 
+- Run `npm run verify:roles` to render local student, supervisor, library, and
+  admin preview surfaces in Chrome/Chromium.
 - Student: sign up or sign in, upload project metadata and PDF, initialize
   payment, see workflow status.
 - Supervisor: load assigned projects, approve one, request revision on one.
@@ -57,7 +65,9 @@ Use this checklist before a production handover or institutional demo.
 - Create a scheduled report.
 - Run due reports manually or through cron.
 - Download a generated report from the private `reports` bucket.
-- If email delivery is enabled, confirm recipients receive signed private links.
+- If email delivery is enabled, complete `docs/production-email-deliverability.md`.
+- Confirm recipients receive signed private links from an authenticated sender
+  domain.
 
 ## Tenant Domain
 

@@ -5,10 +5,16 @@
   "type": "commonjs",
   "scripts": {
     "dns:cloudflare": "node scripts/provision-cloudflare-domain.js",
+    "verify:deploy": "node scripts/verify-supabase-deployment.js",
     "verify:a11y": "node scripts/verify-accessibility.js",
+    "verify:db": "node scripts/verify-database-schema.js",
+    "verify:email": "node scripts/verify-email-deliverability.js",
     "verify:release": "node scripts/verify-release-readiness.js",
+    "verify:render": "node scripts/verify-rendered-ui.js --required",
+    "verify:roles": "node scripts/verify-role-rendering.js --required",
     "verify:security": "node scripts/verify-security.js",
     "verify:ui": "node scripts/verify-ui-smoke.js",
+    "verify:workflow": "node scripts/verify-workflow-contracts.js",
     "verify:lifecycle": "node scripts/verify-lifecycle.js"
   }
 }

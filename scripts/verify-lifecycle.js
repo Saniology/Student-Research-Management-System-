@@ -103,13 +103,21 @@ function checkRequiredFiles() {
     'supabase/functions/health-check/index.ts',
     'scripts/provision-cloudflare-domain.js',
     'scripts/verify-accessibility.js',
+    'scripts/verify-database-schema.js',
+    'scripts/verify-email-deliverability.js',
     'scripts/verify-release-readiness.js',
+    'scripts/verify-rendered-ui.js',
+    'scripts/verify-role-rendering.js',
     'scripts/verify-security.js',
+    'scripts/verify-supabase-deployment.js',
     'scripts/verify-ui-smoke.js',
+    'scripts/verify-workflow-contracts.js',
     'docs/local-development-setup.md',
+    'docs/production-email-deliverability.md',
     'docs/production-deployment-runbook.md',
     'docs/release-checklist.md',
     'docs/spms-implementation-roadmap.md',
+    '.github/workflows/verify.yml',
   ].forEach(assertFile);
 }
 
@@ -175,22 +183,57 @@ function checkProductCapabilities() {
   assertContains('index.html', /unsplash\.com\/photo-1497366754035-f200968a6e72/, 'frontend hero uses a real visual asset');
   assertContains('index.html', /\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/, 'frontend enforces restrained card radius standard');
   assertContains('index.html', /focus-visible/, 'frontend preserves keyboard focus styling');
+  assertContains('index.html', /preview_role/, 'frontend exposes local role preview routes');
+  assertContains('index.html', /isRolePreviewAllowed/, 'frontend gates role previews');
+  assertContains('index.html', /isLocalHost\(window\.location\.hostname\)/, 'role previews are local-host only');
 
   assertContains('package.json', /"dns:cloudflare"/, 'Cloudflare DNS provisioning command exists');
+  assertContains('package.json', /"verify:deploy"/, 'Supabase deployment smoke command exists');
   assertContains('package.json', /"verify:a11y"/, 'accessibility verification command exists');
+  assertContains('package.json', /"verify:db"/, 'database schema verification command exists');
+  assertContains('package.json', /"verify:email"/, 'email deliverability verification command exists');
   assertContains('package.json', /"verify:release"/, 'release readiness verification command exists');
+  assertContains('package.json', /"verify:render"/, 'rendered UI verification command exists');
+  assertContains('package.json', /"verify:roles"/, 'role rendering verification command exists');
   assertContains('package.json', /"verify:security"/, 'security verification command exists');
   assertContains('package.json', /"verify:ui"/, 'UI smoke verification command exists');
+  assertContains('package.json', /"verify:workflow"/, 'workflow contract verification command exists');
   assertContains('scripts/provision-cloudflare-domain.js', /CLOUDFLARE_API_TOKEN/, 'DNS provisioning uses Cloudflare API token');
   assertContains('scripts/provision-cloudflare-domain.js', /--dry-run/, 'DNS provisioning supports dry runs');
   assertContains('scripts/provision-cloudflare-domain.js', /allowed_domains/, 'DNS provisioning prints Supabase tenant mapping guidance');
   assertContains('docs/production-deployment-runbook.md', /Tenant Domains/, 'production runbook documents tenant domains');
   assertContains('docs/production-deployment-runbook.md', /npm run dns:cloudflare/, 'production runbook documents DNS automation');
+  assertContains('docs/production-deployment-runbook.md', /npm run verify:deploy/, 'production runbook documents deployment smoke verification');
   assertContains('docs/production-deployment-runbook.md', /health-check/, 'production runbook documents health checks');
+  assertContains('docs/production-deployment-runbook.md', /production-email-deliverability\.md/, 'production runbook links email deliverability guide');
   assertContains('docs/release-checklist.md', /Payments/, 'release checklist documents payment gate');
   assertContains('docs/release-checklist.md', /health-check/, 'release checklist documents health check gate');
+  assertContains('docs/spms-implementation-roadmap.md', /Public portal UI/, 'roadmap documents portal UI standard');
+  assertContains('.github/workflows/verify.yml', /npm run verify:render/, 'GitHub Actions runs rendered UI verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions runs role rendering verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:db/, 'GitHub Actions runs database schema verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:email/, 'GitHub Actions runs email deliverability verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:workflow/, 'GitHub Actions runs workflow contract verification');
+  assertContains('.github/workflows/verify.yml', /python3 -m http\.server 5500/, 'GitHub Actions starts local static app');
+  assertContains('.github/workflows/verify.yml', /npm run verify:lifecycle/, 'GitHub Actions runs lifecycle verification');
+  assertContains('scripts/verify-database-schema.js', /SECURITY DEFINER/, 'database verifier checks SECURITY DEFINER hardening');
+  assertContains('scripts/verify-database-schema.js', /requiredForeignKeys/, 'database verifier checks foreign key contracts');
+  assertContains('scripts/verify-database-schema.js', /requiredIndexes/, 'database verifier checks performance indexes');
+  assertContains('scripts/verify-email-deliverability.js', /DMARC/, 'email verifier checks DMARC guidance');
+  assertContains('scripts/verify-email-deliverability.js', /suppression/, 'email verifier checks suppression monitoring');
+  assertContains('scripts/verify-email-deliverability.js', /createSignedReportUrl/, 'email verifier checks signed report links');
+  assertContains('scripts/verify-workflow-contracts.js', /edgeContracts/, 'workflow verifier checks Edge Function contracts');
+  assertContains('scripts/verify-workflow-contracts.js', /projectStatuses/, 'workflow verifier checks project statuses');
+  assertContains('scripts/verify-workflow-contracts.js', /verificationTypes/, 'workflow verifier checks verification lookup types');
   assertContains('scripts/verify-release-readiness.js', /PAYSTACK_SECRET_KEY/, 'release verifier checks required secrets template');
+  assertContains('scripts/verify-release-readiness.js', /verify:render/, 'release verifier checks rendered UI gate');
+  assertContains('scripts/verify-release-readiness.js', /verify:roles/, 'release verifier checks role rendering gate');
+  assertContains('scripts/verify-release-readiness.js', /verify:deploy/, 'release verifier checks deployment smoke gate');
   assertContains('scripts/verify-release-readiness.js', /no obvious private secrets/, 'release verifier checks secret hygiene');
+  assertContains('scripts/verify-supabase-deployment.js', /requiredFunctions/, 'deployment verifier checks required Edge Functions');
+  assertContains('scripts/verify-supabase-deployment.js', /NOT_FOUND/, 'deployment verifier detects missing functions');
+  assertContains('scripts/verify-supabase-deployment.js', /access-control-allow-origin/, 'deployment verifier validates CORS headers');
+  assertContains('scripts/verify-supabase-deployment.js', /health-check/, 'deployment verifier checks production health endpoint');
   assertContains('SECURITY.md', /Secret Handling/, 'security policy documents secret handling');
   assertContains('scripts/verify-security.js', /Payment Safety|checkPaymentSafety/, 'security verifier checks payment safety');
   assertContains('scripts/verify-security.js', /ENABLE ROW LEVEL SECURITY/, 'security verifier checks RLS coverage');
@@ -199,6 +242,12 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-ui-smoke.js', /inline onclick handlers resolve/, 'UI smoke verifier checks inline handlers');
   assertContains('scripts/verify-ui-smoke.js', /role views exist/, 'UI smoke verifier checks role surfaces');
   assertContains('scripts/verify-ui-smoke.js', /portal home shell exists/, 'UI smoke verifier checks portal shell standard');
+  assertContains('scripts/verify-rendered-ui.js', /--screenshot/, 'rendered UI verifier captures browser screenshots');
+  assertContains('scripts/verify-rendered-ui.js', /desktop/, 'rendered UI verifier covers desktop viewport');
+  assertContains('scripts/verify-rendered-ui.js', /mobile/, 'rendered UI verifier covers mobile viewport');
+  assertContains('scripts/verify-role-rendering.js', /preview_role/, 'role rendering verifier uses local preview routes');
+  assertContains('scripts/verify-role-rendering.js', /--dump-dom/, 'role rendering verifier checks browser DOM');
+  assertContains('scripts/verify-role-rendering.js', /--screenshot/, 'role rendering verifier captures role screenshots');
 }
 
 function checkDeployConfig() {
@@ -235,8 +284,24 @@ function checkUiSmoke() {
   run('node', ['scripts/verify-ui-smoke.js'], 'UI smoke verification passes');
 }
 
+function checkRenderedUi() {
+  run('node', ['scripts/verify-rendered-ui.js'], 'rendered UI verification passes or skips cleanly');
+}
+
+function checkRoleRendering() {
+  run('node', ['scripts/verify-role-rendering.js'], 'role rendering verification passes or skips cleanly');
+}
+
 function checkAccessibility() {
   run('node', ['scripts/verify-accessibility.js'], 'accessibility verification passes');
+}
+
+function checkDatabaseSchema() {
+  run('node', ['scripts/verify-database-schema.js'], 'database schema verification passes');
+}
+
+function checkEmailDeliverability() {
+  run('node', ['scripts/verify-email-deliverability.js'], 'email deliverability verification passes');
 }
 
 function checkReleaseReadiness() {
@@ -245,6 +310,10 @@ function checkReleaseReadiness() {
 
 function checkSecurity() {
   run('node', ['scripts/verify-security.js'], 'security verification passes');
+}
+
+function checkWorkflowContracts() {
+  run('node', ['scripts/verify-workflow-contracts.js'], 'workflow contract verification passes');
 }
 
 function checkDenoFunctions() {
@@ -310,7 +379,12 @@ checkProductCapabilities();
 checkDeployConfig();
 checkAccessibility();
 checkUiSmoke();
+checkRenderedUi();
+checkRoleRendering();
+checkDatabaseSchema();
+checkEmailDeliverability();
 checkSecurity();
+checkWorkflowContracts();
 checkReleaseReadiness();
 checkDenoFunctions();
 checkLocalServer();

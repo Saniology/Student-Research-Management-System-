@@ -4,6 +4,9 @@ Use this checklist when preparing SPMS for a real institution.
 
 For the final handover gate, also use `docs/release-checklist.md`.
 
+For scheduled report email delivery, also use
+`docs/production-email-deliverability.md` before setting live sender secrets.
+
 ## 1. Database
 
 Apply SQL in this order from the Supabase SQL Editor:
@@ -112,6 +115,9 @@ Admins can create schedules from Admin > Reports. Generated files are stored in
 the private `reports` bucket. When email secrets are configured, recipients get a
 private signed download link.
 
+Before setting live email secrets, authenticate the sending domain and complete
+`docs/production-email-deliverability.md`.
+
 External cron can run due schedules:
 
 ```bash
@@ -127,8 +133,11 @@ Before handing over:
 
 ```bash
 npm run verify:a11y
+npm run verify:db
+npm run verify:email
 npm run verify:security
 npm run verify:ui
+npm run verify:workflow
 npm run verify:release
 npm run verify:lifecycle
 ```
@@ -137,7 +146,10 @@ Expected result:
 
 ```text
 Accessibility verification complete: 0 failure(s).
+Database schema verification complete: 0 failure(s).
+Email deliverability verification complete: 0 failure(s).
 Security verification complete: 0 failure(s).
+Workflow contract verification complete: 0 failure(s).
 Release readiness verification complete: 0 failure(s).
 Verification complete: 0 failure(s), 0 warning(s).
 ```

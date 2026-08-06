@@ -4,9 +4,17 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-spms-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lifecycle:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,6 +28,40 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+
+      - name: Show browser version
+        run: google-chrome --version || chromium-browser --version || chromium --version
+
+      - name: Start static app
+        run: |
+          python3 -m http.server 5500 --bind 127.0.0.1 > /tmp/spms-http.log 2>&1 &
+          echo "$!" > /tmp/spms-http.pid
+
+      - name: Wait for static app
+        run: |
+          for attempt in {1..20}; do
+            if curl -fsS http://127.0.0.1:5500/ > /dev/null; then
+              exit 0
+            fi
+            sleep 0.5
+          done
+          cat /tmp/spms-http.log
+          exit 1
+
+      - name: Verify rendered UI
+        run: npm run verify:render
+
+      - name: Verify role rendering
+        run: npm run verify:roles
+
+      - name: Verify database schema
+        run: npm run verify:db
+
+      - name: Verify email deliverability handover
+        run: npm run verify:email
+
+      - name: Verify workflow contracts
+        run: npm run verify:workflow
 
       - name: Verify lifecycle
         run: npm run verify:lifecycle

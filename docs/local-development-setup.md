@@ -15,6 +15,7 @@ files.
 - Git.
 - A modern browser.
 - Node.js 20 or newer, used for the project verification command.
+- Google Chrome or Chromium, used for rendered desktop/mobile UI checks.
 - Python 3, used only to serve the static app locally.
 - `curl` and `unzip`, used by the project-local Deno install command.
 - Internet access, because the app talks to the hosted Supabase project, Paystack,
@@ -218,12 +219,33 @@ dashboard surfaces, duplicate HTML ids, and small admin layout issues.
 For owner handover/release readiness:
 
 ```bash
+npm run verify:db
+npm run verify:email
 npm run verify:security
+npm run verify:workflow
 npm run verify:release
 ```
 
-These checks cover security posture, the production env template, release
+These checks cover database schema contracts, email deliverability handover,
+security posture, workflow contracts, the production env template, release
 checklist, and obvious private secret leaks in release-facing files.
+
+With the local server running, check actual browser rendering:
+
+```bash
+npm run verify:render
+npm run verify:roles
+```
+
+This captures desktop and mobile screenshots with Chrome/Chromium, then opens
+local-only role previews for student, supervisor, library, and admin dashboards.
+The role previews are available only from local hosts through
+`?preview_role=student`, `?preview_role=teacher`, `?preview_role=library`, or
+`?preview_role=admin`.
+
+GitHub Actions runs the same rendered UI, role rendering, and full lifecycle
+verifiers on pushes and pull requests. Keep the local server command working
+because CI uses the same static serving path.
 
 Check the static app:
 

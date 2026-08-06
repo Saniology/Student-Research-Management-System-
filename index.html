@@ -77,7 +77,7 @@
             box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
         }
         .portal-hero {
-            min-height: calc(100vh - 5rem);
+            min-height: min(760px, calc(100vh - 8rem));
             display: flex;
             align-items: center;
             padding: 4rem 1rem 3rem;
@@ -124,7 +124,12 @@
             outline-offset: 2px;
         }
         @media (max-width: 640px) {
-            .portal-hero { align-items: flex-start; padding-top: 2rem; }
+            .portal-hero {
+                min-height: auto;
+                align-items: flex-start;
+                padding-top: 2rem;
+                padding-bottom: 2.25rem;
+            }
         }
     </style>
 </head>
@@ -164,7 +169,7 @@
                     </div>
                 </div>
 
-                <div class="hero-panel rounded-xl p-5 md:p-6">
+                <div class="hero-panel hidden md:block rounded-xl p-5 md:p-6">
                     <div class="flex items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-5">
                         <div>
                             <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Live Workflow Desk</p>
@@ -1670,6 +1675,165 @@
             else if (role === 'teacher') loadTeacherStudents();
             else if (role === 'library') initLibrary();
             else if (role === 'admin') { loadCatalogue(); loadAdminDashboard(); loadAdminSettings(); loadAdminPayments(); }
+        }
+
+        function rolePreviewTarget() {
+            const role = new URLSearchParams(window.location.search).get('preview_role');
+            return ['student', 'teacher', 'library', 'admin'].includes(role) ? role : '';
+        }
+
+        function isRolePreviewAllowed() {
+            return isLocalHost(window.location.hostname) && Boolean(rolePreviewTarget());
+        }
+
+        function previewProfileForRole(role) {
+            const profiles = {
+                student: {
+                    full_name: 'Musa Abdullahi',
+                    matric: 'KASU/SCI/20/123',
+                    department: 'Computer Science',
+                    email: 'student.preview@kasu.edu.ng',
+                },
+                teacher: {
+                    full_name: 'Dr. Sani Musa',
+                    matric: '',
+                    department: 'Computer Science',
+                    email: 'supervisor.preview@kasu.edu.ng',
+                },
+                library: {
+                    full_name: 'Library Officer',
+                    matric: '',
+                    department: 'University Library',
+                    email: 'library.preview@kasu.edu.ng',
+                },
+                admin: {
+                    full_name: 'SPMS Administrator',
+                    matric: '',
+                    department: 'Registry',
+                    email: 'admin.preview@kasu.edu.ng',
+                },
+            };
+            return { ...profiles[role], role };
+        }
+
+        function seedRolePreviewState(role) {
+            currentInstitution = currentInstitution || tenantFallback();
+            currentSystemConfig = currentSystemConfig || {
+                clearance_fee_kobo: REPOSITORY_FEE_KOBO,
+                repository_download_fee_kobo: REPOSITORY_DOWNLOAD_FEE_KOBO,
+                currency: 'NGN',
+            };
+            currentUserRole = role;
+            currentUserProfile = previewProfileForRole(role);
+            currentUser = {
+                id: `preview-${role}-user`,
+                email: currentUserProfile.email,
+                user_metadata: currentUserProfile,
+            };
+            document.documentElement.dataset.rolePreview = role;
+        }
+
+        function renderStudentPreview() {
+            document.getElementById('student-name').innerText = currentUserProfile.full_name;
+            document.getElementById('student-matric').innerText = 'Matric: ' + currentUserProfile.matric;
+            document.getElementById('student-dept').innerText = currentUserProfile.department;
+            document.getElementById('student-avatar').src =
+                'https://ui-avatars.com/api/?name=' + encodeURIComponent(currentUserProfile.full_name) + '&background=065F46&color=fff';
+            document.getElementById('project-title-input').value = 'Web-Based E-Voting System';
+            document.getElementById('project-degree-input').value = 'BSc';
+            document.getElementById('project-abstract-input').value = 'A final-year project workflow preview for supervisor review, library publication, payment clearance, and repository verification.';
+            currentProject = {
+                title: 'Web-Based E-Voting System',
+                degree: 'BSc',
+                status: 'published',
+                revision_note: 'Published by the library and ready for final clearance receipt verification.',
+            };
+            markPaymentSuccess({
+                amount: getClearanceFeeKobo(),
+                paystack_reference: 'SPMS-PREVIEW-STUDENT',
+                paid_at: new Date().toISOString(),
+            });
+        }
+
+        function renderSupervisorPreview() {
+            supervisorProjects = assignedStudents.map((student, index) => ({
+                ...student,
+                id: `preview-${student.id}`,
+                status: index % 3 === 0 ? 'supervisor_review' : index % 3 === 1 ? 'revision_requested' : 'supervisor_approved',
+                abstract: 'Role preview record for validating supervisor review, revision, and approval controls.',
+                isReal: false,
+            }));
+            const tableBody = document.getElementById('student-table-body');
+            tableBody.innerHTML = supervisorProjects.map(s => `
+                <tr class="hover:bg-slate-50 cursor-pointer" onclick="viewStudent('${s.id}')">
+                    <td class="p-4 flex items-center space-x-3"><img src="${escapeHtml(s.img)}" class="w-10 h-10 rounded-full object-cover" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Student&background=065F46&color=fff'"><div><p class="font-bold text-primary">${escapeHtml(s.name)}</p><p class="text-xs text-slate-400">${escapeHtml(s.matric)}</p></div></td>
+                    <td class="p-4"><span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${escapeHtml(s.degree)}</span></td>
+                    <td class="p-4 text-slate-600 max-w-xs">${escapeHtml(s.topic)}</td>
+                    <td class="p-4"><span class="text-[10px] ${statusClass(s.status)} px-2 py-1 rounded font-bold uppercase">${escapeHtml(statusLabel(s.status))}</span></td>
+                    <td class="p-4 text-right" onclick="event.stopPropagation()">
+                        <button onclick="viewStudent('${s.id}')" class="bg-primary text-white px-3 py-1 rounded text-xs font-bold">Review</button>
+                    </td>
+                </tr>
+            `).join('');
+            setText('teacher-workflow-status', 'Preview queue loaded for supervisor approval, revision, and publication handoff checks.');
+        }
+
+        function renderLibraryPreview() {
+            libraryQueueProjects = libraryProjects.slice(0, 9).map((project, index) => ({
+                ...project,
+                id: `preview-${project.id}`,
+                status: index % 2 === 0 ? 'supervisor_approved' : 'published',
+                shelf_number: `KASU-CS-${String(index + 1).padStart(3, '0')}`,
+                doi: `10.0000/spms.preview.${index + 1}`,
+                qr_payload: `SPMS-PREVIEW-CATALOG-${index + 1}`,
+                isReal: false,
+            }));
+            document.querySelector('#library .text-2xl').innerText = libraryQueueProjects.length + ' Projects';
+            const deptSelect = document.getElementById('lib-dept');
+            const departments = [...new Set(libraryQueueProjects.map(p => p.dept))].sort();
+            deptSelect.innerHTML = '<option value="All">All Departments</option>' + departments.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+            filterLibrary();
+        }
+
+        function renderAdminPreview() {
+            setMetric('metric-total-students', '18,425');
+            setMetric('metric-total-revenue', formatNaira(842500000));
+            setMetric('metric-total-uploads', '4,021');
+            setMetric('metric-pending-approvals', '216');
+            const workflow = document.getElementById('analytics-workflow-chart');
+            if (workflow) {
+                workflow.innerHTML = ['Submitted', 'Supervisor Approved', 'Library Published', 'Cleared'].map((label, index) => `
+                    <div>
+                        <div class="flex justify-between text-xs font-bold text-slate-600 mb-1"><span>${label}</span><span>${[920, 780, 650, 612][index]}</span></div>
+                        <div class="h-3 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-primary" style="width:${[92, 78, 65, 61][index]}%"></div></div>
+                    </div>
+                `).join('');
+            }
+            const revenue = document.getElementById('analytics-revenue-chart');
+            if (revenue) revenue.innerHTML = '<p class="text-sm text-slate-600">Institution share: 80% • SPMS provider share: 20%</p>';
+            const monthly = document.getElementById('analytics-monthly-chart');
+            if (monthly) monthly.innerHTML = '<p class="text-sm text-slate-600">Preview trend: ₦8.4m reconciled across clearance and repository payments.</p>';
+            const publication = document.getElementById('analytics-publication-chart');
+            if (publication) publication.innerHTML = '<p class="text-sm text-slate-600">Published catalog records are ready for public QR verification.</p>';
+            setText('analytics-status', 'Preview analytics loaded for admin verification.');
+            const signals = document.getElementById('analytics-signal-list');
+            if (signals) signals.innerHTML = '<li>216 projects awaiting staff action.</li><li>612 students cleared this cycle.</li>';
+            const departments = document.getElementById('department-activity-list');
+            if (departments) departments.innerHTML = '<p class="text-sm text-slate-600">Computer Science leads preview activity with 340 uploads.</p>';
+        }
+
+        function applyRolePreview() {
+            if (!isRolePreviewAllowed()) return false;
+            const role = rolePreviewTarget();
+            seedRolePreviewState(role);
+            closeAuthModal();
+            navigate(role);
+            if (role === 'student') renderStudentPreview();
+            else if (role === 'teacher') renderSupervisorPreview();
+            else if (role === 'library') renderLibraryPreview();
+            else if (role === 'admin') renderAdminPreview();
+            updateNav();
+            return true;
         }
 
         async function handleLogin() {
@@ -3479,7 +3643,10 @@
             alert('Revision request sent to the student.');
         }
 
-        loadTenantContext().then(() => restoreSession()).finally(() => {
+        loadTenantContext().then(() => {
+            if (applyRolePreview()) return null;
+            return restoreSession();
+        }).finally(() => {
             updateNav();
             loadPublicProjects();
         });
