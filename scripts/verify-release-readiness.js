@@ -15,6 +15,7 @@ const requiredFiles = [
   'SECURITY.md',
   'scripts/verify-lifecycle.js',
   'scripts/verify-database-schema.js',
+  'scripts/verify-edge-functions.js',
   'scripts/verify-email-deliverability.js',
   'scripts/verify-rendered-ui.js',
   'scripts/verify-role-interactions.js',
@@ -85,6 +86,7 @@ function checkReleaseDocs() {
   assertContains('docs/release-checklist.md', /Database/, 'release checklist includes database gate');
   assertContains('docs/release-checklist.md', /npm run verify:db/, 'release checklist includes database verifier');
   assertContains('docs/release-checklist.md', /npm run verify:deploy/, 'release checklist includes deployment smoke verifier');
+  assertContains('docs/release-checklist.md', /npm run verify:edge/, 'release checklist includes Edge Function contract verifier');
   assertContains('docs/release-checklist.md', /npm run verify:email/, 'release checklist includes email deliverability verifier');
   assertContains('docs/release-checklist.md', /Edge Functions/, 'release checklist includes function gate');
   assertContains('docs/release-checklist.md', /Payments/, 'release checklist includes payment gate');
@@ -108,6 +110,7 @@ function checkReleaseDocs() {
   assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions includes role rendering gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:interactions/, 'GitHub Actions includes role interaction gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:db/, 'GitHub Actions includes database gate');
+  assertContains('.github/workflows/verify.yml', /npm run verify:edge/, 'GitHub Actions includes Edge Function contract gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:email/, 'GitHub Actions includes email deliverability gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:workflow/, 'GitHub Actions includes workflow contract gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:lifecycle/, 'GitHub Actions includes lifecycle gate');

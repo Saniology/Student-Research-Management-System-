@@ -8,6 +8,7 @@
     "verify:deploy": "node scripts/verify-supabase-deployment.js",
     "verify:a11y": "node scripts/verify-accessibility.js",
     "verify:db": "node scripts/verify-database-schema.js",
+    "verify:edge": "node scripts/verify-edge-functions.js",
     "verify:email": "node scripts/verify-email-deliverability.js",
     "verify:release": "node scripts/verify-release-readiness.js",
     "verify:render": "node scripts/verify-rendered-ui.js --required",

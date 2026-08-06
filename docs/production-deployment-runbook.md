@@ -150,6 +150,7 @@ Before handing over:
 ```bash
 npm run verify:a11y
 npm run verify:db
+npm run verify:edge
 npm run verify:email
 npm run verify:deploy
 npm run verify:security
@@ -164,6 +165,7 @@ Expected result:
 ```text
 Accessibility verification complete: 0 failure(s).
 Database schema verification complete: 0 failure(s).
+Edge Function contract verification complete: 0 failure(s).
 Email deliverability verification complete: 0 failure(s).
 Security verification complete: 0 failure(s).
 Workflow contract verification complete: 0 failure(s).

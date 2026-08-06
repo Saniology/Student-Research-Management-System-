@@ -11,6 +11,7 @@ Use this checklist before a production handover or institutional demo.
   work, then fill in real values locally.
 - Run `npm run verify:a11y`.
 - Run `npm run verify:db`.
+- Run `npm run verify:edge`.
 - Run `npm run verify:email`.
 - Start the local server and run `npm run verify:render`.
 - With the local server still running, run `npm run verify:roles`.
@@ -37,6 +38,8 @@ Use this checklist before a production handover or institutional demo.
 - Set optional operational secrets as needed:
   `REPORT_CRON_SECRET`, `HEALTH_CHECK_SECRET`, `RESEND_API_KEY`, `REPORT_FROM_EMAIL`,
   `REPORT_DELIVERY_EMAILS`, `REPORT_LINK_TTL_SECONDS`.
+- Run `npm run verify:edge` before deployment to confirm CORS, method guards,
+  action names, function config, and deploy script coverage.
 - Deploy all functions with `bash supabase/deploy-verify-paystack.sh`.
 - Run `npm run verify:deploy`.
 - Confirm every Edge Function `OPTIONS` request returns `HTTP 204`.

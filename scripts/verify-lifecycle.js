@@ -104,6 +104,7 @@ function checkRequiredFiles() {
     'scripts/provision-cloudflare-domain.js',
     'scripts/verify-accessibility.js',
     'scripts/verify-database-schema.js',
+    'scripts/verify-edge-functions.js',
     'scripts/verify-email-deliverability.js',
     'scripts/verify-release-readiness.js',
     'scripts/verify-rendered-ui.js',
@@ -193,6 +194,7 @@ function checkProductCapabilities() {
   assertContains('package.json', /"verify:deploy"/, 'Supabase deployment smoke command exists');
   assertContains('package.json', /"verify:a11y"/, 'accessibility verification command exists');
   assertContains('package.json', /"verify:db"/, 'database schema verification command exists');
+  assertContains('package.json', /"verify:edge"/, 'Edge Function contract verification command exists');
   assertContains('package.json', /"verify:email"/, 'email deliverability verification command exists');
   assertContains('package.json', /"verify:release"/, 'release readiness verification command exists');
   assertContains('package.json', /"verify:render"/, 'rendered UI verification command exists');
@@ -216,6 +218,7 @@ function checkProductCapabilities() {
   assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions runs role rendering verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:interactions/, 'GitHub Actions runs role interaction verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:db/, 'GitHub Actions runs database schema verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:edge/, 'GitHub Actions runs Edge Function contract verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:email/, 'GitHub Actions runs email deliverability verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:workflow/, 'GitHub Actions runs workflow contract verification');
   assertContains('.github/workflows/verify.yml', /python3 -m http\.server 5500/, 'GitHub Actions starts local static app');
@@ -223,6 +226,10 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-database-schema.js', /SECURITY DEFINER/, 'database verifier checks SECURITY DEFINER hardening');
   assertContains('scripts/verify-database-schema.js', /requiredForeignKeys/, 'database verifier checks foreign key contracts');
   assertContains('scripts/verify-database-schema.js', /requiredIndexes/, 'database verifier checks performance indexes');
+  assertContains('scripts/verify-edge-functions.js', /corsHeaders/, 'Edge Function verifier checks CORS headers');
+  assertContains('scripts/verify-edge-functions.js', /Method not allowed/, 'Edge Function verifier checks method guards');
+  assertContains('scripts/verify-edge-functions.js', /verify_jwt/, 'Edge Function verifier checks gateway JWT config');
+  assertContains('scripts/verify-edge-functions.js', /--no-verify-jwt/, 'Edge Function verifier checks deploy JWT flag');
   assertContains('scripts/verify-email-deliverability.js', /DMARC/, 'email verifier checks DMARC guidance');
   assertContains('scripts/verify-email-deliverability.js', /suppression/, 'email verifier checks suppression monitoring');
   assertContains('scripts/verify-email-deliverability.js', /createSignedReportUrl/, 'email verifier checks signed report links');
@@ -331,6 +338,10 @@ function checkDatabaseSchema() {
   run('node', ['scripts/verify-database-schema.js'], 'database schema verification passes');
 }
 
+function checkEdgeFunctions() {
+  run('node', ['scripts/verify-edge-functions.js'], 'Edge Function contract verification passes');
+}
+
 function checkEmailDeliverability() {
   run('node', ['scripts/verify-email-deliverability.js'], 'email deliverability verification passes');
 }
@@ -414,6 +425,7 @@ checkRenderedUi();
 checkRoleRendering();
 checkRoleInteractions();
 checkDatabaseSchema();
+checkEdgeFunctions();
 checkEmailDeliverability();
 checkSecurity();
 checkWorkflowContracts();

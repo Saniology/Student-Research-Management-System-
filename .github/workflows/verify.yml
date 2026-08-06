@@ -60,6 +60,9 @@ jobs:
       - name: Verify database schema
         run: npm run verify:db
 
+      - name: Verify Edge Function contracts
+        run: npm run verify:edge
+
       - name: Verify email deliverability handover
         run: npm run verify:email
 
