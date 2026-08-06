@@ -276,6 +276,7 @@
                     <a onclick="showAdminSection('uploads')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-file-upload w-5"></i> Uploads</a>
                     <a onclick="showAdminSection('payments')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-money-bill-wave w-5"></i> Payments</a>
                     <a onclick="showAdminSection('reports')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chart-line w-5"></i> Reports</a>
+                    <a onclick="showAdminSection('settings')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-cog w-5"></i> Settings</a>
                 </nav>
             </aside>
 
@@ -286,19 +287,16 @@
                 <div id="admin-dashboard" class="admin-section active">
                     <h1 class="text-3xl font-display font-bold text-primary mb-8">Analytics Hub</h1>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Students</p><p class="text-3xl font-display font-bold text-primary mt-1">18,425</p></div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Revenue</p><p class="text-3xl font-display font-bold text-emerald-600 mt-1">₦9.0M</p></div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Uploads</p><p class="text-3xl font-display font-bold text-primary mt-1">4,021</p></div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Approvals</p><p class="text-3xl font-display font-bold text-accent mt-1">209</p></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Students</p><p id="metric-total-students" class="text-3xl font-display font-bold text-primary mt-1">—</p></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Revenue</p><p id="metric-total-revenue" class="text-3xl font-display font-bold text-emerald-600 mt-1">—</p></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Uploads</p><p id="metric-total-uploads" class="text-3xl font-display font-bold text-primary mt-1">—</p></div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Approvals</p><p id="metric-pending-approvals" class="text-3xl font-display font-bold text-accent mt-1">—</p></div>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                         <div class="lg:col-span-2 bg-white p-6 rounded-xl premium-shadow border border-slate-200">
                             <h3 class="text-lg font-display font-bold text-primary mb-6">Departmental Uploads</h3>
-                            <div class="space-y-4">
-                                <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Computer Science</span><span>850</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 85%"></div></div></div>
-                                <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Engineering</span><span>620</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 62%"></div></div></div>
-                                <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Sciences</span><span>450</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 45%"></div></div></div>
-                                <div><div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">Arts</span><span>300</span></div><div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: 30%"></div></div></div>
+                            <div id="department-activity-list" class="space-y-4">
+                                <p class="text-sm text-slate-400">Loading department activity...</p>
                             </div>
                         </div>
                         <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 space-y-6">
@@ -388,6 +386,41 @@
                         <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-export text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Export Student Data</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Download CSV</button></div>
                         <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-invoice-dollar text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Financial Report</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Download PDF</button></div>
                         <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 text-center"><i class="fas fa-file-archive text-3xl text-primary mb-4"></i><h3 class="text-lg font-display font-bold text-primary mb-2">Archive Log</h3><button class="mt-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">View Log</button></div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="admin-settings" class="admin-section">
+                    <h1 class="text-3xl font-display font-bold text-primary mb-8">System Settings</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        <div class="lg:col-span-2 bg-white rounded-xl premium-shadow border border-slate-200 p-6">
+                            <h3 class="text-lg font-display font-bold text-primary mb-6">Institution & Payment Rules</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Institution Name</label><input id="settings-institution-name" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Short Name</label><input id="settings-short-name" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Clearance Fee (₦)</label><input id="settings-clearance-fee" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" step="100"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Repository Download Fee (₦)</label><input id="settings-download-fee" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" step="100"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Max PDF Size (MB)</label><input id="settings-max-pdf" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="1" step="1"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Currency</label><input id="settings-currency" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" maxlength="3"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Primary Color</label><input id="settings-primary-color" class="mt-1 w-full h-12 p-1 glass-input rounded-lg" type="color" onchange="previewAdminTheme()"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Accent Color</label><input id="settings-accent-color" class="mt-1 w-full h-12 p-1 glass-input rounded-lg" type="color" onchange="previewAdminTheme()"></div>
+                            </div>
+                            <button onclick="saveAdminSettings()" class="mt-6 bg-primary text-white px-6 py-3 rounded-lg text-sm font-bold hover:bg-emerald-700 transition">Save Settings</button>
+                            <p id="settings-save-status" class="text-sm text-slate-500 mt-3"></p>
+                        </div>
+                        <div class="bg-white rounded-xl premium-shadow border border-slate-200 p-6">
+                            <h3 class="text-lg font-display font-bold text-primary mb-4">Live Preview</h3>
+                            <div class="rounded-xl overflow-hidden border border-slate-200">
+                                <div class="bg-primary p-5 text-white">
+                                    <p id="settings-preview-name" class="font-display font-bold text-lg text-white">KASU SPMS</p>
+                                    <p class="text-xs text-white/70 mt-1">White-label tenant surface</p>
+                                </div>
+                                <div class="p-5 bg-slate-50">
+                                    <button class="bg-accent text-dark px-4 py-2 rounded-lg text-sm font-bold">Primary Action</button>
+                                    <p class="text-xs text-slate-500 mt-4">These colors apply immediately in the current browser and persist after saving.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -506,6 +539,8 @@
         let currentUserProfile = null;
         let currentPayment = null;
         let currentProject = null;
+        let currentInstitution = null;
+        let currentSystemConfig = null;
         let selectedFile = null;
         let pendingVerification = null;
         let supervisorProjects = [];
@@ -697,13 +732,230 @@
             return map[status] || 'No active thesis workflow yet.';
         }
 
+        function applyInstitutionTheme(primary = '#065F46', accent = '#F59E0B') {
+            document.documentElement.style.setProperty('--spms-primary', primary);
+            document.documentElement.style.setProperty('--spms-accent', accent);
+        }
+
+        function previewAdminTheme() {
+            const primary = document.getElementById('settings-primary-color')?.value || '#065F46';
+            const accent = document.getElementById('settings-accent-color')?.value || '#F59E0B';
+            applyInstitutionTheme(primary, accent);
+            const name = document.getElementById('settings-short-name')?.value || 'KASU';
+            const preview = document.getElementById('settings-preview-name');
+            if (preview) preview.innerText = name + ' SPMS';
+        }
+
+        function setMetric(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = value;
+        }
+
+        async function loadAdminDashboard() {
+            setMetric('metric-total-students', '—');
+            setMetric('metric-total-revenue', '—');
+            setMetric('metric-total-uploads', '—');
+            setMetric('metric-pending-approvals', '—');
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('admin_overview')
+                    .select('*')
+                    .maybeSingle();
+                if (error) throw error;
+                if (data) {
+                    setMetric('metric-total-students', Number(data.total_students || 0).toLocaleString());
+                    setMetric('metric-total-revenue', formatNaira(data.total_revenue_kobo || 0));
+                    setMetric('metric-total-uploads', Number(data.total_projects || 0).toLocaleString());
+                    const pending = Number(data.pending_supervisor_review || 0) + Number(data.pending_library_review || 0);
+                    setMetric('metric-pending-approvals', pending.toLocaleString());
+                }
+            } catch (err) {
+                console.warn('Admin overview unavailable:', err.message);
+                await loadAdminDashboardFallback();
+            }
+
+            await loadDepartmentActivity();
+        }
+
+        async function loadAdminDashboardFallback() {
+            try {
+                const { count: students } = await supabaseClient
+                    .from('profiles')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('role', 'student');
+                setMetric('metric-total-students', Number(students || 0).toLocaleString());
+            } catch (_) {
+                setMetric('metric-total-students', 'Demo');
+            }
+
+            try {
+                const { data: payments } = await supabaseClient
+                    .from('payments')
+                    .select('amount,status');
+                const revenue = (payments || []).filter(p => p.status === 'success').reduce((sum, p) => sum + Number(p.amount || 0), 0);
+                setMetric('metric-total-revenue', formatNaira(revenue));
+            } catch (_) {
+                setMetric('metric-total-revenue', '—');
+            }
+
+            try {
+                const { count: uploads } = await supabaseClient
+                    .from('submissions')
+                    .select('id', { count: 'exact', head: true });
+                setMetric('metric-total-uploads', Number(uploads || 0).toLocaleString());
+                setMetric('metric-pending-approvals', Number(uploads || 0).toLocaleString());
+            } catch (_) {
+                setMetric('metric-total-uploads', '—');
+                setMetric('metric-pending-approvals', '—');
+            }
+        }
+
+        async function loadDepartmentActivity() {
+            const container = document.getElementById('department-activity-list');
+            if (!container) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('projects')
+                    .select('id, departments(name)');
+                if (error) throw error;
+
+                const counts = {};
+                (data || []).forEach(project => {
+                    const name = project.departments?.name || 'Unassigned';
+                    counts[name] = (counts[name] || 0) + 1;
+                });
+                const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+                const max = Math.max(...rows.map(([, count]) => count), 1);
+                if (!rows.length) {
+                    container.innerHTML = '<p class="text-sm text-slate-400">No project activity yet.</p>';
+                    return;
+                }
+                container.innerHTML = rows.map(([name, count]) => `
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">${escapeHtml(name)}</span><span>${count}</span></div>
+                        <div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width: ${Math.max(8, Math.round((count / max) * 100))}%"></div></div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.warn('Department activity unavailable:', err.message);
+                container.innerHTML = '<p class="text-sm text-slate-400">Apply supabase/spms-core.sql to enable live department analytics.</p>';
+            }
+        }
+
+        async function loadAdminSettings() {
+            const status = document.getElementById('settings-save-status');
+            try {
+                const { data: institution, error: institutionError } = await supabaseClient
+                    .from('institutions')
+                    .select('*')
+                    .eq('slug', 'kasu')
+                    .maybeSingle();
+                if (institutionError) throw institutionError;
+                currentInstitution = institution;
+
+                let config = null;
+                if (institution?.id) {
+                    const { data, error } = await supabaseClient
+                        .from('system_configs')
+                        .select('*')
+                        .eq('institution_id', institution.id)
+                        .maybeSingle();
+                    if (error) throw error;
+                    config = data;
+                }
+                currentSystemConfig = config;
+                populateAdminSettings(institution, config);
+                if (status) status.innerText = '';
+            } catch (err) {
+                console.warn('Admin settings unavailable:', err.message);
+                populateAdminSettings(null, null);
+                if (status) status.innerText = 'Apply supabase/spms-core.sql to enable saved tenant settings.';
+            }
+        }
+
+        function populateAdminSettings(institution, config) {
+            const primary = institution?.primary_color || '#065F46';
+            const accent = institution?.accent_color || '#F59E0B';
+            const values = {
+                'settings-institution-name': institution?.name || 'Kaduna State University',
+                'settings-short-name': institution?.short_name || 'KASU',
+                'settings-clearance-fee': (config?.clearance_fee_kobo || REPOSITORY_FEE_KOBO) / 100,
+                'settings-download-fee': (config?.download_fee_kobo || REPOSITORY_DOWNLOAD_FEE_KOBO) / 100,
+                'settings-max-pdf': Math.round((config?.max_pdf_size_bytes || 104857600) / 1048576),
+                'settings-currency': config?.currency || 'NGN',
+                'settings-primary-color': primary,
+                'settings-accent-color': accent
+            };
+
+            Object.entries(values).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = value;
+            });
+            previewAdminTheme();
+        }
+
+        async function saveAdminSettings() {
+            if (currentUserRole !== 'admin') {
+                alert('Only admins can save system settings.');
+                return;
+            }
+            const status = document.getElementById('settings-save-status');
+            if (!currentInstitution?.id) {
+                if (status) status.innerText = 'Settings table is not available yet. Run supabase/spms-core.sql first.';
+                return;
+            }
+
+            const institutionPayload = {
+                name: document.getElementById('settings-institution-name').value.trim(),
+                short_name: document.getElementById('settings-short-name').value.trim(),
+                primary_color: document.getElementById('settings-primary-color').value,
+                accent_color: document.getElementById('settings-accent-color').value,
+                updated_at: new Date().toISOString()
+            };
+
+            const configPayload = {
+                institution_id: currentInstitution.id,
+                clearance_fee_kobo: Math.round(Number(document.getElementById('settings-clearance-fee').value || 0) * 100),
+                download_fee_kobo: Math.round(Number(document.getElementById('settings-download-fee').value || 0) * 100),
+                max_pdf_size_bytes: Math.round(Number(document.getElementById('settings-max-pdf').value || 100) * 1048576),
+                currency: (document.getElementById('settings-currency').value || 'NGN').toUpperCase(),
+                updated_at: new Date().toISOString()
+            };
+
+            try {
+                const { data: institution, error: institutionError } = await supabaseClient
+                    .from('institutions')
+                    .update(institutionPayload)
+                    .eq('id', currentInstitution.id)
+                    .select()
+                    .single();
+                if (institutionError) throw institutionError;
+
+                const { data: config, error: configError } = await supabaseClient
+                    .from('system_configs')
+                    .upsert(configPayload, { onConflict: 'institution_id' })
+                    .select()
+                    .single();
+                if (configError) throw configError;
+
+                currentInstitution = institution;
+                currentSystemConfig = config;
+                previewAdminTheme();
+                if (status) status.innerText = 'Settings saved.';
+            } catch (err) {
+                if (status) status.innerText = 'Save failed: ' + err.message;
+            }
+        }
+
         function navigateToRole(role) {
             closeAuthModal();
             navigate(role);
             if (role === 'student') loadStudentDashboard();
             else if (role === 'teacher') loadTeacherStudents();
             else if (role === 'library') initLibrary();
-            else if (role === 'admin') { loadCatalogue(); loadAdminPayments(); }
+            else if (role === 'admin') { loadCatalogue(); loadAdminDashboard(); loadAdminSettings(); loadAdminPayments(); }
         }
 
         async function handleLogin() {
@@ -863,7 +1115,9 @@
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             event.target.closest('a').classList.add('active');
             if (window.innerWidth < 768) { toggleSidebar(); }
+            if (id === 'dashboard') loadAdminDashboard();
             if (id === 'payments') loadAdminPayments();
+            if (id === 'settings') loadAdminSettings();
         }
 
         // --- LANDING PAGE PUBLIC REPO ---
