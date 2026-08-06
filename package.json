@@ -4,6 +4,10 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
+    "dns:cloudflare": "node scripts/provision-cloudflare-domain.js",
+    "verify:release": "node scripts/verify-release-readiness.js",
+    "verify:security": "node scripts/verify-security.js",
+    "verify:ui": "node scripts/verify-ui-smoke.js",
     "verify:lifecycle": "node scripts/verify-lifecycle.js"
   }
 }

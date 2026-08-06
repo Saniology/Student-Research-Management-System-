@@ -99,6 +99,7 @@ CREATE TABLE IF NOT EXISTS institutions (
   slug TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   short_name TEXT NOT NULL,
+  allowed_domains TEXT[] NOT NULL DEFAULT '{}',
   primary_color TEXT NOT NULL DEFAULT '#065F46',
   accent_color TEXT NOT NULL DEFAULT '#F59E0B',
   logo_url TEXT,
@@ -106,11 +107,19 @@ CREATE TABLE IF NOT EXISTS institutions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE institutions
+  ADD COLUMN IF NOT EXISTS allowed_domains TEXT[] NOT NULL DEFAULT '{}';
+
 CREATE TABLE IF NOT EXISTS system_configs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   institution_id UUID NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
   clearance_fee_kobo INTEGER NOT NULL DEFAULT 200000,
   download_fee_kobo INTEGER NOT NULL DEFAULT 50000,
+  institution_share_percent NUMERIC(5,2) NOT NULL DEFAULT 50.00,
+  provider_share_percent NUMERIC(5,2) NOT NULL DEFAULT 50.00,
+  paystack_split_code TEXT,
+  paystack_institution_subaccount TEXT,
+  paystack_provider_subaccount TEXT,
   max_pdf_size_bytes BIGINT NOT NULL DEFAULT 104857600,
   allowed_mime_types TEXT[] NOT NULL DEFAULT ARRAY['application/pdf'],
   currency TEXT NOT NULL DEFAULT 'NGN',
@@ -120,13 +129,32 @@ CREATE TABLE IF NOT EXISTS system_configs (
   UNIQUE (institution_id)
 );
 
-CREATE TABLE IF NOT EXISTS faculties (
+ALTER TABLE system_configs
+  ADD COLUMN IF NOT EXISTS institution_share_percent NUMERIC(5,2) NOT NULL DEFAULT 50.00,
+  ADD COLUMN IF NOT EXISTS provider_share_percent NUMERIC(5,2) NOT NULL DEFAULT 50.00,
+  ADD COLUMN IF NOT EXISTS paystack_split_code TEXT,
+  ADD COLUMN IF NOT EXISTS paystack_institution_subaccount TEXT,
+  ADD COLUMN IF NOT EXISTS paystack_provider_subaccount TEXT;
+
+CREATE TABLE IF NOT EXISTS colleges (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   institution_id UUID NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (institution_id, name)
 );
+
+CREATE TABLE IF NOT EXISTS faculties (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+  college_id UUID REFERENCES colleges(id) ON DELETE SET NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (institution_id, name)
+);
+
+ALTER TABLE faculties
+  ADD COLUMN IF NOT EXISTS college_id UUID REFERENCES colleges(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS departments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -253,6 +281,63 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
 
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES institutions(id) ON DELETE CASCADE,
+  recipient_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  actor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  category TEXT NOT NULL DEFAULT 'workflow',
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  action_url TEXT,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_created
+  ON notifications(recipient_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread
+  ON notifications(recipient_id, read_at)
+  WHERE read_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_notifications_project ON notifications(project_id);
+
+CREATE TABLE IF NOT EXISTS report_schedules (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES institutions(id) ON DELETE CASCADE,
+  created_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  report_type TEXT NOT NULL CHECK (report_type IN ('student_register', 'project_lifecycle', 'financial', 'archive')),
+  frequency TEXT NOT NULL DEFAULT 'monthly' CHECK (frequency IN ('daily', 'weekly', 'monthly')),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  next_run_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_run_at TIMESTAMPTZ,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_schedules_due
+  ON report_schedules(is_active, next_run_at);
+CREATE INDEX IF NOT EXISTS idx_report_schedules_institution
+  ON report_schedules(institution_id);
+
+CREATE TABLE IF NOT EXISTS generated_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  schedule_id UUID REFERENCES report_schedules(id) ON DELETE SET NULL,
+  institution_id UUID REFERENCES institutions(id) ON DELETE CASCADE,
+  report_type TEXT NOT NULL,
+  file_path TEXT NOT NULL,
+  row_count INTEGER NOT NULL DEFAULT 0,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_generated_reports_institution
+  ON generated_reports(institution_id, generated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_generated_reports_schedule
+  ON generated_reports(schedule_id, generated_at DESC);
+
 ALTER TABLE payments
   ADD COLUMN IF NOT EXISTS project_id UUID REFERENCES projects(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS transaction_type transaction_type NOT NULL DEFAULT 'clearance_fee',
@@ -268,11 +353,12 @@ CREATE INDEX IF NOT EXISTS idx_payments_type ON payments(transaction_type);
 -- Seed KASU tenant and map demo data
 -- ---------------------------------------------------------------------------
 
-INSERT INTO institutions (slug, name, short_name, primary_color, accent_color)
-VALUES ('kasu', 'Kaduna State University', 'KASU', '#065F46', '#F59E0B')
+INSERT INTO institutions (slug, name, short_name, allowed_domains, primary_color, accent_color)
+VALUES ('kasu', 'Kaduna State University', 'KASU', ARRAY['kasu-spms.local'], '#065F46', '#F59E0B')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   short_name = EXCLUDED.short_name,
+  allowed_domains = COALESCE(NULLIF(institutions.allowed_domains, '{}'), EXCLUDED.allowed_domains),
   primary_color = EXCLUDED.primary_color,
   accent_color = EXCLUDED.accent_color,
   updated_at = NOW();
@@ -281,17 +367,37 @@ INSERT INTO system_configs (institution_id)
 SELECT id FROM institutions WHERE slug = 'kasu'
 ON CONFLICT (institution_id) DO NOTHING;
 
-INSERT INTO faculties (institution_id, name)
-SELECT i.id, f.name
+INSERT INTO colleges (institution_id, name)
+SELECT i.id, c.name
 FROM institutions i
 CROSS JOIN (VALUES
+  ('College of Computing and Sciences'),
+  ('College of Social and Management Sciences')
+) AS c(name)
+WHERE i.slug = 'kasu'
+ON CONFLICT (institution_id, name) DO NOTHING;
+
+INSERT INTO faculties (institution_id, college_id, name)
+SELECT i.id, c.id, f.name
+FROM institutions i
+LEFT JOIN colleges c ON c.institution_id = i.id AND c.name = 'College of Computing and Sciences'
+CROSS JOIN (VALUES
   ('Faculty of Computing'),
-  ('Faculty of Science'),
+  ('Faculty of Science')
+) AS f(name)
+WHERE i.slug = 'kasu'
+ON CONFLICT (institution_id, name) DO UPDATE SET college_id = EXCLUDED.college_id;
+
+INSERT INTO faculties (institution_id, college_id, name)
+SELECT i.id, c.id, f.name
+FROM institutions i
+LEFT JOIN colleges c ON c.institution_id = i.id AND c.name = 'College of Social and Management Sciences'
+CROSS JOIN (VALUES
   ('Faculty of Social Sciences'),
   ('Faculty of Management Sciences')
 ) AS f(name)
 WHERE i.slug = 'kasu'
-ON CONFLICT (institution_id, name) DO NOTHING;
+ON CONFLICT (institution_id, name) DO UPDATE SET college_id = EXCLUDED.college_id;
 
 INSERT INTO departments (institution_id, faculty_id, name, code)
 SELECT i.id, f.id, d.name, d.code
@@ -327,9 +433,14 @@ ON CONFLICT (institution_id, name) DO NOTHING;
 
 UPDATE profiles p
 SET institution_id = i.id,
-    department_id = d.id
+    department_id = (
+      SELECT d.id
+      FROM departments d
+      WHERE d.institution_id = i.id
+        AND d.name = p.department
+      LIMIT 1
+    )
 FROM institutions i
-LEFT JOIN departments d ON d.institution_id = i.id AND d.name = p.department
 WHERE i.slug = 'kasu'
   AND p.institution_id IS NULL;
 
@@ -343,11 +454,16 @@ WHERE s.role = 'student'
 
 UPDATE students_registry sr
 SET institution_id = i.id,
-    department_id = d.id,
+    department_id = (
+      SELECT d.id
+      FROM departments d
+      WHERE d.institution_id = i.id
+        AND d.name = sr.department
+      LIMIT 1
+    ),
     supervisor_email = COALESCE(sr.supervisor_email, 'teacher@kasu.edu.ng'),
     degree = COALESCE(sr.degree, 'BSc')
 FROM institutions i
-LEFT JOIN departments d ON d.institution_id = i.id AND d.name = sr.department
 WHERE i.slug = 'kasu'
   AND sr.institution_id IS NULL;
 
@@ -357,6 +473,7 @@ WHERE i.slug = 'kasu'
 
 ALTER TABLE institutions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE colleges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faculties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
@@ -365,6 +482,9 @@ ALTER TABLE public_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE repository_unlocks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clearance_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE report_schedules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE generated_reports ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public read institutions" ON institutions;
 CREATE POLICY "Public read institutions"
@@ -379,6 +499,11 @@ CREATE POLICY "Public read configs"
 DROP POLICY IF EXISTS "Public read faculties" ON faculties;
 CREATE POLICY "Public read faculties"
   ON faculties FOR SELECT
+  USING (true);
+
+DROP POLICY IF EXISTS "Public read colleges" ON colleges;
+CREATE POLICY "Public read colleges"
+  ON colleges FOR SELECT
   USING (true);
 
 DROP POLICY IF EXISTS "Public read departments" ON departments;
@@ -401,6 +526,12 @@ CREATE POLICY "Admins manage configs"
 DROP POLICY IF EXISTS "Admins manage faculties" ON faculties;
 CREATE POLICY "Admins manage faculties"
   ON faculties FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins manage colleges" ON colleges;
+CREATE POLICY "Admins manage colleges"
+  ON colleges FOR ALL
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
@@ -479,6 +610,51 @@ DROP POLICY IF EXISTS "Admins read audit logs" ON audit_logs;
 CREATE POLICY "Admins read audit logs"
   ON audit_logs FOR SELECT
   USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Users read own notifications" ON notifications;
+CREATE POLICY "Users read own notifications"
+  ON notifications FOR SELECT
+  USING (auth.uid() = recipient_id);
+
+DROP POLICY IF EXISTS "Users update own notification read state" ON notifications;
+CREATE POLICY "Users update own notification read state"
+  ON notifications FOR UPDATE
+  USING (auth.uid() = recipient_id)
+  WITH CHECK (auth.uid() = recipient_id);
+
+DROP POLICY IF EXISTS "Admins read all notifications" ON notifications;
+CREATE POLICY "Admins read all notifications"
+  ON notifications FOR SELECT
+  USING (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins manage report schedules" ON report_schedules;
+CREATE POLICY "Admins manage report schedules"
+  ON report_schedules FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins read generated reports" ON generated_reports;
+CREATE POLICY "Admins read generated reports"
+  ON generated_reports FOR SELECT
+  USING (public.is_admin());
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'reports',
+  'reports',
+  false,
+  10485760,
+  ARRAY['text/csv', 'application/pdf', 'application/json']
+)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Admins read generated report files" ON storage.objects;
+CREATE POLICY "Admins read generated report files"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'reports'
+    AND public.is_admin()
+  );
 
 -- Storage read access for reviewers. Students keep the existing own-folder policies.
 DROP POLICY IF EXISTS "Supervisors read assigned thesis files" ON storage.objects;

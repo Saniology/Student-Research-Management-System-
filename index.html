@@ -55,10 +55,9 @@
     <nav class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 premium-shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
             <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('landing')">
-                <img src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg?auth_key=1883957539-c26e32e54017417fa3f43a008332e2bf-0-65c12dd7c1dd680811e323fff26a3285" alt="KASU Logo" class="h-12 w-12 object-contain rounded-full" onerror="this.src='https://ui-avatars.com/api/?name=KASU&background=065F46&color=fff&bold=true'">
+                <img id="tenant-logo" src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg?auth_key=1883957539-c26e32e54017417fa3f43a008332e2bf-0-65c12dd7c1dd680811e323fff26a3285" alt="KASU Logo" class="h-12 w-12 object-contain rounded-full" onerror="this.src='https://ui-avatars.com/api/?name=KASU&background=065F46&color=fff&bold=true'">
                 <div class="flex flex-col leading-tight">
-                    <span class="font-display font-bold text-lg text-primary">KASU SPMS</span>
-                    <!-- TEXT CHANGED HERE -->
+                    <span id="tenant-nav-name" class="font-display font-bold text-lg text-primary">KASU SPMS</span>
                     <span class="hidden sm:block text-[10px] text-slate-500 uppercase tracking-widest">Student Project Management System</span>
                 </div>
             </div>
@@ -66,6 +65,7 @@
             <div class="flex items-center space-x-4" id="nav-actions"></div>
         </div>
     </nav>
+    <div id="app-config-error" class="hidden bg-red-50 border-b border-red-200 px-4 py-3 text-sm text-red-700"></div>
 
     <!-- VIEW 1: LANDING -->
     <div id="landing" class="view active-view blueprint-bg min-h-[calc(100vh-5rem)]">
@@ -73,9 +73,9 @@
             <div class="max-w-4xl mx-auto">
                 <div class="inline-flex items-center space-x-2 bg-white border border-slate-200 px-4 py-1.5 rounded-full mb-8 premium-shadow">
                     <span class="bg-primary w-2 h-2 rounded-full animate-pulse"></span>
-                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Kaduna State University</span>
+                    <span id="tenant-hero-eyebrow" class="text-xs font-bold text-slate-700 uppercase tracking-wider">Kaduna State University</span>
                 </div>
-                <h1 class="text-4xl md:text-6xl lg:text-7xl font-display font-semibold text-primary leading-[1.1] mb-6">KASU SPMS</h1>
+                <h1 id="tenant-hero-title" class="text-4xl md:text-6xl lg:text-7xl font-display font-semibold text-primary leading-[1.1] mb-6">KASU SPMS</h1>
                 <p class="text-xl md:text-2xl text-accent italic font-medium mb-8">The Official Final-Year Project Submission Portal</p>
                 <p class="text-lg text-slate-600 max-w-2xl mx-auto mb-10 font-light leading-relaxed">Designed to simplify project submission, supervisor approval, and library clearance through one secure digital platform.</p>
                 <button onclick="openAuthModal('login')" class="bg-primary text-white px-8 py-4 rounded-lg text-sm font-bold hover:bg-emerald-700 transition premium-shadow">Login to Portal <i class="fas fa-arrow-right ml-2"></i></button>
@@ -129,7 +129,7 @@
 
     <!-- VIEW 2: STUDENT -->
     <div id="student" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
-        <div class="max-w-5xl mx-auto">
+        <div id="student-dashboard-content" class="max-w-5xl mx-auto">
             <div class="glass-card rounded-xl p-6 premium-shadow mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 <img id="student-avatar" src="https://ui-avatars.com/api/?name=Student&background=065F46&color=fff" alt="Student Profile" class="w-24 h-24 rounded-full border-4 border-accent object-cover">
                 <div class="text-center sm:text-left flex-1">
@@ -220,6 +220,7 @@
                     </table>
                 </div>
             </div>
+            <p id="teacher-workflow-status" class="text-sm text-slate-500 mt-4"></p>
         </div>
     </div>
 
@@ -229,7 +230,7 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                 <div>
                     <h1 class="text-3xl font-display font-bold text-primary">Library Catalog & Verification</h1>
-                    <p class="text-slate-500 font-light mt-1">Comprehensive archive of all submitted research across KASU.</p>
+                    <p id="tenant-repository-copy" class="text-slate-500 font-light mt-1">Comprehensive archive of all submitted research across KASU.</p>
                 </div>
                 <div class="mt-4 md:mt-0 bg-white p-4 rounded-xl premium-shadow border border-slate-200 text-center">
                     <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Verification Queue</p>
@@ -278,14 +279,14 @@
             <aside id="admin-sidebar" class="w-64 admin-sidebar fixed md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition duration-200 ease-in-out z-50 flex flex-col flex-shrink-0 min-h-screen">
                 <div class="h-20 flex items-center justify-center border-b border-slate-800 hidden md:flex"><span class="font-display font-bold text-white text-lg">Admin Panel</span></div>
                 <nav class="flex-1 p-4 space-y-1">
-                    <a onclick="showAdminSection('dashboard')" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-tachometer-alt w-5"></i> Dashboard</a>
-                    <a onclick="showAdminSection('students')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-user-graduate w-5"></i> Students</a>
-                    <a onclick="showAdminSection('supervisors')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chalkboard-teacher w-5"></i> Supervisors</a>
-                    <a onclick="showAdminSection('departments')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-building w-5"></i> Departments</a>
-                    <a onclick="showAdminSection('uploads')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-file-upload w-5"></i> Uploads</a>
-                    <a onclick="showAdminSection('payments')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-money-bill-wave w-5"></i> Payments</a>
-                    <a onclick="showAdminSection('reports')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chart-line w-5"></i> Reports</a>
-                    <a onclick="showAdminSection('settings')" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-cog w-5"></i> Settings</a>
+                    <a onclick="showAdminSection('dashboard', this)" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-tachometer-alt w-5"></i> Dashboard</a>
+                    <a onclick="showAdminSection('students', this)" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-user-graduate w-5"></i> Students</a>
+                    <a onclick="showAdminSection('supervisors', this)" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chalkboard-teacher w-5"></i> Supervisors</a>
+                    <a onclick="showAdminSection('departments', this)" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-building w-5"></i> Departments</a>
+                    <a onclick="showAdminSection('uploads', this)" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-file-upload w-5"></i> Uploads</a>
+                    <a onclick="showAdminSection('payments', this)" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-money-bill-wave w-5"></i> Payments</a>
+                    <a onclick="showAdminSection('reports', this)" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-chart-line w-5"></i> Reports</a>
+                    <a onclick="showAdminSection('settings', this)" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-cog w-5"></i> Settings</a>
                 </nav>
             </aside>
 
@@ -301,6 +302,25 @@
                         <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Uploads</p><p id="metric-total-uploads" class="text-3xl font-display font-bold text-primary mt-1">—</p></div>
                         <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Approvals</p><p id="metric-pending-approvals" class="text-3xl font-display font-bold text-accent mt-1">—</p></div>
                     </div>
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                            <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-display font-bold text-primary">Workflow Funnel</h3><span class="text-[11px] text-slate-400 font-bold uppercase">Live Status</span></div>
+                            <div id="analytics-workflow-chart" class="space-y-4 min-h-56"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                            <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-display font-bold text-primary">Revenue Split</h3><span class="text-[11px] text-slate-400 font-bold uppercase">Reconciliation</span></div>
+                            <div id="analytics-revenue-chart" class="space-y-4 min-h-56"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                            <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-display font-bold text-primary">Monthly Revenue</h3><span class="text-[11px] text-slate-400 font-bold uppercase">Last 6 Months</span></div>
+                            <div id="analytics-monthly-chart" class="min-h-56"></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                            <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-display font-bold text-primary">Publication Progress</h3><span class="text-[11px] text-slate-400 font-bold uppercase">Library Output</span></div>
+                            <div id="analytics-publication-chart" class="space-y-4 min-h-56"></div>
+                        </div>
+                    </div>
+                    <p id="analytics-status" class="text-sm text-slate-500 mb-6"></p>
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                         <div class="lg:col-span-2 bg-white p-6 rounded-xl premium-shadow border border-slate-200">
                             <h3 class="text-lg font-display font-bold text-primary mb-6">Departmental Uploads</h3>
@@ -309,8 +329,8 @@
                             </div>
                         </div>
                         <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200 space-y-6">
-                            <div><h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-bell mr-2 text-accent"></i> Notifications</h4><ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside"><li><strong>Student:</strong> Upload OK, Approve/Reject</li><li><strong>Supervisor:</strong> Student Uploads</li><li><strong>Library:</strong> Super. Approves</li></ul></div>
-                            <div><h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-file-pdf mr-2 text-red-500"></i> PDF Rules</h4><ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside"><li>Format: PDF Only</li><li>Max Size: 100MB</li><li>Auto-Rename: Enabled</li></ul></div>
+                            <div><h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-bell mr-2 text-accent"></i> Workflow Signals</h4><ul id="analytics-signal-list" class="text-[11px] text-slate-600 space-y-2"><li>Loading workflow signals...</li></ul></div>
+                            <div><h4 class="text-xs font-bold text-slate-800 uppercase mb-3 flex items-center"><i class="fas fa-file-pdf mr-2 text-red-500"></i> PDF Rules</h4><ul class="text-[11px] text-slate-600 space-y-1 list-disc list-inside"><li>Format: PDF Only</li><li>Private storage + signed URLs</li><li>Watermarked repository copies</li></ul></div>
                         </div>
                     </div>
                 </div>
@@ -410,7 +430,7 @@
                     <h1 class="text-3xl font-display font-bold text-primary mb-8">Payment Records</h1>
                     <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
                         <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Type</th><th class="p-4 font-bold">Amount</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Reference</th><th class="p-4 font-bold">Status</th></tr></thead><tbody id="admin-payments-body" class="text-sm divide-y divide-slate-200">
-                            <tr><td colspan="5" class="p-8 text-center text-slate-400">Loading payments...</td></tr>
+                            <tr><td colspan="6" class="p-8 text-center text-slate-400">Loading payments...</td></tr>
                         </tbody></table></div>
                     </div>
                 </div>
@@ -426,6 +446,60 @@
                     </div>
                     <p id="reports-status" class="text-sm text-slate-500 mt-4"></p>
                     <div id="reports-output" class="mt-6 bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden hidden"></div>
+                    <div class="mt-8 bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <h3 class="text-lg font-display font-bold text-primary">Scheduled Delivery</h3>
+                                <p class="text-sm text-slate-500 mt-1">Generate recurring compliance, finance, and archive CSV reports.</p>
+                            </div>
+                            <button onclick="loadReportAutomation()" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold"><i class="fas fa-rotate mr-2"></i>Refresh</button>
+                        </div>
+                        <div class="p-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Report</label>
+                                <select id="report-schedule-type" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                                    <option value="student_register">Student Register</option>
+                                    <option value="project_lifecycle">Project Lifecycle</option>
+                                    <option value="financial">Financial</option>
+                                    <option value="archive">Archive Log</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Frequency</label>
+                                <select id="report-schedule-frequency" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                                    <option value="monthly">Monthly</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="daily">Daily</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Next Run</label>
+                                <input id="report-schedule-next-run" type="datetime-local" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 uppercase">Email To</label>
+                                <input id="report-schedule-recipients" type="text" placeholder="admin@school.edu" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                            </div>
+                            <div class="flex flex-col justify-end gap-2">
+                                <button onclick="createReportSchedule()" class="bg-primary text-white px-4 py-2.5 rounded-lg text-sm font-bold"><i class="fas fa-calendar-plus mr-2"></i>Create</button>
+                                <button onclick="runReportOnce()" class="bg-slate-100 text-slate-700 px-4 py-2.5 rounded-lg text-sm font-bold"><i class="fas fa-file-circle-plus mr-2"></i>Generate Once</button>
+                            </div>
+                        </div>
+                        <div class="px-6 pb-6 flex flex-col lg:flex-row gap-6">
+                            <div class="flex-1">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="text-sm font-bold text-primary">Schedules</h4>
+                                    <button onclick="runDueReports()" class="text-xs font-bold text-accent hover:underline">Run Due Now</button>
+                                </div>
+                                <div id="report-schedules-list" class="border border-slate-200 rounded-lg overflow-hidden"></div>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-bold text-primary mb-3">Generated Reports</h4>
+                                <div id="generated-reports-list" class="border border-slate-200 rounded-lg overflow-hidden"></div>
+                            </div>
+                        </div>
+                        <p id="report-automation-status" class="px-6 pb-5 text-sm text-slate-500"></p>
+                    </div>
                 </div>
 
                 <!-- Settings Section -->
@@ -437,6 +511,8 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Institution Name</label><input id="settings-institution-name" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Short Name</label><input id="settings-short-name" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Tenant Slug</label><input id="settings-tenant-slug" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" placeholder="kasu"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Allowed Domains</label><input id="settings-allowed-domains" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" placeholder="portal.school.edu, spms.school.edu"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Clearance Fee (₦)</label><input id="settings-clearance-fee" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" step="100"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Repository Download Fee (₦)</label><input id="settings-download-fee" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" step="100"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Institution Share (%)</label><input id="settings-institution-share" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" max="100" step="0.01"></div>
@@ -566,9 +642,9 @@
     <!-- HIDDEN PDF RECEIPT TEMPLATE -->
     <div id="receipt-template">
         <div style="display: flex; align-items: center; border-bottom: 2px solid #065F46; padding-bottom: 20px; margin-bottom: 30px;">
-            <img src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg" alt="KASU Logo" style="width: 80px; height: 80px; margin-right: 20px;">
+            <img id="receipt-tenant-logo" src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg" alt="KASU Logo" style="width: 80px; height: 80px; margin-right: 20px;">
             <div>
-                <h1 style="color: #065F46; font-size: 24px; margin: 0; font-family: 'Fraunces', serif;">Kaduna State University</h1>
+                <h1 id="receipt-tenant-name" style="color: #065F46; font-size: 24px; margin: 0; font-family: 'Fraunces', serif;">Kaduna State University</h1>
                 <p style="color: #F59E0B; font-size: 16px; font-weight: bold; margin: 5px 0 0 0;">Official Digital Clearance Receipt</p>
             </div>
         </div>
@@ -584,13 +660,11 @@
     </div>
 
     <script>
-        if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY ||
-            window.SUPABASE_URL.includes('YOUR_PROJECT') ||
-            window.SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')) {
-            console.error('Set your Supabase URL and anon key in js/config.js before using login.');
-        }
-
-        const supabaseClient = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+        const appConfig = validateAppConfig();
+        const supabaseClient = appConfig.valid
+            ? window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY)
+            : null;
+        if (!appConfig.valid) showAppConfigError();
 
         let currentUserRole = null;
         let currentUser = null;
@@ -599,6 +673,7 @@
         let currentProject = null;
         let currentInstitution = null;
         let currentSystemConfig = null;
+        let currentTenantSlug = 'kasu';
         let selectedFile = null;
         let pendingVerification = null;
         let supervisorProjects = [];
@@ -610,6 +685,30 @@
         let currentLibraryView = 'grid'; // 'grid' or 'list'
         const REPOSITORY_FEE_KOBO = 200000; // ₦2,000
         const REPOSITORY_DOWNLOAD_FEE_KOBO = 50000; // ₦500
+
+        function validateAppConfig() {
+            const errors = [];
+            const url = String(window.SUPABASE_URL || '').trim();
+            const anonKey = String(window.SUPABASE_ANON_KEY || '').trim();
+            if (!window.supabase?.createClient) errors.push('Supabase JS did not load.');
+            if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) errors.push('Set a valid SUPABASE_URL in js/config.js.');
+            if (!anonKey || /YOUR_SUPABASE|anon_key_here|replace/i.test(anonKey)) errors.push('Set SUPABASE_ANON_KEY in js/config.js.');
+            return { valid: errors.length === 0, errors };
+        }
+
+        function showAppConfigError() {
+            const banner = document.getElementById('app-config-error');
+            if (!banner) return;
+            banner.classList.remove('hidden');
+            banner.innerText = 'Configuration required: ' + appConfig.errors.join(' ');
+        }
+
+        function ensureAppConfigured() {
+            if (appConfig.valid && supabaseClient) return true;
+            showAppConfigError();
+            alert('Set Supabase URL and anon key in js/config.js before using connected portal features.');
+            return false;
+        }
 
         // Official User Provided Pictures
         const pic1 = "https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b";
@@ -725,6 +824,7 @@
         }
 
         function openAuthModal(mode) {
+            if (!ensureAppConfigured()) return;
             showAuthError('');
             document.getElementById('login-form').classList.toggle('hidden', mode !== 'login');
             document.getElementById('signup-form').classList.toggle('hidden', mode !== 'signup');
@@ -754,6 +854,18 @@
         async function loadSystemConfigForProfile(profile) {
             if (!profile?.institution_id) return;
             try {
+                if (currentInstitution?.id !== profile.institution_id) {
+                    const { data: institution, error: institutionError } = await supabaseClient
+                        .from('institutions')
+                        .select('*')
+                        .eq('id', profile.institution_id)
+                        .maybeSingle();
+                    if (institutionError) throw institutionError;
+                    if (institution) {
+                        currentInstitution = institution;
+                        currentTenantSlug = institution.slug || currentTenantSlug;
+                    }
+                }
                 const { data, error } = await supabaseClient
                     .from('system_configs')
                     .select('*')
@@ -761,6 +873,7 @@
                     .maybeSingle();
                 if (error) throw error;
                 currentSystemConfig = data;
+                applyTenantBranding();
                 refreshStudentPaymentCta();
             } catch (err) {
                 console.warn('System config unavailable:', err.message);
@@ -863,6 +976,7 @@
         }
 
         async function verifyPublicReceipt() {
+            if (!ensureAppConfigured()) return;
             const code = document.getElementById('public-verification-code').value.trim();
             const result = document.getElementById('public-verification-result');
             if (!code) {
@@ -891,6 +1005,115 @@
         function applyInstitutionTheme(primary = '#065F46', accent = '#F59E0B') {
             document.documentElement.style.setProperty('--spms-primary', primary);
             document.documentElement.style.setProperty('--spms-accent', accent);
+        }
+
+        function tenantFallback() {
+            return {
+                slug: 'kasu',
+                name: 'Kaduna State University',
+                short_name: 'KASU',
+                primary_color: '#065F46',
+                accent_color: '#F59E0B',
+                logo_url: '',
+                allowed_domains: []
+            };
+        }
+
+        function tenantSlugCandidate() {
+            const params = new URLSearchParams(window.location.search);
+            const explicit = params.get('tenant') || params.get('institution') || window.SPMS_TENANT_SLUG || window.SPMS_DEFAULT_TENANT_SLUG;
+            return String(explicit || 'kasu').trim().toLowerCase();
+        }
+
+        function isLocalHost(hostname) {
+            return ['localhost', '127.0.0.1', '0.0.0.0', ''].includes(hostname);
+        }
+
+        async function loadTenantContext() {
+            const fallback = tenantFallback();
+            currentTenantSlug = tenantSlugCandidate();
+            try {
+                let institution = null;
+                const host = window.location.hostname.toLowerCase();
+
+                if (!isLocalHost(host)) {
+                    const { data, error } = await supabaseClient
+                        .from('institutions')
+                        .select('*')
+                        .contains('allowed_domains', [host])
+                        .maybeSingle();
+                    if (error) throw error;
+                    institution = data;
+                }
+
+                if (!institution) {
+                    const { data, error } = await supabaseClient
+                        .from('institutions')
+                        .select('*')
+                        .eq('slug', currentTenantSlug)
+                        .maybeSingle();
+                    if (error) throw error;
+                    institution = data;
+                }
+
+                currentInstitution = institution || fallback;
+                currentTenantSlug = currentInstitution.slug || currentTenantSlug;
+                await loadSystemConfigForInstitution(currentInstitution.id);
+            } catch (err) {
+                console.warn('Tenant resolution unavailable:', err.message);
+                currentInstitution = fallback;
+                currentSystemConfig = null;
+            }
+
+            applyTenantBranding();
+            return currentInstitution;
+        }
+
+        async function loadSystemConfigForInstitution(institutionId) {
+            if (!institutionId || !supabaseClient) return null;
+            const { data, error } = await supabaseClient
+                .from('system_configs')
+                .select('*')
+                .eq('institution_id', institutionId)
+                .maybeSingle();
+            if (error) throw error;
+            currentSystemConfig = data;
+            return data;
+        }
+
+        function applyTenantBranding() {
+            const institution = currentInstitution || tenantFallback();
+            const shortName = institution.short_name || 'SPMS';
+            const fullName = institution.name || 'Institution';
+            applyInstitutionTheme(institution.primary_color || '#065F46', institution.accent_color || '#F59E0B');
+            document.title = `${shortName} SPMS`;
+            setText('tenant-nav-name', `${shortName} SPMS`);
+            setText('tenant-hero-eyebrow', fullName);
+            setText('tenant-hero-title', `${shortName} SPMS`);
+            setText('tenant-repository-copy', `Comprehensive archive of all submitted research across ${shortName}.`);
+            setText('receipt-tenant-name', fullName);
+            const refInput = document.getElementById('verification-ref-input');
+            if (refInput) refInput.placeholder = `${shortName}-...`;
+
+            const logo = document.getElementById('tenant-logo');
+            const receiptLogo = document.getElementById('receipt-tenant-logo');
+            const logoUrl = institution.logo_url || '';
+            const fallbackLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(shortName)}&background=065F46&color=fff&bold=true`;
+            if (logo) {
+                logo.src = logoUrl || fallbackLogo;
+                logo.alt = `${shortName} Logo`;
+                logo.onerror = function() { this.src = fallbackLogo; };
+            }
+            if (receiptLogo) {
+                receiptLogo.src = logoUrl || fallbackLogo;
+                receiptLogo.alt = `${shortName} Logo`;
+            }
+            refreshStudentPaymentCta();
+        }
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.innerText = value;
         }
 
         function previewAdminTheme() {
@@ -931,6 +1154,7 @@
                 await loadAdminDashboardFallback();
             }
 
+            await loadAdminAnalytics();
             await loadDepartmentActivity();
         }
 
@@ -965,6 +1189,202 @@
                 setMetric('metric-total-uploads', '—');
                 setMetric('metric-pending-approvals', '—');
             }
+        }
+
+        async function loadAdminAnalytics() {
+            resetAdminAnalytics();
+            try {
+                const [projectsRes, paymentsRes] = await Promise.all([
+                    supabaseClient
+                        .from('projects')
+                        .select('id,status,created_at,published_at,cleared_at,departments(name)')
+                        .limit(5000),
+                    supabaseClient
+                        .from('payments')
+                        .select('amount,status,transaction_type,institution_share_kobo,provider_share_kobo,created_at,paid_at')
+                        .eq('status', 'success')
+                        .limit(5000)
+                ]);
+
+                if (projectsRes.error) throw projectsRes.error;
+                if (paymentsRes.error) throw paymentsRes.error;
+
+                renderAdminAnalytics(projectsRes.data || [], paymentsRes.data || []);
+                setAnalyticsStatus('Analytics refreshed from live workflow and payment records.');
+            } catch (err) {
+                console.warn('Admin analytics unavailable:', err.message);
+                renderAdminAnalytics(demoAnalyticsProjects(), demoAnalyticsPayments(), true);
+                setAnalyticsStatus('Showing demo analytics. Apply supabase/spms-core.sql and payments data for live charts.', 'warn');
+            }
+        }
+
+        function resetAdminAnalytics() {
+            ['analytics-workflow-chart', 'analytics-revenue-chart', 'analytics-monthly-chart', 'analytics-publication-chart'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = '<p class="text-sm text-slate-400">Loading chart...</p>';
+            });
+            const signals = document.getElementById('analytics-signal-list');
+            if (signals) signals.innerHTML = '<li>Loading workflow signals...</li>';
+            setAnalyticsStatus('');
+        }
+
+        function setAnalyticsStatus(message, tone = 'info') {
+            const el = document.getElementById('analytics-status');
+            if (!el) return;
+            const colors = { info: 'text-slate-500', warn: 'text-amber-700', success: 'text-emerald-700' };
+            el.className = `text-sm mb-6 ${colors[tone] || colors.info}`;
+            el.innerText = message || '';
+        }
+
+        function renderAdminAnalytics(projectRows, paymentRows, isDemo = false) {
+            const workflowRows = buildWorkflowRows(projectRows);
+            renderHorizontalBars('analytics-workflow-chart', workflowRows);
+            renderRevenueSplit(paymentRows);
+            renderMonthlyRevenue(paymentRows);
+            renderPublicationProgress(projectRows);
+            renderAnalyticsSignals(projectRows, paymentRows, isDemo);
+        }
+
+        function buildWorkflowRows(projectRows) {
+            const labels = [
+                ['submitted', 'Submitted'],
+                ['supervisor_review', 'Supervisor Review'],
+                ['revision_requested', 'Revision Requested'],
+                ['supervisor_approved', 'Supervisor Approved'],
+                ['library_review', 'Library Review'],
+                ['published', 'Published'],
+                ['cleared', 'Cleared']
+            ];
+            const counts = projectRows.reduce((acc, project) => {
+                const status = project.status || 'submitted';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {});
+            return labels.map(([key, label]) => ({
+                label,
+                value: counts[key] || 0,
+                color: key === 'cleared' || key === 'published' ? 'bg-emerald-500' : key === 'revision_requested' ? 'bg-red-500' : key === 'library_review' ? 'bg-indigo-500' : key === 'supervisor_approved' ? 'bg-blue-500' : 'bg-amber-500'
+            }));
+        }
+
+        function renderRevenueSplit(paymentRows) {
+            const total = paymentRows.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+            const institution = paymentRows.reduce((sum, p) => sum + Number(p.institution_share_kobo || 0), 0);
+            const provider = paymentRows.reduce((sum, p) => sum + Number(p.provider_share_kobo || 0), 0);
+            const unallocated = Math.max(0, total - institution - provider);
+            renderHorizontalBars('analytics-revenue-chart', [
+                { label: 'Institution Share', value: institution, display: formatNaira(institution), color: 'bg-primary' },
+                { label: 'SPMS Provider Share', value: provider, display: formatNaira(provider), color: 'bg-accent' },
+                { label: 'Legacy / Unallocated', value: unallocated, display: formatNaira(unallocated), color: 'bg-slate-400' }
+            ]);
+        }
+
+        function renderMonthlyRevenue(paymentRows) {
+            const container = document.getElementById('analytics-monthly-chart');
+            if (!container) return;
+            const months = getRecentMonths(6).map(month => ({ ...month, value: 0 }));
+            paymentRows.forEach(payment => {
+                const date = new Date(payment.paid_at || payment.created_at || Date.now());
+                if (Number.isNaN(date.getTime())) return;
+                const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                const bucket = months.find(month => month.key === key);
+                if (bucket) bucket.value += Number(payment.amount || 0);
+            });
+
+            const max = Math.max(...months.map(month => month.value), 1);
+            container.innerHTML = `
+                <div class="h-56 flex items-end gap-3 border-l border-b border-slate-200 px-2 pb-2">
+                    ${months.map(month => {
+                        const height = Math.max(6, Math.round((month.value / max) * 180));
+                        return `<div class="flex-1 flex flex-col items-center gap-2 min-w-0">
+                            <div class="w-full max-w-12 bg-primary rounded-t" style="height:${height}px" title="${formatNaira(month.value)}"></div>
+                            <span class="text-[10px] text-slate-500 truncate">${month.label}</span>
+                        </div>`;
+                    }).join('')}
+                </div>
+                <p class="text-xs text-slate-500 mt-3">Peak month: ${formatNaira(max)}</p>
+            `;
+        }
+
+        function renderPublicationProgress(projectRows) {
+            const total = projectRows.length;
+            const published = projectRows.filter(p => ['published', 'cleared'].includes(p.status)).length;
+            const cleared = projectRows.filter(p => p.status === 'cleared').length;
+            const libraryQueue = projectRows.filter(p => ['supervisor_approved', 'library_review'].includes(p.status)).length;
+            renderHorizontalBars('analytics-publication-chart', [
+                { label: 'Published Catalog Items', value: published, display: `${published}/${total || 0}`, color: 'bg-emerald-500' },
+                { label: 'Cleared Receipts', value: cleared, display: `${cleared}/${total || 0}`, color: 'bg-primary' },
+                { label: 'Awaiting Library', value: libraryQueue, display: String(libraryQueue), color: 'bg-indigo-500' }
+            ]);
+        }
+
+        function renderHorizontalBars(containerId, rows) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const max = Math.max(...rows.map(row => Number(row.value || 0)), 1);
+            container.innerHTML = rows.map(row => {
+                const value = Number(row.value || 0);
+                const width = Math.max(value ? 8 : 2, Math.round((value / max) * 100));
+                return `<div>
+                    <div class="flex items-center justify-between gap-3 mb-1">
+                        <span class="text-sm font-semibold text-slate-700">${escapeHtml(row.label)}</span>
+                        <span class="text-xs font-bold text-slate-500">${escapeHtml(row.display ?? value)}</span>
+                    </div>
+                    <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full ${row.color || 'bg-primary'} rounded-full" style="width:${width}%"></div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderAnalyticsSignals(projectRows, paymentRows, isDemo = false) {
+            const signals = document.getElementById('analytics-signal-list');
+            if (!signals) return;
+            const pendingSupervisor = projectRows.filter(p => ['submitted', 'supervisor_review'].includes(p.status)).length;
+            const revision = projectRows.filter(p => p.status === 'revision_requested').length;
+            const libraryQueue = projectRows.filter(p => ['supervisor_approved', 'library_review'].includes(p.status)).length;
+            const downloads = paymentRows.filter(p => p.transaction_type === 'repository_download').length;
+            signals.innerHTML = `
+                <li><span class="font-bold text-slate-800">${pendingSupervisor}</span> projects need supervisor action.</li>
+                <li><span class="font-bold text-slate-800">${revision}</span> projects are waiting on student revisions.</li>
+                <li><span class="font-bold text-slate-800">${libraryQueue}</span> projects are queued for library publishing.</li>
+                <li><span class="font-bold text-slate-800">${downloads}</span> repository download payments recorded.</li>
+                ${isDemo ? '<li class="text-amber-700 font-semibold">Demo analytics are active.</li>' : ''}
+            `;
+        }
+
+        function getRecentMonths(count) {
+            const formatter = new Intl.DateTimeFormat('en-NG', { month: 'short' });
+            const months = [];
+            const date = new Date();
+            date.setDate(1);
+            for (let i = count - 1; i >= 0; i--) {
+                const item = new Date(date.getFullYear(), date.getMonth() - i, 1);
+                months.push({
+                    key: `${item.getFullYear()}-${String(item.getMonth() + 1).padStart(2, '0')}`,
+                    label: formatter.format(item)
+                });
+            }
+            return months;
+        }
+
+        function demoAnalyticsProjects() {
+            return students.map((student, index) => ({
+                id: String(student.id),
+                status: ['supervisor_review', 'supervisor_approved', 'published', 'cleared', 'revision_requested'][index % 5],
+                created_at: new Date(Date.now() - index * 86400000).toISOString()
+            }));
+        }
+
+        function demoAnalyticsPayments() {
+            return students.slice(0, 8).map((student, index) => ({
+                amount: index % 3 === 0 ? REPOSITORY_DOWNLOAD_FEE_KOBO : getClearanceFeeKobo(),
+                status: 'success',
+                transaction_type: index % 3 === 0 ? 'repository_download' : 'clearance_fee',
+                institution_share_kobo: Math.round((index % 3 === 0 ? REPOSITORY_DOWNLOAD_FEE_KOBO : getClearanceFeeKobo()) * 0.5),
+                provider_share_kobo: Math.round((index % 3 === 0 ? REPOSITORY_DOWNLOAD_FEE_KOBO : getClearanceFeeKobo()) * 0.5),
+                paid_at: new Date(Date.now() - index * 18 * 86400000).toISOString()
+            }));
         }
 
         async function loadDepartmentActivity() {
@@ -1003,23 +1423,12 @@
         async function loadAdminSettings() {
             const status = document.getElementById('settings-save-status');
             try {
-                const { data: institution, error: institutionError } = await supabaseClient
-                    .from('institutions')
-                    .select('*')
-                    .eq('slug', 'kasu')
-                    .maybeSingle();
-                if (institutionError) throw institutionError;
+                const institution = currentInstitution?.id ? currentInstitution : await loadTenantContext();
                 currentInstitution = institution;
 
                 let config = null;
                 if (institution?.id) {
-                    const { data, error } = await supabaseClient
-                        .from('system_configs')
-                        .select('*')
-                        .eq('institution_id', institution.id)
-                        .maybeSingle();
-                    if (error) throw error;
-                    config = data;
+                    config = currentSystemConfig || await loadSystemConfigForInstitution(institution.id);
                 }
                 currentSystemConfig = config;
                 populateAdminSettings(institution, config);
@@ -1037,6 +1446,8 @@
             const values = {
                 'settings-institution-name': institution?.name || 'Kaduna State University',
                 'settings-short-name': institution?.short_name || 'KASU',
+                'settings-tenant-slug': institution?.slug || currentTenantSlug || 'kasu',
+                'settings-allowed-domains': Array.isArray(institution?.allowed_domains) ? institution.allowed_domains.join(', ') : '',
                 'settings-clearance-fee': (config?.clearance_fee_kobo || REPOSITORY_FEE_KOBO) / 100,
                 'settings-download-fee': (config?.download_fee_kobo || REPOSITORY_DOWNLOAD_FEE_KOBO) / 100,
                 'settings-institution-share': config?.institution_share_percent ?? 50,
@@ -1078,6 +1489,8 @@
             const institutionPayload = {
                 name: document.getElementById('settings-institution-name').value.trim(),
                 short_name: document.getElementById('settings-short-name').value.trim(),
+                slug: document.getElementById('settings-tenant-slug').value.trim().toLowerCase() || currentTenantSlug,
+                allowed_domains: document.getElementById('settings-allowed-domains').value.split(',').map(domain => domain.trim().toLowerCase()).filter(Boolean),
                 primary_color: document.getElementById('settings-primary-color').value,
                 accent_color: document.getElementById('settings-accent-color').value,
                 updated_at: new Date().toISOString()
@@ -1114,8 +1527,9 @@
                 if (configError) throw configError;
 
                 currentInstitution = institution;
+                currentTenantSlug = institution.slug || currentTenantSlug;
                 currentSystemConfig = config;
-                previewAdminTheme();
+                applyTenantBranding();
                 if (status) status.innerText = 'Settings saved.';
             } catch (err) {
                 if (status) status.innerText = 'Save failed: ' + err.message;
@@ -1132,6 +1546,7 @@
         }
 
         async function handleLogin() {
+            if (!ensureAppConfigured()) return;
             const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
             showAuthError('');
@@ -1158,6 +1573,7 @@
         }
 
         async function handleSignup() {
+            if (!ensureAppConfigured()) return;
             const matric = document.getElementById('signup-matric').value.trim();
             const email = document.getElementById('signup-email').value.trim();
             const password = document.getElementById('signup-password').value;
@@ -1217,6 +1633,7 @@
         }
 
         async function restoreSession() {
+            if (!supabaseClient) return;
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) return;
 
@@ -1234,24 +1651,26 @@
             }
         }
 
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                currentUserRole = null;
-                currentUserProfile = null;
-                userNotifications = [];
-                updateNav();
-            } else if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
-                try {
-                    const profile = await loadUserProfile(session.user.id);
-                    currentUser = session.user;
-                    currentUserRole = profile.role;
+        if (supabaseClient) {
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    currentUserRole = null;
+                    currentUserProfile = null;
+                    userNotifications = [];
                     updateNav();
-                } catch (err) {
-                    console.error('Auth state sync failed:', err.message);
+                } else if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION')) {
+                    try {
+                        const profile = await loadUserProfile(session.user.id);
+                        currentUser = session.user;
+                        currentUserRole = profile.role;
+                        updateNav();
+                    } catch (err) {
+                        console.error('Auth state sync failed:', err.message);
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // --- NAVIGATION ---
         function navigate(viewId) {
@@ -1262,7 +1681,7 @@
             if (viewId === 'landing') loadPublicProjects();
         }
         async function logout() {
-            await supabaseClient.auth.signOut();
+            if (supabaseClient) await supabaseClient.auth.signOut();
             currentUser = null;
             currentUserRole = null;
             navigate('landing');
@@ -1272,7 +1691,9 @@
             const navActions = document.getElementById('nav-actions');
             if (!currentUserRole) {
                 navLinks.innerHTML = '<span class="text-sm font-medium text-slate-600">Home</span>';
-                navActions.innerHTML = '<button onclick="openAuthModal(\'login\')" class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold">Login</button>';
+                navActions.innerHTML = appConfig.valid
+                    ? '<button onclick="openAuthModal(\'login\')" class="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold">Login</button>'
+                    : '<button onclick="showAppConfigError()" class="bg-red-50 text-red-700 border border-red-200 px-5 py-2.5 rounded-lg text-sm font-semibold">Configure</button>';
             } else {
                 navLinks.innerHTML = '<span class="text-sm font-bold text-primary uppercase">' + currentUserRole + ' Dashboard</span>';
                 navActions.innerHTML = `
@@ -1434,16 +1855,16 @@
             const sidebar = document.getElementById('admin-sidebar');
             sidebar.classList.toggle('-translate-x-full');
         }
-        function showAdminSection(id) {
+        function showAdminSection(id, link) {
             document.querySelectorAll('.admin-section').forEach(el => el.classList.remove('active'));
             document.getElementById('admin-'+id).classList.add('active');
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
-            event.target.closest('a').classList.add('active');
+            if (link) link.classList.add('active');
             if (window.innerWidth < 768) { toggleSidebar(); }
             if (id === 'dashboard') loadAdminDashboard();
             if (id === 'departments') loadCatalogue();
             if (id === 'payments') loadAdminPayments();
-            if (id === 'reports') loadReportsSummary();
+            if (id === 'reports') { loadReportsSummary(); loadReportAutomation(); }
             if (id === 'settings') loadAdminSettings();
         }
 
@@ -1466,6 +1887,224 @@
                 output.classList.add('hidden');
                 output.innerHTML = '';
             }
+            const nextRunInput = document.getElementById('report-schedule-next-run');
+            if (nextRunInput && !nextRunInput.value) {
+                const nextMonth = new Date();
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                nextMonth.setMinutes(0, 0, 0);
+                nextRunInput.value = toLocalDateTimeInput(nextMonth);
+            }
+        }
+
+        function setReportAutomationStatus(message, tone = 'info') {
+            const status = document.getElementById('report-automation-status');
+            if (!status) return;
+            const colors = {
+                info: 'text-slate-500',
+                success: 'text-emerald-700',
+                error: 'text-red-600'
+            };
+            status.className = `px-6 pb-5 text-sm ${colors[tone] || colors.info}`;
+            status.innerText = message || '';
+        }
+
+        async function loadReportAutomation() {
+            if (currentUserRole !== 'admin') return;
+            try {
+                if (!currentInstitution?.id) currentInstitution = await loadTenantContext();
+                await Promise.all([loadReportSchedules(), loadGeneratedReports()]);
+                setReportAutomationStatus('');
+            } catch (err) {
+                setReportAutomationStatus('Report automation unavailable: apply supabase/spms-core.sql and deploy scheduled-reports.', 'error');
+                console.warn('Report automation unavailable:', err.message);
+            }
+        }
+
+        async function createReportSchedule() {
+            if (!ensureAdminReportAccess()) return;
+            const reportType = document.getElementById('report-schedule-type')?.value || 'student_register';
+            const frequency = document.getElementById('report-schedule-frequency')?.value || 'monthly';
+            const nextRunValue = document.getElementById('report-schedule-next-run')?.value;
+            const recipients = reportRecipientList(document.getElementById('report-schedule-recipients')?.value || '');
+
+            try {
+                if (!currentInstitution?.id) currentInstitution = await loadTenantContext();
+                if (!currentInstitution?.id) throw new Error('Institution settings unavailable');
+
+                const nextRunAt = nextRunValue ? new Date(nextRunValue).toISOString() : new Date().toISOString();
+                const { error } = await supabaseClient.from('report_schedules').insert({
+                    institution_id: currentInstitution.id,
+                    created_by: currentUser?.id || null,
+                    report_type: reportType,
+                    frequency,
+                    next_run_at: nextRunAt,
+                    is_active: true,
+                    metadata: { email_recipients: recipients }
+                });
+                if (error) throw error;
+
+                setReportAutomationStatus('Schedule created.', 'success');
+                await loadReportAutomation();
+            } catch (err) {
+                setReportAutomationStatus('Could not create schedule: ' + err.message, 'error');
+            }
+        }
+
+        async function runDueReports() {
+            if (!ensureAdminReportAccess()) return;
+            setReportAutomationStatus('Running due reports...');
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('scheduled-reports', {
+                    body: { action: 'run_due' }
+                });
+                if (error) throw error;
+                if (data?.error) throw new Error(data.error);
+                setReportAutomationStatus(`Generated ${data?.generated?.length || 0} due report(s).`, 'success');
+                await loadReportAutomation();
+            } catch (err) {
+                setReportAutomationStatus('Scheduled run failed: ' + err.message, 'error');
+            }
+        }
+
+        async function runReportOnce() {
+            if (!ensureAdminReportAccess()) return;
+            const reportType = document.getElementById('report-schedule-type')?.value || 'student_register';
+            const recipients = reportRecipientList(document.getElementById('report-schedule-recipients')?.value || '');
+            setReportAutomationStatus('Generating report...');
+            try {
+                if (!currentInstitution?.id) currentInstitution = await loadTenantContext();
+                const { data, error } = await supabaseClient.functions.invoke('scheduled-reports', {
+                    body: {
+                        action: 'run_once',
+                        report_type: reportType,
+                        institution_id: currentInstitution?.id || null,
+                        email_recipients: recipients
+                    }
+                });
+                if (error) throw error;
+                if (data?.error) throw new Error(data.error);
+                setReportAutomationStatus(`${reportTypeLabel(reportType)} generated.`, 'success');
+                await loadGeneratedReports();
+            } catch (err) {
+                setReportAutomationStatus('Generate once failed: ' + err.message, 'error');
+            }
+        }
+
+        async function loadReportSchedules() {
+            const list = document.getElementById('report-schedules-list');
+            if (!list) return;
+            list.innerHTML = '<p class="p-4 text-sm text-slate-400">Loading schedules...</p>';
+
+            let query = supabaseClient
+                .from('report_schedules')
+                .select('id, report_type, frequency, is_active, next_run_at, last_run_at, created_at, metadata')
+                .order('next_run_at', { ascending: true });
+            if (currentInstitution?.id) query = query.eq('institution_id', currentInstitution.id);
+
+            const { data, error } = await query;
+            if (error) throw error;
+            const schedules = data || [];
+            list.innerHTML = schedules.length ? schedules.map(schedule => `
+                <div class="p-4 border-b border-slate-100 last:border-b-0 flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-bold text-primary">${escapeHtml(reportTypeLabel(schedule.report_type))}</p>
+                        <p class="text-xs text-slate-500">${escapeHtml(statusLabel(schedule.frequency))} - next ${formatDateTime(schedule.next_run_at)}</p>
+                        <p class="text-[11px] text-slate-400">Last run: ${schedule.last_run_at ? formatDateTime(schedule.last_run_at) : 'Not yet'}</p>
+                        <p class="text-[11px] text-slate-400">Email: ${escapeHtml(reportRecipientLabel(schedule.metadata))}</p>
+                    </div>
+                    <button onclick="toggleReportSchedule('${schedule.id}', ${schedule.is_active ? 'false' : 'true'})" class="${schedule.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'} px-3 py-2 rounded-lg text-xs font-bold">
+                        ${schedule.is_active ? 'Active' : 'Paused'}
+                    </button>
+                </div>
+            `).join('') : '<p class="p-4 text-sm text-slate-400">No schedules yet.</p>';
+        }
+
+        async function loadGeneratedReports() {
+            const list = document.getElementById('generated-reports-list');
+            if (!list) return;
+            list.innerHTML = '<p class="p-4 text-sm text-slate-400">Loading generated reports...</p>';
+
+            let query = supabaseClient
+                .from('generated_reports')
+                .select('id, report_type, file_path, row_count, generated_at')
+                .order('generated_at', { ascending: false })
+                .limit(10);
+            if (currentInstitution?.id) query = query.eq('institution_id', currentInstitution.id);
+
+            const { data, error } = await query;
+            if (error) throw error;
+            const reports = data || [];
+            list.innerHTML = reports.length ? reports.map(report => `
+                <div class="p-4 border-b border-slate-100 last:border-b-0 flex items-center justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-bold text-primary">${escapeHtml(reportTypeLabel(report.report_type))}</p>
+                        <p class="text-xs text-slate-500">${Number(report.row_count || 0)} rows - ${formatDateTime(report.generated_at)}</p>
+                    </div>
+                    <button onclick="downloadGeneratedReport('${encodeURIComponent(report.file_path)}')" class="bg-slate-100 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold">
+                        <i class="fas fa-download mr-1"></i>CSV
+                    </button>
+                </div>
+            `).join('') : '<p class="p-4 text-sm text-slate-400">No generated reports yet.</p>';
+        }
+
+        async function toggleReportSchedule(scheduleId, isActive) {
+            try {
+                const { error } = await supabaseClient
+                    .from('report_schedules')
+                    .update({ is_active: isActive, updated_at: new Date().toISOString() })
+                    .eq('id', scheduleId);
+                if (error) throw error;
+                setReportAutomationStatus(isActive ? 'Schedule resumed.' : 'Schedule paused.', 'success');
+                await loadReportSchedules();
+            } catch (err) {
+                setReportAutomationStatus('Could not update schedule: ' + err.message, 'error');
+            }
+        }
+
+        async function downloadGeneratedReport(filePath) {
+            try {
+                const decodedPath = decodeURIComponent(filePath);
+                const { data, error } = await supabaseClient.storage
+                    .from('reports')
+                    .createSignedUrl(decodedPath, 300);
+                if (error) throw error;
+                openSignedDownload(data.signedUrl || data.signedURL || data.signed_url);
+            } catch (err) {
+                setReportAutomationStatus('Download failed: ' + err.message, 'error');
+            }
+        }
+
+        function reportTypeLabel(reportType) {
+            const labels = {
+                student_register: 'Student Register',
+                project_lifecycle: 'Project Lifecycle',
+                financial: 'Financial Report',
+                archive: 'Archive Log'
+            };
+            return labels[reportType] || statusLabel(reportType);
+        }
+
+        function reportRecipientList(value) {
+            return String(value || '')
+                .split(/[\s,;]+/)
+                .map(email => email.trim().toLowerCase())
+                .filter(email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+                .filter((email, index, list) => list.indexOf(email) === index);
+        }
+
+        function reportRecipientLabel(metadata) {
+            const recipients = Array.isArray(metadata?.email_recipients) ? metadata.email_recipients : [];
+            return recipients.length ? recipients.join(', ') : 'Dashboard only';
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '';
+            return new Date(value).toLocaleString('en-NG');
+        }
+
+        function toLocalDateTimeInput(date) {
+            const offsetMs = date.getTimezoneOffset() * 60000;
+            return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
         }
 
         async function exportStudentReport() {
@@ -1602,7 +2241,7 @@
         async function fetchFinancialRows() {
             const { data, error } = await supabaseClient
                 .from('payments')
-                .select('amount, currency, transaction_type, institution_share_kobo, provider_share_kobo, paystack_reference, status, paid_at, created_at, profiles(full_name, matric)')
+                .select('amount, currency, transaction_type, institution_share_kobo, provider_share_kobo, paystack_reference, status, paid_at, created_at, profiles!payments_student_id_fkey(full_name, matric)')
                 .order('created_at', { ascending: false })
                 .limit(1000);
             if (error) throw error;
@@ -2023,13 +2662,7 @@
             const live = document.getElementById('live-hierarchy-container');
             try {
                 if (!currentInstitution?.id) {
-                    const { data: institution, error } = await supabaseClient
-                        .from('institutions')
-                        .select('*')
-                        .eq('slug', 'kasu')
-                        .maybeSingle();
-                    if (error) throw error;
-                    currentInstitution = institution;
+                    currentInstitution = await loadTenantContext();
                 }
                 if (!currentInstitution?.id) throw new Error('Institution settings unavailable');
 
@@ -2198,7 +2831,8 @@
         }
 
         function generatePaymentReference() {
-            return 'KASU-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+            const prefix = (currentInstitution?.short_name || 'SPMS').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+            return prefix + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
         }
 
         function markPaymentSuccess(payment) {
@@ -2502,13 +3136,13 @@
 
             let { data: payments, error } = await supabaseClient
                 .from('payments')
-                .select('amount, currency, transaction_type, paystack_reference, status, paid_at, created_at, profiles(full_name, matric)')
+                .select('amount, currency, transaction_type, paystack_reference, status, paid_at, created_at, profiles!payments_student_id_fkey(full_name, matric)')
                 .order('created_at', { ascending: false });
 
             if (error && /transaction_type/i.test(error.message || '')) {
                 const retry = await supabaseClient
                     .from('payments')
-                    .select('amount, currency, paystack_reference, status, paid_at, created_at, profiles(full_name, matric)')
+                    .select('amount, currency, paystack_reference, status, paid_at, created_at, profiles!payments_student_id_fkey(full_name, matric)')
                     .order('created_at', { ascending: false });
                 payments = retry.data;
                 error = retry.error;
@@ -2586,7 +3220,8 @@
             renderQrCode('receipt-qr-code', qrPayload, 120);
 
             const element = document.getElementById('receipt-template');
-            html2pdf().from(element).save('KASU-Clearance-Receipt.pdf');
+            const receiptName = (currentInstitution?.short_name || 'SPMS').replace(/[^a-zA-Z0-9_-]/g, '') + '-Clearance-Receipt.pdf';
+            html2pdf().from(element).save(receiptName);
         }
 
         // --- TEACHER LOGIC ---
@@ -2713,7 +3348,7 @@
             alert('Revision request sent to the student.');
         }
 
-        restoreSession().finally(() => {
+        loadTenantContext().then(() => restoreSession()).finally(() => {
             updateNav();
             loadPublicProjects();
         });

@@ -1,6 +1,8 @@
 # Deploy: supabase link --project-ref tejkksgyqltudpfuzjdo
 # Secrets:  supabase secrets set PAYSTACK_SECRET_KEY=sk_test_...
-# Deploy:   supabase functions deploy verify-paystack project-workflow repository-access verification-lookup --use-api
+# Optional: supabase secrets set REPORT_CRON_SECRET=long_random_value
+# Optional: supabase secrets set RESEND_API_KEY=re_... REPORT_FROM_EMAIL=reports@example.edu
+# Deploy:   supabase functions deploy verify-paystack project-workflow repository-access verification-lookup scheduled-reports --use-api
 
 [functions.verify-paystack]
 # JWT is validated inside the function via auth.getUser().
@@ -17,4 +19,8 @@ verify_jwt = false
 
 [functions.verification-lookup]
 # Public verification endpoint for QR scans. It returns controlled verification data only.
+verify_jwt = false
+
+[functions.scheduled-reports]
+# Admins are validated inside the function. Cron jobs can use REPORT_CRON_SECRET.
 verify_jwt = false
