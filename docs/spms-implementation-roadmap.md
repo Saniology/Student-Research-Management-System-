@@ -36,7 +36,7 @@ It adds:
 Deploy both functions:
 
 ```bash
-supabase functions deploy verify-paystack project-workflow --no-verify-jwt --use-api
+supabase functions deploy verify-paystack project-workflow repository-access --no-verify-jwt --use-api
 ```
 
 `verify-paystack`:
@@ -52,6 +52,11 @@ supabase functions deploy verify-paystack project-workflow --no-verify-jwt --use
 - `library_publish`: verify metadata, assign shelf number, publish anonymized catalog record.
 - `issue_receipt`: issue final clearance receipt after library publication.
 
+`repository-access`:
+
+- `get_download_url`: checks whether a user already unlocked a published project and returns a short-lived private signed URL.
+- `verify_download`: verifies the Paystack repository download fee, records the transaction split, creates a persistent unlock, and returns a short-lived signed URL.
+
 ## Frontend Upgrade Started
 
 - Student dashboard now collects title, abstract, degree, and PDF.
@@ -59,12 +64,11 @@ supabase functions deploy verify-paystack project-workflow --no-verify-jwt --use
 - Supervisor dashboard can load real assigned `projects` and call approval/revision actions.
 - Library dashboard can load approved projects and publish them to the public catalog.
 - Public repository can read anonymized `public_catalog` records, with demo fallback.
+- Public repository download buttons now route through Paystack and the `repository-access` function for paid unlocks.
 
 ## Still Remaining
 
-- Real paid repository download flow and `repository_download` Paystack verification.
 - Dynamic PDF watermarking before download.
-- Signed storage URLs for authorized PDF access.
 - Server-generated QR code images.
 - Admin settings UI for fees, academic hierarchy, institution theme, and Paystack split rules.
 - Real analytics charts backed by `admin_overview`.

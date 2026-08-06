@@ -1,6 +1,6 @@
 # Deploy: supabase link --project-ref tejkksgyqltudpfuzjdo
 # Secrets:  supabase secrets set PAYSTACK_SECRET_KEY=sk_test_...
-# Deploy:   supabase functions deploy verify-paystack project-workflow --use-api
+# Deploy:   supabase functions deploy verify-paystack project-workflow repository-access --use-api
 
 [functions.verify-paystack]
 # JWT is validated inside the function via auth.getUser().
@@ -8,5 +8,9 @@
 verify_jwt = false
 
 [functions.project-workflow]
+# JWT is validated inside the function via auth.getUser().
+verify_jwt = false
+
+[functions.repository-access]
 # JWT is validated inside the function via auth.getUser().
 verify_jwt = false

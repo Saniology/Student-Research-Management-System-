@@ -14,12 +14,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --spms-primary: #065F46;
+            --spms-accent: #F59E0B;
+        }
         body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; color: #334155; margin: 0; }
         h1, h2, h3, h4, .font-display { font-family: 'Fraunces', serif; color: #0F172A; }
-        .bg-primary { background-color: #065F46; }
-        .text-primary { color: #065F46; }
-        .bg-accent { background-color: #F59E0B; }
-        .text-accent { color: #F59E0B; }
+        .bg-primary { background-color: var(--spms-primary); }
+        .text-primary { color: var(--spms-primary); }
+        .bg-accent { background-color: var(--spms-accent); }
+        .text-accent { color: var(--spms-accent); }
         .premium-shadow { box-shadow: 0 10px 40px -15px rgba(6, 95, 70, 0.1); }
         .card-hover { transition: all 0.3s ease; }
         .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(6, 95, 70, 0.1); }
@@ -28,7 +32,7 @@
         #admin.active-view { display: flex !important; }
         .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(12px); border: 1px solid rgba(226, 232, 240, 0.8); }
         .glass-input { background: rgba(248, 250, 252, 0.9); border: 1px solid rgba(203, 213, 225, 0.8); color: #0F172A; }
-        .glass-input:focus { border-color: #065F46; outline: none; }
+        .glass-input:focus { border-color: var(--spms-primary); outline: none; }
         .blueprint-bg { background-color: #FFFFFF; position: relative; overflow: hidden; }
         .blueprint-bg::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 0; pointer-events: none; background-image: url("data:image/svg+xml,%3Csvg width='150' height='150' viewBox='0 0 150 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23065F46' stroke-width='1' stroke-opacity='0.06'%3E%3Cpath d='M0 0 L150 150 M0 150 L150 0'/%3E%3Ccircle cx='75' cy='75' r='30'/%3E%3Ccircle cx='75' cy='75' r='60'/%3E%3C/g%3E%3C/svg%3E"); }
         .blueprint-bg > * { position: relative; z-index: 1; }
@@ -37,7 +41,7 @@
         .admin-sidebar { background-color: #0F172A; color: #94a3b8; }
         .sidebar-link { transition: all 0.2s; border-left: 3px solid transparent; cursor: pointer; }
         .sidebar-link:hover { background-color: #1e293b; color: #fff; }
-        .sidebar-link.active { background-color: #065F46; color: #fff; border-left-color: #F59E0B; }
+        .sidebar-link.active { background-color: var(--spms-primary); color: #fff; border-left-color: var(--spms-accent); }
         .admin-section { display: none; }
         .admin-section.active { display: block; }
         #receipt-template { position: absolute; left: -9999px; top: 0; width: 800px; padding: 40px; background: white; font-family: 'Inter', sans-serif; }
@@ -371,7 +375,7 @@
                 <div id="admin-payments" class="admin-section">
                     <h1 class="text-3xl font-display font-bold text-primary mb-8">Payment Records</h1>
                     <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
-                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Amount</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Reference</th><th class="p-4 font-bold">Status</th></tr></thead><tbody id="admin-payments-body" class="text-sm divide-y divide-slate-200">
+                        <div class="overflow-x-auto"><table class="w-full text-left border-collapse min-w-[600px]"><thead><tr class="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><th class="p-4 font-bold">Student</th><th class="p-4 font-bold">Type</th><th class="p-4 font-bold">Amount</th><th class="p-4 font-bold">Date</th><th class="p-4 font-bold">Reference</th><th class="p-4 font-bold">Status</th></tr></thead><tbody id="admin-payments-body" class="text-sm divide-y divide-slate-200">
                             <tr><td colspan="5" class="p-8 text-center text-slate-400">Loading payments...</td></tr>
                         </tbody></table></div>
                     </div>
@@ -506,9 +510,11 @@
         let pendingVerification = null;
         let supervisorProjects = [];
         let libraryQueueProjects = [];
+        let publicCatalogItems = [];
         let selectedLibraryProject = null;
         let currentLibraryView = 'grid'; // 'grid' or 'list'
         const REPOSITORY_FEE_KOBO = 200000; // ₦2,000
+        const REPOSITORY_DOWNLOAD_FEE_KOBO = 50000; // ₦500
 
         // Official User Provided Pictures
         const pic1 = "https://z-cdn-media.chatglm.cn/files/b1769e10-556f-4748-a52e-66470f135c19.jpeg?auth_key=1883957539-7649f2ae122845ed800c8f48ef5c5374-0-4b8401d326f5b34dd22ff3f2b9fabc0b";
@@ -866,10 +872,13 @@
             grid.innerHTML = '<p class="text-slate-500 text-center col-span-full py-8">Loading repository...</p>';
 
             let catalogItems = projects.map(p => ({
+                id: 'demo-' + p.id,
+                project_id: null,
                 title: p.title,
                 abstract: p.abstract,
                 degree: p.degree,
-                department_name: p.dept
+                department_name: p.dept,
+                isDemo: true
             }));
 
             try {
@@ -884,7 +893,9 @@
                 console.warn('Using demo public repository:', err.message);
             }
 
-            grid.innerHTML = catalogItems.map(p => `
+            publicCatalogItems = catalogItems;
+
+            grid.innerHTML = publicCatalogItems.map(p => `
                 <div class="glass-card p-6 rounded-xl flex flex-col card-hover border border-slate-200 premium-shadow">
                     <div class="flex justify-between items-start mb-4">
                         <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${escapeHtml(p.degree || 'Research')}</span>
@@ -893,11 +904,104 @@
                     <h3 class="text-base font-display font-bold text-primary mb-3">${escapeHtml(p.title)}</h3>
                     <p class="text-xs text-slate-600 mb-4 flex-grow">${escapeHtml((p.abstract || '').substring(0, 150))}${(p.abstract || '').length > 150 ? '...' : ''}</p>
                     <div class="mt-auto pt-4 flex space-x-2 border-t border-slate-200">
-                        <button onclick="alert('${escapeHtml(p.abstract || 'No abstract available.').replace(/'/g, '\\&#39;')}')" class="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">View Abstract</button>
-                        <button onclick="openAuthModal('signup')" class="flex-1 bg-primary text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700"><i class="fas fa-lock mr-1"></i> Download</button>
+                        <button onclick="showPublicAbstract('${p.id}')" class="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">View Abstract</button>
+                        <button onclick="handleRepositoryDownload('${p.id}')" class="flex-1 bg-primary text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700"><i class="fas fa-lock mr-1"></i> Download</button>
                     </div>
                 </div>
             `).join('');
+        }
+
+        function showPublicAbstract(itemId) {
+            const item = publicCatalogItems.find(p => String(p.id) === String(itemId));
+            alert(item?.abstract || 'No abstract available.');
+        }
+
+        async function handleRepositoryDownload(itemId) {
+            const item = publicCatalogItems.find(p => String(p.id) === String(itemId));
+            if (!item) return;
+            if (!item.project_id) {
+                alert('This is a demo catalog record. Publish a real project from the library dashboard to test paid downloads.');
+                return;
+            }
+            if (!currentUser) {
+                openAuthModal('login');
+                alert('Log in or create an account before downloading repository PDFs.');
+                return;
+            }
+            if (!window.PAYSTACK_PUBLIC_KEY || window.PAYSTACK_PUBLIC_KEY.includes('YOUR_PAYSTACK')) {
+                alert('Paystack is not configured. Add your public key in js/config.js');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('repository-access', {
+                    body: {
+                        action: 'get_download_url',
+                        project_id: item.project_id
+                    }
+                });
+
+                if (error || data?.error) throw new Error(data?.error || error.message);
+                if (data?.signed_url) {
+                    openSignedDownload(data.signed_url);
+                    return;
+                }
+
+                const amount = data?.amount || REPOSITORY_DOWNLOAD_FEE_KOBO;
+                openRepositoryPaystack(item, amount);
+            } catch (err) {
+                alert('Could not start repository download: ' + err.message);
+            }
+        }
+
+        function openRepositoryPaystack(item, amount) {
+            if (typeof PaystackPop === 'undefined') {
+                alert('Paystack failed to load. Check your internet connection and refresh.');
+                return;
+            }
+
+            const reference = 'KASU-DL-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
+            const handler = PaystackPop.setup({
+                key: window.PAYSTACK_PUBLIC_KEY,
+                email: currentUser.email,
+                amount,
+                currency: 'NGN',
+                ref: reference,
+                metadata: {
+                    custom_fields: [
+                        { display_name: 'Project', variable_name: 'project_id', value: item.project_id },
+                        { display_name: 'Download Fee', variable_name: 'fee_type', value: 'repository_download' }
+                    ]
+                },
+                callback: function(response) {
+                    verifyRepositoryDownload(item, response.reference);
+                }
+            });
+
+            handler.openIframe();
+        }
+
+        async function verifyRepositoryDownload(item, reference) {
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('repository-access', {
+                    body: {
+                        action: 'verify_download',
+                        project_id: item.project_id,
+                        reference
+                    }
+                });
+
+                if (error || data?.error) throw new Error(data?.error || error.message);
+                if (!data?.signed_url) throw new Error('Download link was not returned.');
+                openSignedDownload(data.signed_url);
+                alert('Repository access unlocked. Your private download link expires in 5 minutes.');
+            } catch (err) {
+                alert('Download verification failed: ' + err.message + '. Save this reference: ' + reference);
+            }
+        }
+
+        function openSignedDownload(url) {
+            window.open(url, '_blank', 'noopener');
         }
 
         // --- LIBRARY CATALOG LOGIC ---
@@ -1386,18 +1490,27 @@
             const tbody = document.getElementById('admin-payments-body');
             if (!tbody) return;
 
-            const { data: payments, error } = await supabaseClient
+            let { data: payments, error } = await supabaseClient
                 .from('payments')
-                .select('amount, currency, paystack_reference, status, paid_at, created_at, profiles(full_name, matric)')
+                .select('amount, currency, transaction_type, paystack_reference, status, paid_at, created_at, profiles(full_name, matric)')
                 .order('created_at', { ascending: false });
 
+            if (error && /transaction_type/i.test(error.message || '')) {
+                const retry = await supabaseClient
+                    .from('payments')
+                    .select('amount, currency, paystack_reference, status, paid_at, created_at, profiles(full_name, matric)')
+                    .order('created_at', { ascending: false });
+                payments = retry.data;
+                error = retry.error;
+            }
+
             if (error) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-red-500">Could not load payments. Run supabase/payments.sql first.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-500">Could not load payments. Run supabase/payments.sql first.</td></tr>';
                 return;
             }
 
             if (!payments || payments.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">No payments recorded yet.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400">No payments recorded yet.</td></tr>';
                 return;
             }
 
@@ -1409,6 +1522,7 @@
                 return `
                     <tr>
                         <td class="p-4 text-slate-700">${studentName}</td>
+                        <td class="p-4 text-slate-500">${statusLabel(p.transaction_type || 'clearance_fee')}</td>
                         <td class="p-4 text-slate-700">${formatNaira(p.amount)}</td>
                         <td class="p-4 text-slate-500">${formattedDate}</td>
                         <td class="p-4 text-slate-500 font-mono text-xs">${p.paystack_reference}</td>
@@ -1419,9 +1533,30 @@
         }
 
         // --- PDF RECEIPT GENERATOR ---
-        function generateReceipt() {
+        async function generateReceipt() {
             if (!currentPayment || !currentUserProfile) {
                 alert('Complete your payment first to download a receipt.');
+                return;
+            }
+            if (!currentProject || !['published', 'cleared'].includes(currentProject.status)) {
+                alert('Library clearance must be completed before receipt generation.');
+                return;
+            }
+
+            let receipt = null;
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('project-workflow', {
+                    body: {
+                        action: 'issue_receipt',
+                        project_id: currentProject.id
+                    }
+                });
+                if (error || data?.error) throw new Error(data?.error || error.message);
+                receipt = data.receipt;
+                currentProject = data.project || currentProject;
+                renderStudentProjectStatus();
+            } catch (err) {
+                alert('Could not issue receipt: ' + err.message);
                 return;
             }
 
@@ -1430,6 +1565,8 @@
                 <p><strong>Student:</strong> ${currentUserProfile.full_name || '—'}</p>
                 <p><strong>Matric:</strong> ${currentUserProfile.matric || '—'}</p>
                 <p><strong>Department:</strong> ${currentUserProfile.department || '—'}</p>
+                <p><strong>Project:</strong> ${currentProject.title || '—'}</p>
+                <p><strong>Verification Code:</strong> ${receipt?.verification_code || '—'}</p>
                 <p><strong>Amount Paid:</strong> ${formatNaira(currentPayment.amount)}</p>
                 <p><strong>Payment Reference:</strong> ${currentPayment.paystack_reference}</p>
                 <p><strong>Date:</strong> ${new Date(currentPayment.paid_at || currentPayment.created_at).toLocaleString('en-NG')}</p>
