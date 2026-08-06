@@ -47,6 +47,10 @@ Use `.env.production.example` as the owner-only template for local deployment
 environment variables. Copy it to `.env.production.local` and fill real values
 there.
 
+The deploy script automatically loads `.env.production.local`. It uses a global
+`supabase` CLI when installed, otherwise it falls back to `npx --yes supabase`.
+Set `SUPABASE_CLI` only when you need a custom command path.
+
 ## 3. Edge Functions
 
 Deploy all functions:
@@ -56,6 +60,18 @@ bash supabase/deploy-verify-paystack.sh
 ```
 
 Confirm CORS preflight returns `HTTP 204`:
+
+```bash
+npm run verify:deploy
+```
+
+The verifier checks every deployed Edge Function preflight route, detects
+`NOT_FOUND`, validates CORS headers, and calls `health-check`. It reads
+`SUPABASE_URL` from `.env.production.local` or `js/config.js`. Add
+`HEALTH_CHECK_SECRET` to `.env.production.local` when detailed health checks are
+protected.
+
+Manual equivalent:
 
 ```bash
 curl -i -X OPTIONS "https://tejkksgyqltudpfuzjdo.supabase.co/functions/v1/verify-paystack"
@@ -135,6 +151,7 @@ Before handing over:
 npm run verify:a11y
 npm run verify:db
 npm run verify:email
+npm run verify:deploy
 npm run verify:security
 npm run verify:ui
 npm run verify:workflow

@@ -37,6 +37,7 @@ Use this checklist before a production handover or institutional demo.
   `REPORT_CRON_SECRET`, `HEALTH_CHECK_SECRET`, `RESEND_API_KEY`, `REPORT_FROM_EMAIL`,
   `REPORT_DELIVERY_EMAILS`, `REPORT_LINK_TTL_SECONDS`.
 - Deploy all functions with `bash supabase/deploy-verify-paystack.sh`.
+- Run `npm run verify:deploy`.
 - Confirm every Edge Function `OPTIONS` request returns `HTTP 204`.
 - Confirm `health-check` returns `status: ok` after SQL and bucket setup.
 

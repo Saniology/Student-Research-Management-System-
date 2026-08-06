@@ -67,6 +67,10 @@ npx supabase secrets set REPORT_LINK_TTL_SECONDS=604800
 bash supabase/deploy-verify-paystack.sh
 ```
 
+The deploy script loads owner-only values from `.env.production.local`, uses a
+global `supabase` CLI when one is installed, and otherwise falls back to
+`npx --yes supabase`.
+
 The owner must also apply the SQL files in this order when setting up or
 upgrading the hosted database:
 
@@ -260,6 +264,18 @@ HTTP/1.0 200 OK
 ```
 
 Check deployed Edge Function CORS:
+
+```bash
+npm run verify:deploy
+```
+
+This checks all Supabase Edge Function preflight routes and the `health-check`
+endpoint using `SUPABASE_URL` from `.env.production.local` or `js/config.js`.
+The owner should run it after deploying functions. A colleague who cannot log in
+to Supabase can still run this command because it only calls public function
+URLs; detailed health output needs `HEALTH_CHECK_SECRET` in their local env file.
+
+Manual equivalent:
 
 ```bash
 curl -i -X OPTIONS "https://tejkksgyqltudpfuzjdo.supabase.co/functions/v1/verify-paystack"

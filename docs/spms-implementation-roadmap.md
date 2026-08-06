@@ -119,6 +119,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Public portal UI now uses a visual first screen, restrained card radius, clear action hierarchy, and mobile-first viewport behavior.
 - Cloudflare DNS tenant provisioning can be previewed or applied through `npm run dns:cloudflare`.
 - Health monitoring is available through the `health-check` Edge Function.
+- `npm run verify:deploy` checks live Supabase Edge Function preflight routes, detects missing deployments, validates CORS headers, and calls the production health endpoint.
 - `npm run verify:a11y` checks static accessibility basics: document metadata, image alt text, form labels, named buttons, focus safety, and responsive type guardrails.
 - `npm run verify:db` checks SQL run order, RLS coverage, foreign keys, indexes, constraints, private storage buckets, and `SECURITY DEFINER` search paths.
 - `npm run verify:email` checks production email deliverability handover, mail-secret safety, signed report links, and scheduled report fallback behavior.

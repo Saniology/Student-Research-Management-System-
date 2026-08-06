@@ -277,6 +277,24 @@ function checkDeployConfig() {
     }
   });
 
+  if (/\.env\.production\.local/.test(deployScript)) {
+    pass('deploy script loads owner production env file');
+  } else {
+    fail('deploy script does not load owner production env file');
+  }
+
+  if (/npx --yes supabase/.test(deployScript)) {
+    pass('deploy script falls back to npx Supabase CLI');
+  } else {
+    fail('deploy script does not fall back to npx Supabase CLI');
+  }
+
+  if (/SUPABASE_CLI/.test(deployScript)) {
+    pass('deploy script supports custom Supabase CLI command');
+  } else {
+    fail('deploy script does not support custom Supabase CLI command');
+  }
+
   run('bash', ['-n', 'supabase/deploy-verify-paystack.sh'], 'deploy script syntax is valid');
 }
 
