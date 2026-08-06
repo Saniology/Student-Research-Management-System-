@@ -144,6 +144,7 @@ async function handleLibraryPublish(
 
   const qrPayload = JSON.stringify({
     type: "spms-project",
+    endpoint: `${supabaseUrl}/functions/v1/verification-lookup`,
     project_id: project.id,
     shelf_number: shelfNumber,
     issued_at: new Date().toISOString(),
@@ -214,6 +215,7 @@ async function handleIssueReceipt(
   const verificationCode = `SPMS-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
   const qrPayload = JSON.stringify({
     type: "spms-clearance-receipt",
+    endpoint: `${supabaseUrl}/functions/v1/verification-lookup`,
     project_id: project.id,
     student_id: project.student_id,
     verification_code: verificationCode,

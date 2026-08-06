@@ -10,6 +10,7 @@
     <script src="https://js.paystack.co/v1/inline.js"></script>
     <script src="js/config.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -112,6 +113,14 @@
                 <div class="text-center mb-12">
                     <span class="text-xs font-bold text-accent uppercase tracking-widest">Public Repository</span>
                     <h2 class="text-3xl md:text-4xl font-display font-semibold text-primary mt-2">Browse Past Research</h2>
+                </div>
+                <div class="glass-card rounded-xl p-4 premium-shadow mb-8 flex flex-col md:flex-row gap-3 items-center">
+                    <div class="flex-1 w-full">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Verify Clearance Receipt</label>
+                        <input id="public-verification-code" type="text" placeholder="SPMS-XXXXXXXX" class="mt-1 w-full p-3 glass-input rounded-lg text-sm font-mono">
+                    </div>
+                    <button onclick="verifyPublicReceipt()" class="w-full md:w-auto bg-primary text-white px-6 py-3 rounded-lg text-sm font-bold hover:bg-emerald-700 transition">Verify Code</button>
+                    <p id="public-verification-result" class="w-full md:w-1/3 text-sm text-slate-600"></p>
                 </div>
                 <div id="public-project-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
             </div>
@@ -352,6 +361,33 @@
                 <!-- Departments Section (Contains the massive Catalogue) -->
                 <div id="admin-departments" class="admin-section">
                     <h1 class="text-3xl font-display font-bold text-primary mb-8">Departments & Catalogue</h1>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white rounded-xl premium-shadow border border-slate-200 p-6">
+                            <h3 class="text-lg font-display font-bold text-primary mb-4">Add College</h3>
+                            <input id="college-name-input" type="text" placeholder="College name" class="w-full p-3 glass-input rounded-lg text-sm mb-3">
+                            <button onclick="createCollege()" class="w-full bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Add College</button>
+                        </div>
+                        <div class="bg-white rounded-xl premium-shadow border border-slate-200 p-6">
+                            <h3 class="text-lg font-display font-bold text-primary mb-4">Add Faculty</h3>
+                            <select id="faculty-college-select" class="w-full p-3 glass-input rounded-lg text-sm mb-3"><option value="">Select college</option></select>
+                            <input id="faculty-name-input" type="text" placeholder="Faculty name" class="w-full p-3 glass-input rounded-lg text-sm mb-3">
+                            <button onclick="createFaculty()" class="w-full bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Add Faculty</button>
+                        </div>
+                        <div class="bg-white rounded-xl premium-shadow border border-slate-200 p-6">
+                            <h3 class="text-lg font-display font-bold text-primary mb-4">Add Department</h3>
+                            <select id="department-faculty-select" class="w-full p-3 glass-input rounded-lg text-sm mb-3"><option value="">Select faculty</option></select>
+                            <div class="grid grid-cols-3 gap-2 mb-3">
+                                <input id="department-code-input" type="text" placeholder="Code" class="p-3 glass-input rounded-lg text-sm">
+                                <input id="department-name-input" type="text" placeholder="Department name" class="col-span-2 p-3 glass-input rounded-lg text-sm">
+                            </div>
+                            <button onclick="createDepartment()" class="w-full bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold">Add Department</button>
+                        </div>
+                    </div>
+                    <p id="hierarchy-status" class="text-sm text-slate-500 mb-4"></p>
+                    <div id="live-hierarchy-container" class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden mb-8 hidden">
+                        <div class="p-6 border-b border-slate-200"><h3 class="text-lg font-display font-bold text-primary">Live Academic Hierarchy</h3><p class="text-sm text-slate-500 mt-1">Database-backed colleges, faculties, and departments.</p></div>
+                        <div class="p-6 space-y-5" id="live-hierarchy-list"></div>
+                    </div>
                     <div class="bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden mb-8">
                         <div class="p-6 border-b border-slate-200"><h3 class="text-lg font-display font-bold text-primary">Project Catalogue (Faculties & Courses)</h3><p class="text-sm text-slate-500 mt-1">Comprehensive list of all undergraduate and postgraduate courses.</p></div>
                         <div class="p-6 space-y-8" id="catalogue-container"></div>
@@ -483,6 +519,13 @@
                     <input id="lib-doi-input" type="text" placeholder="Optional DOI" class="p-3 glass-input rounded-lg text-sm">
                 </div>
                 <textarea id="lib-comment-input" rows="3" placeholder="Cataloging note" class="w-full p-3 glass-input rounded-lg text-sm mb-4"></textarea>
+                <div id="lib-qr-panel" class="hidden mb-4 bg-slate-50 border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row gap-4 items-center">
+                    <div id="lib-qr-code" class="bg-white p-2 rounded border border-slate-200"></div>
+                    <div class="flex-1 text-sm">
+                        <p class="text-xs uppercase font-bold text-slate-400">Catalog Verification QR</p>
+                        <p id="lib-qr-text" class="text-slate-600 mt-1 break-all"></p>
+                    </div>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <button onclick="publishLibraryProject()" class="bg-emerald-600 text-white px-4 py-3 rounded-lg text-xs font-bold hover:bg-emerald-700 transition"><i class="fas fa-book mr-1"></i> Verify & Publish</button>
                     <button onclick="closeLibraryModal()" class="bg-slate-100 text-primary px-4 py-3 rounded-lg text-xs font-bold hover:bg-slate-200 transition"><i class="fas fa-times mr-1"></i> Close</button>
@@ -523,6 +566,13 @@
         </div>
         <p style="font-size: 14px; color: #64748b;">This document serves as official proof that the student has successfully completed the digital requirements for final-year project clearance.</p>
         <div id="receipt-details" style="margin-top: 24px; font-size: 14px; color: #334155;"></div>
+        <div style="margin-top: 28px; display: flex; align-items: center; gap: 18px; border-top: 1px solid #E2E8F0; padding-top: 20px;">
+            <div id="receipt-qr-code" style="width: 120px; height: 120px;"></div>
+            <div>
+                <p style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700; margin: 0 0 6px 0;">Digital Verification</p>
+                <p id="receipt-qr-text" style="font-size: 12px; color: #334155; margin: 0; word-break: break-all;"></p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -547,6 +597,7 @@
         let libraryQueueProjects = [];
         let publicCatalogItems = [];
         let selectedLibraryProject = null;
+        let academicHierarchy = { colleges: [], faculties: [], departments: [] };
         let currentLibraryView = 'grid'; // 'grid' or 'list'
         const REPOSITORY_FEE_KOBO = 200000; // ₦2,000
         const REPOSITORY_DOWNLOAD_FEE_KOBO = 50000; // ₦500
@@ -730,6 +781,59 @@
                 rejected: 'This submission was rejected. Contact your department for guidance.'
             };
             return map[status] || 'No active thesis workflow yet.';
+        }
+
+        function renderQrCode(elementId, text, size = 128) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.innerHTML = '';
+            if (!text) return;
+            if (typeof QRCode === 'undefined') {
+                el.innerHTML = '<p class="text-xs text-red-500">QR library unavailable</p>';
+                return;
+            }
+            new QRCode(el, {
+                text,
+                width: size,
+                height: size,
+                colorDark: '#0F172A',
+                colorLight: '#FFFFFF',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        function buildVerificationPayload(type, payload) {
+            return JSON.stringify({
+                type,
+                endpoint: window.SUPABASE_URL + '/functions/v1/verification-lookup',
+                ...payload
+            });
+        }
+
+        async function verifyPublicReceipt() {
+            const code = document.getElementById('public-verification-code').value.trim();
+            const result = document.getElementById('public-verification-result');
+            if (!code) {
+                result.innerText = 'Enter a receipt verification code.';
+                return;
+            }
+            result.innerText = 'Verifying...';
+
+            try {
+                const res = await fetch(window.SUPABASE_URL + '/functions/v1/verification-lookup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        apikey: window.SUPABASE_ANON_KEY
+                    },
+                    body: JSON.stringify({ type: 'receipt', verification_code: code })
+                });
+                const data = await res.json();
+                if (!res.ok || data?.error) throw new Error(data?.error || 'Verification failed');
+                result.innerHTML = `<span class="font-bold text-emerald-700">Valid receipt</span><br>${escapeHtml(data.student?.full_name || 'Student')} • ${escapeHtml(data.project?.title || 'Project')}`;
+            } catch (err) {
+                result.innerHTML = `<span class="font-bold text-red-600">Invalid</span><br>${escapeHtml(err.message)}`;
+            }
         }
 
         function applyInstitutionTheme(primary = '#065F46', accent = '#F59E0B') {
@@ -1116,6 +1220,7 @@
             event.target.closest('a').classList.add('active');
             if (window.innerWidth < 768) { toggleSidebar(); }
             if (id === 'dashboard') loadAdminDashboard();
+            if (id === 'departments') loadCatalogue();
             if (id === 'payments') loadAdminPayments();
             if (id === 'settings') loadAdminSettings();
         }
@@ -1266,7 +1371,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('projects')
-                    .select('id, title, abstract, degree, status, shelf_number, doi, created_at, profiles!projects_student_id_fkey(full_name, matric), departments(name)')
+                    .select('id, title, abstract, degree, status, shelf_number, doi, qr_payload, created_at, profiles!projects_student_id_fkey(full_name, matric), departments(name)')
                     .in('status', ['supervisor_approved', 'library_review', 'published', 'cleared'])
                     .order('created_at', { ascending: false });
 
@@ -1282,6 +1387,7 @@
                     status: p.status,
                     shelf_number: p.shelf_number || '',
                     doi: p.doi || '',
+                    qr_payload: p.qr_payload || '',
                     isReal: true
                 }));
             } catch (err) {
@@ -1382,6 +1488,10 @@
                 document.getElementById('lib-shelf-input').value = p.shelf_number || '';
                 document.getElementById('lib-doi-input').value = p.doi || '';
                 document.getElementById('lib-comment-input').value = '';
+                const qrPayload = p.qr_payload || (p.isReal && ['published', 'cleared'].includes(p.status) ? buildVerificationPayload('project', { project_id: p.id }) : '');
+                document.getElementById('lib-qr-panel').classList.toggle('hidden', !qrPayload);
+                document.getElementById('lib-qr-text').innerText = qrPayload || '';
+                renderQrCode('lib-qr-code', qrPayload, 112);
                 document.getElementById('library-modal').classList.add('active');
             }
         }
@@ -1415,13 +1525,151 @@
             }
 
             closeLibraryModal();
+            selectedLibraryProject.qr_payload = data.project?.qr_payload || buildVerificationPayload('project', { project_id: selectedLibraryProject.id });
+            selectedLibraryProject.status = data.project?.status || 'published';
             await initLibrary();
             await loadPublicProjects();
             alert('Project verified and published to the public catalog.');
         }
 
+        // --- ADMIN ACADEMIC HIERARCHY ---
+        async function loadAcademicHierarchy() {
+            const status = document.getElementById('hierarchy-status');
+            const live = document.getElementById('live-hierarchy-container');
+            try {
+                if (!currentInstitution?.id) {
+                    const { data: institution, error } = await supabaseClient
+                        .from('institutions')
+                        .select('*')
+                        .eq('slug', 'kasu')
+                        .maybeSingle();
+                    if (error) throw error;
+                    currentInstitution = institution;
+                }
+                if (!currentInstitution?.id) throw new Error('Institution settings unavailable');
+
+                const [collegesRes, facultiesRes, departmentsRes] = await Promise.all([
+                    supabaseClient.from('colleges').select('id,name,created_at').eq('institution_id', currentInstitution.id).order('name'),
+                    supabaseClient.from('faculties').select('id,name,college_id,created_at').eq('institution_id', currentInstitution.id).order('name'),
+                    supabaseClient.from('departments').select('id,name,code,faculty_id,created_at').eq('institution_id', currentInstitution.id).order('name')
+                ]);
+
+                if (collegesRes.error) throw collegesRes.error;
+                if (facultiesRes.error) throw facultiesRes.error;
+                if (departmentsRes.error) throw departmentsRes.error;
+
+                academicHierarchy = {
+                    colleges: collegesRes.data || [],
+                    faculties: facultiesRes.data || [],
+                    departments: departmentsRes.data || []
+                };
+                renderAcademicHierarchy();
+                populateHierarchySelects();
+                if (live) live.classList.remove('hidden');
+                if (status) status.innerText = '';
+                return true;
+            } catch (err) {
+                console.warn('Academic hierarchy unavailable:', err.message);
+                if (live) live.classList.add('hidden');
+                if (status) status.innerText = 'Apply supabase/spms-core.sql to enable live academic hierarchy management.';
+                return false;
+            }
+        }
+
+        function renderAcademicHierarchy() {
+            const container = document.getElementById('live-hierarchy-list');
+            if (!container) return;
+            if (!academicHierarchy.colleges.length && !academicHierarchy.faculties.length) {
+                container.innerHTML = '<p class="text-sm text-slate-400">No academic hierarchy records yet.</p>';
+                return;
+            }
+
+            const unassignedFaculties = academicHierarchy.faculties.filter(f => !f.college_id);
+            const blocks = academicHierarchy.colleges.map(college => renderCollegeBlock(college));
+            if (unassignedFaculties.length) {
+                blocks.push(renderCollegeBlock({ id: 'unassigned', name: 'Unassigned Faculties' }, unassignedFaculties));
+            }
+            container.innerHTML = blocks.join('');
+        }
+
+        function renderCollegeBlock(college, overrideFaculties = null) {
+            const faculties = overrideFaculties || academicHierarchy.faculties.filter(f => f.college_id === college.id);
+            const facultyHtml = faculties.length ? faculties.map(faculty => {
+                const departments = academicHierarchy.departments.filter(d => d.faculty_id === faculty.id);
+                return `
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                        <div class="flex justify-between gap-3">
+                            <p class="text-sm font-bold text-primary">${escapeHtml(faculty.name)}</p>
+                            <span class="text-[10px] uppercase text-slate-400">${departments.length} departments</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            ${departments.length ? departments.map(d => `<span class="text-[11px] bg-white text-slate-600 px-2 py-1 rounded border border-slate-200">${escapeHtml(d.code || '—')} • ${escapeHtml(d.name)}</span>`).join('') : '<span class="text-xs text-slate-400">No departments yet</span>'}
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<p class="text-sm text-slate-400">No faculties yet.</p>';
+
+            return `
+                <div class="border border-slate-200 rounded-xl p-5">
+                    <h4 class="text-md font-bold text-primary mb-4 flex items-center"><i class="fas fa-landmark mr-2 text-accent"></i> ${escapeHtml(college.name)}</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${facultyHtml}</div>
+                </div>
+            `;
+        }
+
+        function populateHierarchySelects() {
+            const collegeSelect = document.getElementById('faculty-college-select');
+            const facultySelect = document.getElementById('department-faculty-select');
+            if (collegeSelect) {
+                collegeSelect.innerHTML = '<option value="">Select college</option>' + academicHierarchy.colleges.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+            }
+            if (facultySelect) {
+                facultySelect.innerHTML = '<option value="">Select faculty</option>' + academicHierarchy.faculties.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
+            }
+        }
+
+        async function createCollege() {
+            const input = document.getElementById('college-name-input');
+            const name = input.value.trim();
+            if (!name) { alert('Enter a college name.'); return; }
+            if (!currentInstitution?.id && !(await loadAcademicHierarchy())) return;
+            const { error } = await supabaseClient.from('colleges').insert({ institution_id: currentInstitution.id, name });
+            if (error) { alert('Could not add college: ' + error.message); return; }
+            input.value = '';
+            await loadAcademicHierarchy();
+        }
+
+        async function createFaculty() {
+            const collegeId = document.getElementById('faculty-college-select').value || null;
+            const input = document.getElementById('faculty-name-input');
+            const name = input.value.trim();
+            if (!name) { alert('Enter a faculty name.'); return; }
+            if (!currentInstitution?.id && !(await loadAcademicHierarchy())) return;
+            const { error } = await supabaseClient.from('faculties').insert({ institution_id: currentInstitution.id, college_id: collegeId, name });
+            if (error) { alert('Could not add faculty: ' + error.message); return; }
+            input.value = '';
+            await loadAcademicHierarchy();
+        }
+
+        async function createDepartment() {
+            const facultyId = document.getElementById('department-faculty-select').value;
+            const nameInput = document.getElementById('department-name-input');
+            const codeInput = document.getElementById('department-code-input');
+            const name = nameInput.value.trim();
+            const code = codeInput.value.trim().toUpperCase();
+            if (!facultyId) { alert('Select a faculty.'); return; }
+            if (!name) { alert('Enter a department name.'); return; }
+            if (!currentInstitution?.id && !(await loadAcademicHierarchy())) return;
+            const { error } = await supabaseClient.from('departments').insert({ institution_id: currentInstitution.id, faculty_id: facultyId, name, code });
+            if (error) { alert('Could not add department: ' + error.message); return; }
+            nameInput.value = '';
+            codeInput.value = '';
+            await loadAcademicHierarchy();
+        }
+
         // --- ADMIN CATALOGUE LOADER ---
-        function loadCatalogue() {
+        async function loadCatalogue() {
+            await loadAcademicHierarchy();
             const container = document.getElementById('catalogue-container');
             if (!container) return;
             let html = '';
@@ -1815,6 +2063,7 @@
             }
 
             const details = document.getElementById('receipt-details');
+            const qrPayload = receipt?.qr_payload || buildVerificationPayload('receipt', { verification_code: receipt?.verification_code });
             details.innerHTML = `
                 <p><strong>Student:</strong> ${currentUserProfile.full_name || '—'}</p>
                 <p><strong>Matric:</strong> ${currentUserProfile.matric || '—'}</p>
@@ -1825,6 +2074,8 @@
                 <p><strong>Payment Reference:</strong> ${currentPayment.paystack_reference}</p>
                 <p><strong>Date:</strong> ${new Date(currentPayment.paid_at || currentPayment.created_at).toLocaleString('en-NG')}</p>
             `;
+            document.getElementById('receipt-qr-text').innerText = qrPayload;
+            renderQrCode('receipt-qr-code', qrPayload, 120);
 
             const element = document.getElementById('receipt-template');
             html2pdf().from(element).save('KASU-Clearance-Receipt.pdf');

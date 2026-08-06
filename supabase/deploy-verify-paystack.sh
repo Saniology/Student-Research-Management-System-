@@ -24,9 +24,10 @@ echo "Setting Paystack secret..."
 supabase secrets set "PAYSTACK_SECRET_KEY=${PAYSTACK_SECRET_KEY}"
 
 echo "Deploying SPMS edge functions..."
-supabase functions deploy verify-paystack project-workflow repository-access --no-verify-jwt --use-api
+supabase functions deploy verify-paystack project-workflow repository-access verification-lookup --no-verify-jwt --use-api
 
 echo "Done. Test with:"
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verify-paystack\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/project-workflow\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/repository-access\""
+echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verification-lookup\""
