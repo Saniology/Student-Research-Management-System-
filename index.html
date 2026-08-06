@@ -1682,6 +1682,10 @@
             return ['student', 'teacher', 'library', 'admin'].includes(role) ? role : '';
         }
 
+        function rolePreviewAction() {
+            return new URLSearchParams(window.location.search).get('preview_action') || '';
+        }
+
         function isRolePreviewAllowed() {
             return isLocalHost(window.location.hostname) && Boolean(rolePreviewTarget());
         }
@@ -1822,6 +1826,41 @@
             if (departments) departments.innerHTML = '<p class="text-sm text-slate-600">Computer Science leads preview activity with 340 uploads.</p>';
         }
 
+        function showAdminPreviewSection(id) {
+            document.querySelectorAll('.admin-section').forEach(el => el.classList.remove('active'));
+            const section = document.getElementById('admin-' + id);
+            if (section) section.classList.add('active');
+            if (id === 'reports') {
+                setReportsStatus('Preview reports loaded for workflow export, scheduled delivery, and generated report checks.');
+                const output = document.getElementById('reports-output');
+                if (output) {
+                    output.classList.remove('hidden');
+                    output.innerHTML = '<div class="p-4 text-sm text-slate-600">Preview project lifecycle CSV is ready for download.</div>';
+                }
+                const schedules = document.getElementById('report-schedules-list');
+                if (schedules) schedules.innerHTML = '<div class="p-3 text-sm text-slate-600">Monthly registry report • Next run scheduled</div>';
+                const generated = document.getElementById('generated-reports-list');
+                if (generated) generated.innerHTML = '<div class="p-3 text-sm text-slate-600">project-lifecycle-preview.csv</div>';
+            }
+        }
+
+        function applyRolePreviewAction(role) {
+            const action = rolePreviewAction();
+            if (!action) return;
+            document.documentElement.dataset.rolePreviewAction = action;
+            if (role === 'teacher' && action === 'open_review' && supervisorProjects.length) {
+                viewStudent(supervisorProjects[0].id);
+                document.getElementById('modal-review-comment').value = 'Preview approval note for automated supervisor interaction coverage.';
+            } else if (role === 'library' && action === 'open_catalog_record' && libraryQueueProjects.length) {
+                viewLibraryProject(libraryQueueProjects[0].id);
+                document.getElementById('lib-comment-input').value = 'Preview catalog note for automated library interaction coverage.';
+            } else if (role === 'admin' && action === 'open_reports') {
+                showAdminPreviewSection('reports');
+            } else if (role === 'student' && action === 'show_receipt') {
+                document.getElementById('receipt-section')?.classList.remove('hidden');
+            }
+        }
+
         function applyRolePreview() {
             if (!isRolePreviewAllowed()) return false;
             const role = rolePreviewTarget();
@@ -1832,6 +1871,7 @@
             else if (role === 'teacher') renderSupervisorPreview();
             else if (role === 'library') renderLibraryPreview();
             else if (role === 'admin') renderAdminPreview();
+            applyRolePreviewAction(role);
             updateNav();
             return true;
         }

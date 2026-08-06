@@ -107,6 +107,7 @@ function checkRequiredFiles() {
     'scripts/verify-email-deliverability.js',
     'scripts/verify-release-readiness.js',
     'scripts/verify-rendered-ui.js',
+    'scripts/verify-role-interactions.js',
     'scripts/verify-role-rendering.js',
     'scripts/verify-security.js',
     'scripts/verify-supabase-deployment.js',
@@ -184,6 +185,7 @@ function checkProductCapabilities() {
   assertContains('index.html', /\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/, 'frontend enforces restrained card radius standard');
   assertContains('index.html', /focus-visible/, 'frontend preserves keyboard focus styling');
   assertContains('index.html', /preview_role/, 'frontend exposes local role preview routes');
+  assertContains('index.html', /preview_action/, 'frontend exposes local role preview actions');
   assertContains('index.html', /isRolePreviewAllowed/, 'frontend gates role previews');
   assertContains('index.html', /isLocalHost\(window\.location\.hostname\)/, 'role previews are local-host only');
 
@@ -195,6 +197,7 @@ function checkProductCapabilities() {
   assertContains('package.json', /"verify:release"/, 'release readiness verification command exists');
   assertContains('package.json', /"verify:render"/, 'rendered UI verification command exists');
   assertContains('package.json', /"verify:roles"/, 'role rendering verification command exists');
+  assertContains('package.json', /"verify:interactions"/, 'role interaction verification command exists');
   assertContains('package.json', /"verify:security"/, 'security verification command exists');
   assertContains('package.json', /"verify:ui"/, 'UI smoke verification command exists');
   assertContains('package.json', /"verify:workflow"/, 'workflow contract verification command exists');
@@ -211,6 +214,7 @@ function checkProductCapabilities() {
   assertContains('docs/spms-implementation-roadmap.md', /Public portal UI/, 'roadmap documents portal UI standard');
   assertContains('.github/workflows/verify.yml', /npm run verify:render/, 'GitHub Actions runs rendered UI verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions runs role rendering verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:interactions/, 'GitHub Actions runs role interaction verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:db/, 'GitHub Actions runs database schema verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:email/, 'GitHub Actions runs email deliverability verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:workflow/, 'GitHub Actions runs workflow contract verification');
@@ -228,6 +232,7 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-release-readiness.js', /PAYSTACK_SECRET_KEY/, 'release verifier checks required secrets template');
   assertContains('scripts/verify-release-readiness.js', /verify:render/, 'release verifier checks rendered UI gate');
   assertContains('scripts/verify-release-readiness.js', /verify:roles/, 'release verifier checks role rendering gate');
+  assertContains('scripts/verify-release-readiness.js', /verify:interactions/, 'release verifier checks role interaction gate');
   assertContains('scripts/verify-release-readiness.js', /verify:deploy/, 'release verifier checks deployment smoke gate');
   assertContains('scripts/verify-release-readiness.js', /no obvious private secrets/, 'release verifier checks secret hygiene');
   assertContains('scripts/verify-supabase-deployment.js', /requiredFunctions/, 'deployment verifier checks required Edge Functions');
@@ -248,6 +253,10 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-role-rendering.js', /preview_role/, 'role rendering verifier uses local preview routes');
   assertContains('scripts/verify-role-rendering.js', /--dump-dom/, 'role rendering verifier checks browser DOM');
   assertContains('scripts/verify-role-rendering.js', /--screenshot/, 'role rendering verifier captures role screenshots');
+  assertContains('scripts/verify-role-interactions.js', /preview_action/, 'role interaction verifier uses local preview actions');
+  assertContains('scripts/verify-role-interactions.js', /student-modal/, 'role interaction verifier checks supervisor modal');
+  assertContains('scripts/verify-role-interactions.js', /library-modal/, 'role interaction verifier checks library modal');
+  assertContains('scripts/verify-role-interactions.js', /admin-reports/, 'role interaction verifier checks admin report section');
 }
 
 function checkDeployConfig() {
@@ -308,6 +317,10 @@ function checkRenderedUi() {
 
 function checkRoleRendering() {
   run('node', ['scripts/verify-role-rendering.js'], 'role rendering verification passes or skips cleanly');
+}
+
+function checkRoleInteractions() {
+  run('node', ['scripts/verify-role-interactions.js'], 'role interaction verification passes or skips cleanly');
 }
 
 function checkAccessibility() {
@@ -399,6 +412,7 @@ checkAccessibility();
 checkUiSmoke();
 checkRenderedUi();
 checkRoleRendering();
+checkRoleInteractions();
 checkDatabaseSchema();
 checkEmailDeliverability();
 checkSecurity();

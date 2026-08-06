@@ -54,6 +54,9 @@ jobs:
       - name: Verify role rendering
         run: npm run verify:roles
 
+      - name: Verify role interactions
+        run: npm run verify:interactions
+
       - name: Verify database schema
         run: npm run verify:db
 

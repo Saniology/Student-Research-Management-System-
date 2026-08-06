@@ -12,6 +12,7 @@
     "verify:release": "node scripts/verify-release-readiness.js",
     "verify:render": "node scripts/verify-rendered-ui.js --required",
     "verify:roles": "node scripts/verify-role-rendering.js --required",
+    "verify:interactions": "node scripts/verify-role-interactions.js --required",
     "verify:security": "node scripts/verify-security.js",
     "verify:ui": "node scripts/verify-ui-smoke.js",
     "verify:workflow": "node scripts/verify-workflow-contracts.js",

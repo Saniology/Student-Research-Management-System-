@@ -239,6 +239,7 @@ With the local server running, check actual browser rendering:
 ```bash
 npm run verify:render
 npm run verify:roles
+npm run verify:interactions
 ```
 
 This captures desktop and mobile screenshots with Chrome/Chromium, then opens
@@ -246,10 +247,13 @@ local-only role previews for student, supervisor, library, and admin dashboards.
 The role previews are available only from local hosts through
 `?preview_role=student`, `?preview_role=teacher`, `?preview_role=library`, or
 `?preview_role=admin`.
+`npm run verify:interactions` also opens local preview workflow states such as
+the supervisor review modal, library catalog modal, student receipt state, and
+admin reports section.
 
-GitHub Actions runs the same rendered UI, role rendering, and full lifecycle
-verifiers on pushes and pull requests. Keep the local server command working
-because CI uses the same static serving path.
+GitHub Actions runs the same rendered UI, role rendering, role interaction, and
+full lifecycle verifiers on pushes and pull requests. Keep the local server
+command working because CI uses the same static serving path.
 
 Check the static app:
 

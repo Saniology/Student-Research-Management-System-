@@ -125,12 +125,13 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - `npm run verify:email` checks production email deliverability handover, mail-secret safety, signed report links, and scheduled report fallback behavior.
 - `npm run verify:render` captures Chrome/Chromium desktop and mobile screenshots from the local app and validates that rendered pages are non-trivial PNGs.
 - `npm run verify:roles` renders local-only student, supervisor, library, and admin preview surfaces in Chrome/Chromium and checks role-specific DOM content plus screenshots.
+- `npm run verify:interactions` opens local-only workflow states for student receipt, supervisor review, library cataloging, and admin reports to catch broken modal/section interactions.
 - `npm run verify:security` checks secret hygiene, RLS coverage, private storage, Edge Function CORS/auth patterns, and payment safety.
 - `npm run verify:ui` checks role dashboard surfaces, inline actions, duplicate ids, and admin UI regression guards.
 - `npm run verify:workflow` checks frontend/Edge Function action contracts, verification types, workflow statuses, transaction types, report types, and role checklist coverage.
 - `npm run verify:release` checks release docs, env template coverage, and obvious private secret leaks.
 - `npm run verify:lifecycle` validates the static app, Edge Functions, schema capabilities, deploy script, and local server smoke status.
-- GitHub Actions workflow runs rendered UI screenshots, role rendering, and lifecycle verification for pushes and pull requests.
+- GitHub Actions workflow runs rendered UI screenshots, role rendering, role interaction checks, and lifecycle verification for pushes and pull requests.
 
 ## Still Remaining
 

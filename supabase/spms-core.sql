@@ -431,18 +431,21 @@ CROSS JOIN (VALUES ('Accounting', 'ACC')) AS d(name, code)
 WHERE i.slug = 'kasu'
 ON CONFLICT (institution_id, name) DO NOTHING;
 
+WITH profile_department_backfill AS (
+  SELECT p.id AS profile_id,
+         i.id AS institution_id,
+         d.id AS department_id
+  FROM profiles p
+  JOIN institutions i ON i.slug = 'kasu'
+  LEFT JOIN departments d ON d.institution_id = i.id
+    AND d.name = p.department
+  WHERE p.institution_id IS NULL
+)
 UPDATE profiles p
-SET institution_id = i.id,
-    department_id = (
-      SELECT d.id
-      FROM departments d
-      WHERE d.institution_id = i.id
-        AND d.name = p.department
-      LIMIT 1
-    )
-FROM institutions i
-WHERE i.slug = 'kasu'
-  AND p.institution_id IS NULL;
+SET institution_id = b.institution_id,
+    department_id = b.department_id
+FROM profile_department_backfill b
+WHERE p.id = b.profile_id;
 
 UPDATE profiles s
 SET supervisor_id = t.id
@@ -452,20 +455,23 @@ WHERE s.role = 'student'
   AND s.department = t.department
   AND s.supervisor_id IS NULL;
 
+WITH registry_department_backfill AS (
+  SELECT sr.matric,
+         i.id AS institution_id,
+         d.id AS department_id
+  FROM students_registry sr
+  JOIN institutions i ON i.slug = 'kasu'
+  LEFT JOIN departments d ON d.institution_id = i.id
+    AND d.name = sr.department
+  WHERE sr.institution_id IS NULL
+)
 UPDATE students_registry sr
-SET institution_id = i.id,
-    department_id = (
-      SELECT d.id
-      FROM departments d
-      WHERE d.institution_id = i.id
-        AND d.name = sr.department
-      LIMIT 1
-    ),
+SET institution_id = b.institution_id,
+    department_id = b.department_id,
     supervisor_email = COALESCE(sr.supervisor_email, 'teacher@kasu.edu.ng'),
     degree = COALESCE(sr.degree, 'BSc')
-FROM institutions i
-WHERE i.slug = 'kasu'
-  AND sr.institution_id IS NULL;
+FROM registry_department_backfill b
+WHERE sr.matric = b.matric;
 
 -- ---------------------------------------------------------------------------
 -- RLS

@@ -17,6 +17,7 @@ const requiredFiles = [
   'scripts/verify-database-schema.js',
   'scripts/verify-email-deliverability.js',
   'scripts/verify-rendered-ui.js',
+  'scripts/verify-role-interactions.js',
   'scripts/verify-role-rendering.js',
   'scripts/verify-security.js',
   'scripts/verify-supabase-deployment.js',
@@ -92,6 +93,7 @@ function checkReleaseDocs() {
   assertContains('docs/release-checklist.md', /health-check/, 'release checklist includes health check gate');
   assertContains('docs/release-checklist.md', /npm run verify:render/, 'release checklist includes rendered UI gate');
   assertContains('docs/release-checklist.md', /npm run verify:roles/, 'release checklist includes role rendering gate');
+  assertContains('docs/release-checklist.md', /npm run verify:interactions/, 'release checklist includes role interaction gate');
   assertContains('docs/release-checklist.md', /npm run verify:security/, 'release checklist includes security gate');
   assertContains('docs/release-checklist.md', /npm run verify:workflow/, 'release checklist includes workflow contract gate');
   assertContains('docs/production-deployment-runbook.md', /docs\/release-checklist\.md/, 'production runbook links release checklist');
@@ -104,6 +106,7 @@ function checkReleaseDocs() {
   assertContains('docs/local-development-setup.md', /npm run verify:deploy/, 'local setup includes deployment smoke verifier');
   assertContains('.github/workflows/verify.yml', /npm run verify:render/, 'GitHub Actions includes rendered UI gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions includes role rendering gate');
+  assertContains('.github/workflows/verify.yml', /npm run verify:interactions/, 'GitHub Actions includes role interaction gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:db/, 'GitHub Actions includes database gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:email/, 'GitHub Actions includes email deliverability gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:workflow/, 'GitHub Actions includes workflow contract gate');
