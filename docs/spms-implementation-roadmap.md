@@ -121,6 +121,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Health monitoring is available through the `health-check` Edge Function.
 - `npm run verify:deploy` checks live Supabase Edge Function preflight routes, detects missing deployments, validates CORS headers, and calls the production health endpoint.
 - `npm run verify:a11y` checks static accessibility basics: document metadata, image alt text, form labels, named buttons, focus safety, and responsive type guardrails.
+- `npm run verify:config` checks browser-safe Supabase/Paystack configuration, anon JWT project matching, placeholder rejection, and secret hygiene in frontend files.
 - `npm run verify:db` checks SQL run order, RLS coverage, foreign keys, indexes, constraints, private storage buckets, and `SECURITY DEFINER` search paths.
 - `npm run verify:edge` checks Edge Function CORS preflight behavior, allowed methods, action/type contracts, JSON error handling, deploy config, and live smoke verifier coverage.
 - `npm run verify:email` checks production email deliverability handover, mail-secret safety, signed report links, and scheduled report fallback behavior.

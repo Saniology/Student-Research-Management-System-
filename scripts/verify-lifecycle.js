@@ -103,6 +103,7 @@ function checkRequiredFiles() {
     'supabase/functions/health-check/index.ts',
     'scripts/provision-cloudflare-domain.js',
     'scripts/verify-accessibility.js',
+    'scripts/verify-browser-config.js',
     'scripts/verify-database-schema.js',
     'scripts/verify-edge-functions.js',
     'scripts/verify-email-deliverability.js',
@@ -191,6 +192,7 @@ function checkProductCapabilities() {
   assertContains('index.html', /isLocalHost\(window\.location\.hostname\)/, 'role previews are local-host only');
 
   assertContains('package.json', /"dns:cloudflare"/, 'Cloudflare DNS provisioning command exists');
+  assertContains('package.json', /"verify:config"/, 'browser config verification command exists');
   assertContains('package.json', /"verify:deploy"/, 'Supabase deployment smoke command exists');
   assertContains('package.json', /"verify:a11y"/, 'accessibility verification command exists');
   assertContains('package.json', /"verify:db"/, 'database schema verification command exists');
@@ -207,6 +209,7 @@ function checkProductCapabilities() {
   assertContains('scripts/provision-cloudflare-domain.js', /--dry-run/, 'DNS provisioning supports dry runs');
   assertContains('scripts/provision-cloudflare-domain.js', /allowed_domains/, 'DNS provisioning prints Supabase tenant mapping guidance');
   assertContains('docs/production-deployment-runbook.md', /Tenant Domains/, 'production runbook documents tenant domains');
+  assertContains('docs/production-deployment-runbook.md', /npm run verify:config/, 'production runbook documents browser config verification');
   assertContains('docs/production-deployment-runbook.md', /npm run dns:cloudflare/, 'production runbook documents DNS automation');
   assertContains('docs/production-deployment-runbook.md', /npm run verify:deploy/, 'production runbook documents deployment smoke verification');
   assertContains('docs/production-deployment-runbook.md', /health-check/, 'production runbook documents health checks');
@@ -214,6 +217,7 @@ function checkProductCapabilities() {
   assertContains('docs/release-checklist.md', /Payments/, 'release checklist documents payment gate');
   assertContains('docs/release-checklist.md', /health-check/, 'release checklist documents health check gate');
   assertContains('docs/spms-implementation-roadmap.md', /Public portal UI/, 'roadmap documents portal UI standard');
+  assertContains('.github/workflows/verify.yml', /npm run verify:config/, 'GitHub Actions runs browser config verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:render/, 'GitHub Actions runs rendered UI verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions runs role rendering verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:interactions/, 'GitHub Actions runs role interaction verification');
@@ -224,6 +228,9 @@ function checkProductCapabilities() {
   assertContains('.github/workflows/verify.yml', /python3 -m http\.server 5500/, 'GitHub Actions starts local static app');
   assertContains('.github/workflows/verify.yml', /npm run verify:lifecycle/, 'GitHub Actions runs lifecycle verification');
   assertContains('scripts/verify-database-schema.js', /SECURITY DEFINER/, 'database verifier checks SECURITY DEFINER hardening');
+  assertContains('scripts/verify-browser-config.js', /SUPABASE_ANON_KEY/, 'browser config verifier checks Supabase anon key');
+  assertContains('scripts/verify-browser-config.js', /PAYSTACK_PUBLIC_KEY/, 'browser config verifier checks Paystack public key');
+  assertContains('scripts/verify-browser-config.js', /browser files contain only public config/, 'browser config verifier checks frontend secret hygiene');
   assertContains('scripts/verify-database-schema.js', /requiredForeignKeys/, 'database verifier checks foreign key contracts');
   assertContains('scripts/verify-database-schema.js', /requiredIndexes/, 'database verifier checks performance indexes');
   assertContains('scripts/verify-edge-functions.js', /corsHeaders/, 'Edge Function verifier checks CORS headers');
@@ -334,6 +341,10 @@ function checkAccessibility() {
   run('node', ['scripts/verify-accessibility.js'], 'accessibility verification passes');
 }
 
+function checkBrowserConfig() {
+  run('node', ['scripts/verify-browser-config.js'], 'browser config verification passes');
+}
+
 function checkDatabaseSchema() {
   run('node', ['scripts/verify-database-schema.js'], 'database schema verification passes');
 }
@@ -420,6 +431,7 @@ checkHtmlScripts();
 checkProductCapabilities();
 checkDeployConfig();
 checkAccessibility();
+checkBrowserConfig();
 checkUiSmoke();
 checkRenderedUi();
 checkRoleRendering();

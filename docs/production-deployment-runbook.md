@@ -149,6 +149,7 @@ Before handing over:
 
 ```bash
 npm run verify:a11y
+npm run verify:config
 npm run verify:db
 npm run verify:edge
 npm run verify:email
@@ -164,6 +165,7 @@ Expected result:
 
 ```text
 Accessibility verification complete: 0 failure(s).
+Browser config verification complete: 0 failure(s).
 Database schema verification complete: 0 failure(s).
 Edge Function contract verification complete: 0 failure(s).
 Email deliverability verification complete: 0 failure(s).

@@ -48,6 +48,9 @@ jobs:
           cat /tmp/spms-http.log
           exit 1
 
+      - name: Verify browser config
+        run: npm run verify:config
+
       - name: Verify rendered UI
         run: npm run verify:render
 

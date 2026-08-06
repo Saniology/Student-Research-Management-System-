@@ -13,6 +13,7 @@ const requiredFiles = [
   'docs/production-deployment-runbook.md',
   'docs/release-checklist.md',
   'SECURITY.md',
+  'scripts/verify-browser-config.js',
   'scripts/verify-lifecycle.js',
   'scripts/verify-database-schema.js',
   'scripts/verify-edge-functions.js',
@@ -83,6 +84,7 @@ function checkEnvTemplate() {
 
 function checkReleaseDocs() {
   assertContains('docs/release-checklist.md', /Code And Config/, 'release checklist includes code/config gate');
+  assertContains('docs/release-checklist.md', /npm run verify:config/, 'release checklist includes browser config verifier');
   assertContains('docs/release-checklist.md', /Database/, 'release checklist includes database gate');
   assertContains('docs/release-checklist.md', /npm run verify:db/, 'release checklist includes database verifier');
   assertContains('docs/release-checklist.md', /npm run verify:deploy/, 'release checklist includes deployment smoke verifier');
@@ -104,8 +106,10 @@ function checkReleaseDocs() {
   assertContains('docs/production-deployment-runbook.md', /npm run verify:deploy/, 'production runbook includes deployment smoke verifier');
   assertContains('docs/production-deployment-runbook.md', /health-check/, 'production runbook includes health check endpoint');
   assertContains('docs/local-development-setup.md', /\.env\.production\.example/, 'local setup references env production template');
+  assertContains('docs/local-development-setup.md', /npm run verify:config/, 'local setup includes browser config verifier');
   assertContains('docs/local-development-setup.md', /Chrome|Chromium/, 'local setup documents browser rendering dependency');
   assertContains('docs/local-development-setup.md', /npm run verify:deploy/, 'local setup includes deployment smoke verifier');
+  assertContains('.github/workflows/verify.yml', /npm run verify:config/, 'GitHub Actions includes browser config gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:render/, 'GitHub Actions includes rendered UI gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions includes role rendering gate');
   assertContains('.github/workflows/verify.yml', /npm run verify:interactions/, 'GitHub Actions includes role interaction gate');

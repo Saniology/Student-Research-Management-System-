@@ -10,6 +10,7 @@ Use this checklist before a production handover or institutional demo.
 - Copy `.env.production.example` to `.env.production.local` for owner deployment
   work, then fill in real values locally.
 - Run `npm run verify:a11y`.
+- Run `npm run verify:config`.
 - Run `npm run verify:db`.
 - Run `npm run verify:edge`.
 - Run `npm run verify:email`.

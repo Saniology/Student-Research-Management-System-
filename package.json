@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "dns:cloudflare": "node scripts/provision-cloudflare-domain.js",
+    "verify:config": "node scripts/verify-browser-config.js",
     "verify:deploy": "node scripts/verify-supabase-deployment.js",
     "verify:a11y": "node scripts/verify-accessibility.js",
     "verify:db": "node scripts/verify-database-schema.js",

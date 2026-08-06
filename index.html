@@ -812,9 +812,11 @@
             const errors = [];
             const url = String(window.SUPABASE_URL || '').trim();
             const anonKey = String(window.SUPABASE_ANON_KEY || '').trim();
+            const paystackPublicKey = String(window.PAYSTACK_PUBLIC_KEY || '').trim();
             if (!window.supabase?.createClient) errors.push('Supabase JS did not load.');
             if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) errors.push('Set a valid SUPABASE_URL in js/config.js.');
             if (!anonKey || /YOUR_SUPABASE|anon_key_here|replace/i.test(anonKey)) errors.push('Set SUPABASE_ANON_KEY in js/config.js.');
+            if (!/^pk_(test|live)_[A-Za-z0-9]+$/.test(paystackPublicKey)) errors.push('Set PAYSTACK_PUBLIC_KEY to a Paystack public pk_test or pk_live key in js/config.js.');
             return { valid: errors.length === 0, errors };
         }
 
