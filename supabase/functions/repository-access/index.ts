@@ -172,8 +172,7 @@ async function verifyDownloadPayment(
     return jsonResponse({ error: "Payment email does not match logged-in account" }, 403);
   }
 
-  const institutionShare = Math.floor(transaction.amount / 2);
-  const providerShare = transaction.amount - institutionShare;
+  const split = calculateSplit(transaction.amount, config);
 
   const [payment] = await supabaseRest(
     supabaseUrl,
@@ -191,12 +190,16 @@ async function verifyDownloadPayment(
         paystack_transaction_id: String(transaction.id),
         status: "success",
         transaction_type: "repository_download",
-        institution_share_kobo: institutionShare,
-        provider_share_kobo: providerShare,
+        institution_share_kobo: split.institutionShareKobo,
+        provider_share_kobo: split.providerShareKobo,
         paid_at: transaction.paid_at || new Date().toISOString(),
         metadata: {
           channel: transaction.channel || null,
           customer_email: transaction.customer?.email || null,
+          institution_share_percent: split.institutionSharePercent,
+          provider_share_percent: split.providerSharePercent,
+          paystack_institution_subaccount: config.paystack_institution_subaccount || null,
+          paystack_provider_subaccount: config.paystack_provider_subaccount || null,
         },
       },
     },
@@ -271,12 +274,53 @@ async function getDownloadConfig(
     const configs = await supabaseRest(
       supabaseUrl,
       serviceRoleKey,
-      `/system_configs?institution_id=eq.${encodeURIComponent(institutionId)}&select=download_fee_kobo,currency`,
+      `/system_configs?institution_id=eq.${encodeURIComponent(institutionId)}&select=download_fee_kobo,currency,institution_share_percent,provider_share_percent,paystack_institution_subaccount,paystack_provider_subaccount`,
     );
-    if (configs[0]) return configs[0];
+    if (configs[0]) return normalizePaymentConfig(configs[0], DEFAULT_DOWNLOAD_FEE_KOBO);
   }
 
-  return { download_fee_kobo: DEFAULT_DOWNLOAD_FEE_KOBO, currency: "NGN" };
+  return normalizePaymentConfig({}, DEFAULT_DOWNLOAD_FEE_KOBO);
+}
+
+function normalizePaymentConfig(config: Record<string, unknown>, defaultFeeKobo: number) {
+  const institutionSharePercent = Number(config.institution_share_percent ?? 50);
+  const providerSharePercent = Number(config.provider_share_percent ?? (100 - institutionSharePercent));
+
+  return {
+    download_fee_kobo: Number(config.download_fee_kobo ?? defaultFeeKobo),
+    currency: String(config.currency || "NGN"),
+    institution_share_percent: Number.isFinite(institutionSharePercent) ? institutionSharePercent : 50,
+    provider_share_percent: Number.isFinite(providerSharePercent) ? providerSharePercent : 50,
+    paystack_institution_subaccount:
+      typeof config.paystack_institution_subaccount === "string"
+        ? config.paystack_institution_subaccount
+        : null,
+    paystack_provider_subaccount:
+      typeof config.paystack_provider_subaccount === "string"
+        ? config.paystack_provider_subaccount
+        : null,
+  };
+}
+
+function calculateSplit(amountKobo: number, config: ReturnType<typeof normalizePaymentConfig>) {
+  const institutionSharePercent = clampPercent(config.institution_share_percent);
+  const providerSharePercent = clampPercent(config.provider_share_percent);
+  const totalPercent = institutionSharePercent + providerSharePercent;
+  const effectiveInstitutionPercent =
+    totalPercent > 0 ? (institutionSharePercent / totalPercent) * 100 : 50;
+  const institutionShareKobo = Math.round(amountKobo * (effectiveInstitutionPercent / 100));
+
+  return {
+    institutionShareKobo,
+    providerShareKobo: amountKobo - institutionShareKobo,
+    institutionSharePercent: effectiveInstitutionPercent,
+    providerSharePercent: 100 - effectiveInstitutionPercent,
+  };
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, value));
 }
 
 async function createSignedUrl(

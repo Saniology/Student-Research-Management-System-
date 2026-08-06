@@ -436,6 +436,10 @@
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Short Name</label><input id="settings-short-name" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Clearance Fee (₦)</label><input id="settings-clearance-fee" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" step="100"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Repository Download Fee (₦)</label><input id="settings-download-fee" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" step="100"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Institution Share (%)</label><input id="settings-institution-share" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" max="100" step="0.01"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">SPMS Provider Share (%)</label><input id="settings-provider-share" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="0" max="100" step="0.01"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Institution Subaccount Code</label><input id="settings-institution-subaccount" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" placeholder="ACCT_xxxxx"></div>
+                                <div><label class="text-xs font-bold text-slate-500 uppercase">Provider Subaccount Code</label><input id="settings-provider-subaccount" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" placeholder="ACCT_xxxxx"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Max PDF Size (MB)</label><input id="settings-max-pdf" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="number" min="1" step="1"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Currency</label><input id="settings-currency" class="mt-1 w-full p-3 glass-input rounded-lg text-sm" type="text" maxlength="3"></div>
                                 <div><label class="text-xs font-bold text-slate-500 uppercase">Primary Color</label><input id="settings-primary-color" class="mt-1 w-full h-12 p-1 glass-input rounded-lg" type="color" onchange="previewAdminTheme()"></div>
@@ -738,7 +742,24 @@
                 throw new Error(error?.message || 'Could not load your profile.');
             }
             currentUserProfile = profile;
+            await loadSystemConfigForProfile(profile);
             return profile;
+        }
+
+        async function loadSystemConfigForProfile(profile) {
+            if (!profile?.institution_id) return;
+            try {
+                const { data, error } = await supabaseClient
+                    .from('system_configs')
+                    .select('*')
+                    .eq('institution_id', profile.institution_id)
+                    .maybeSingle();
+                if (error) throw error;
+                currentSystemConfig = data;
+                refreshStudentPaymentCta();
+            } catch (err) {
+                console.warn('System config unavailable:', err.message);
+            }
         }
 
         function escapeHtml(value) {
@@ -987,6 +1008,10 @@
                 'settings-short-name': institution?.short_name || 'KASU',
                 'settings-clearance-fee': (config?.clearance_fee_kobo || REPOSITORY_FEE_KOBO) / 100,
                 'settings-download-fee': (config?.download_fee_kobo || REPOSITORY_DOWNLOAD_FEE_KOBO) / 100,
+                'settings-institution-share': config?.institution_share_percent ?? 50,
+                'settings-provider-share': config?.provider_share_percent ?? 50,
+                'settings-institution-subaccount': config?.paystack_institution_subaccount || '',
+                'settings-provider-subaccount': config?.paystack_provider_subaccount || '',
                 'settings-max-pdf': Math.round((config?.max_pdf_size_bytes || 104857600) / 1048576),
                 'settings-currency': config?.currency || 'NGN',
                 'settings-primary-color': primary,
@@ -1011,6 +1036,13 @@
                 return;
             }
 
+            const institutionShare = Number(document.getElementById('settings-institution-share').value || 0);
+            const providerShare = Number(document.getElementById('settings-provider-share').value || 0);
+            if (institutionShare < 0 || providerShare < 0 || institutionShare > 100 || providerShare > 100 || Math.abs((institutionShare + providerShare) - 100) > 0.01) {
+                if (status) status.innerText = 'Institution and provider shares must add up to 100%.';
+                return;
+            }
+
             const institutionPayload = {
                 name: document.getElementById('settings-institution-name').value.trim(),
                 short_name: document.getElementById('settings-short-name').value.trim(),
@@ -1023,6 +1055,10 @@
                 institution_id: currentInstitution.id,
                 clearance_fee_kobo: Math.round(Number(document.getElementById('settings-clearance-fee').value || 0) * 100),
                 download_fee_kobo: Math.round(Number(document.getElementById('settings-download-fee').value || 0) * 100),
+                institution_share_percent: institutionShare,
+                provider_share_percent: providerShare,
+                paystack_institution_subaccount: document.getElementById('settings-institution-subaccount').value.trim() || null,
+                paystack_provider_subaccount: document.getElementById('settings-provider-subaccount').value.trim() || null,
                 max_pdf_size_bytes: Math.round(Number(document.getElementById('settings-max-pdf').value || 100) * 1048576),
                 currency: (document.getElementById('settings-currency').value || 'NGN').toUpperCase(),
                 updated_at: new Date().toISOString()
@@ -1699,6 +1735,19 @@
             return '₦' + (kobo / 100).toLocaleString('en-NG');
         }
 
+        function getClearanceFeeKobo() {
+            return Number(currentSystemConfig?.clearance_fee_kobo || REPOSITORY_FEE_KOBO);
+        }
+
+        function getTenantCurrency() {
+            return currentSystemConfig?.currency || 'NGN';
+        }
+
+        function refreshStudentPaymentCta() {
+            const btn = document.getElementById('pay-btn');
+            if (btn && !currentPayment) btn.innerText = `Pay ${formatNaira(getClearanceFeeKobo())} & Submit`;
+        }
+
         function generatePaymentReference() {
             return 'KASU-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8).toUpperCase();
         }
@@ -1899,7 +1948,7 @@
                 if (retryBtn) retryBtn.disabled = false;
                 if (!currentPayment) {
                     btn.disabled = false;
-                    btn.innerText = 'Pay ₦2,000 & Submit';
+                    refreshStudentPaymentCta();
                 }
             }
         }
@@ -1957,6 +2006,7 @@
             const btn = document.getElementById('pay-btn');
             const profile = currentUserProfile;
             const reference = generatePaymentReference();
+            const clearanceFeeKobo = getClearanceFeeKobo();
 
             btn.disabled = true;
             btn.innerText = 'Opening Paystack...';
@@ -1964,8 +2014,8 @@
             const handler = PaystackPop.setup({
                 key: window.PAYSTACK_PUBLIC_KEY,
                 email: currentUser.email,
-                amount: REPOSITORY_FEE_KOBO,
-                currency: 'NGN',
+                amount: clearanceFeeKobo,
+                currency: getTenantCurrency(),
                 ref: reference,
                 metadata: {
                     custom_fields: [
@@ -1980,7 +2030,7 @@
                 onClose: function() {
                     if (!currentPayment) {
                         btn.disabled = false;
-                        btn.innerText = 'Pay ₦2,000 & Submit';
+                        refreshStudentPaymentCta();
                     }
                 }
             });

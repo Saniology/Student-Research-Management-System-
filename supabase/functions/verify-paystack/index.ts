@@ -1,4 +1,4 @@
-const REPOSITORY_FEE_KOBO = 200_000;
+const DEFAULT_CLEARANCE_FEE_KOBO = 200_000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +72,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    const profile = await getStudentProfile(supabaseUrl, supabaseServiceKey, user.id);
+    const paymentConfig = await getPaymentConfig(
+      supabaseUrl,
+      supabaseServiceKey,
+      profile?.institution_id,
+    );
+
     const paystackRes = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
       {
@@ -93,7 +100,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Payment was not successful" }, 400);
     }
 
-    if (transaction.amount !== REPOSITORY_FEE_KOBO) {
+    if (transaction.amount !== paymentConfig.clearance_fee_kobo) {
       return jsonResponse({ error: "Invalid payment amount" }, 400);
     }
 
@@ -107,12 +114,6 @@ Deno.serve(async (req) => {
         403,
       );
     }
-
-    const [profile] = await supabaseRest(
-      supabaseUrl,
-      supabaseServiceKey,
-      `/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,institution_id,department_id,department,supervisor_id,matric`,
-    );
 
     const [submission] = await supabaseRest(
       supabaseUrl,
@@ -161,6 +162,7 @@ Deno.serve(async (req) => {
         },
       );
       createdProjectId = project.id;
+      const split = calculateSplit(transaction.amount, paymentConfig);
 
       const [payment] = await supabaseRest(
         supabaseUrl,
@@ -174,15 +176,21 @@ Deno.serve(async (req) => {
             project_id: project.id,
             payer_id: user.id,
             amount: transaction.amount,
-            currency: transaction.currency || "NGN",
+            currency: transaction.currency || paymentConfig.currency,
             paystack_reference: reference,
             paystack_transaction_id: String(transaction.id),
             status: "success",
             transaction_type: "clearance_fee",
+            institution_share_kobo: split.institutionShareKobo,
+            provider_share_kobo: split.providerShareKobo,
             paid_at: transaction.paid_at || new Date().toISOString(),
             metadata: {
               channel: transaction.channel || null,
               customer_email: transaction.customer?.email || null,
+              institution_share_percent: split.institutionSharePercent,
+              provider_share_percent: split.providerSharePercent,
+              paystack_institution_subaccount: paymentConfig.paystack_institution_subaccount || null,
+              paystack_provider_subaccount: paymentConfig.paystack_provider_subaccount || null,
             },
           },
         },
@@ -288,6 +296,90 @@ async function insertLegacyPayment(
       },
     },
   );
+}
+
+async function getStudentProfile(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  userId: string,
+) {
+  try {
+    const [profile] = await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/profiles?id=eq.${encodeURIComponent(userId)}&select=id,institution_id,department_id,department,supervisor_id,matric`,
+    );
+    return profile || null;
+  } catch (err) {
+    const [profile] = await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/profiles?id=eq.${encodeURIComponent(userId)}&select=id,department,matric`,
+    );
+    return profile || null;
+  }
+}
+
+async function getPaymentConfig(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  institutionId?: string | null,
+) {
+  if (institutionId) {
+    try {
+      const configs = await supabaseRest(
+        supabaseUrl,
+        serviceRoleKey,
+        `/system_configs?institution_id=eq.${encodeURIComponent(institutionId)}&select=clearance_fee_kobo,currency,institution_share_percent,provider_share_percent,paystack_institution_subaccount,paystack_provider_subaccount`,
+      );
+      if (configs[0]) return normalizePaymentConfig(configs[0]);
+    } catch (err) {
+      console.warn("System payment config unavailable:", err);
+    }
+  }
+
+  return normalizePaymentConfig({});
+}
+
+function normalizePaymentConfig(config: Record<string, unknown>) {
+  const institutionSharePercent = Number(config.institution_share_percent ?? 50);
+  const providerSharePercent = Number(config.provider_share_percent ?? (100 - institutionSharePercent));
+
+  return {
+    clearance_fee_kobo: Number(config.clearance_fee_kobo ?? DEFAULT_CLEARANCE_FEE_KOBO),
+    currency: String(config.currency || "NGN"),
+    institution_share_percent: Number.isFinite(institutionSharePercent) ? institutionSharePercent : 50,
+    provider_share_percent: Number.isFinite(providerSharePercent) ? providerSharePercent : 50,
+    paystack_institution_subaccount:
+      typeof config.paystack_institution_subaccount === "string"
+        ? config.paystack_institution_subaccount
+        : null,
+    paystack_provider_subaccount:
+      typeof config.paystack_provider_subaccount === "string"
+        ? config.paystack_provider_subaccount
+        : null,
+  };
+}
+
+function calculateSplit(amountKobo: number, config: ReturnType<typeof normalizePaymentConfig>) {
+  const institutionSharePercent = clampPercent(config.institution_share_percent);
+  const providerSharePercent = clampPercent(config.provider_share_percent);
+  const totalPercent = institutionSharePercent + providerSharePercent;
+  const effectiveInstitutionPercent =
+    totalPercent > 0 ? (institutionSharePercent / totalPercent) * 100 : 50;
+  const institutionShareKobo = Math.round(amountKobo * (effectiveInstitutionPercent / 100));
+
+  return {
+    institutionShareKobo,
+    providerShareKobo: amountKobo - institutionShareKobo,
+    institutionSharePercent: effectiveInstitutionPercent,
+    providerSharePercent: 100 - effectiveInstitutionPercent,
+  };
+}
+
+function clampPercent(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(100, Math.max(0, value));
 }
 
 function isMissingWorkflowSchema(err: unknown) {
