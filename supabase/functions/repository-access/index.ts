@@ -538,7 +538,7 @@ async function createSignedUrl(
   filePath: string,
 ) {
   const res = await fetch(
-    `${supabaseUrl}/storage/v1/object/sign/thesis-pdfs/${encodeStoragePath(filePath)}`,
+    `${supabaseUrl}/storage/v1/object/sign/repository-downloads/${encodeStoragePath(filePath)}`,
     {
       method: "POST",
       headers: {
@@ -623,7 +623,7 @@ async function uploadStorageObject(
   fileBytes: Uint8Array,
 ) {
   const res = await fetch(
-    `${supabaseUrl}/storage/v1/object/thesis-pdfs/${encodeStoragePath(filePath)}`,
+    `${supabaseUrl}/storage/v1/object/repository-downloads/${encodeStoragePath(filePath)}`,
     {
       method: "POST",
       headers: {

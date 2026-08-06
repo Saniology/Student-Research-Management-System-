@@ -30,6 +30,13 @@ else
   echo "REPORT_CRON_SECRET not set; admins can still run scheduled reports manually from the app."
 fi
 
+if [[ -n "${HEALTH_CHECK_SECRET:-}" ]]; then
+  echo "Setting health check secret..."
+  supabase secrets set "HEALTH_CHECK_SECRET=${HEALTH_CHECK_SECRET}"
+else
+  echo "HEALTH_CHECK_SECRET not set; health-check will return detailed checks publicly."
+fi
+
 if [[ -n "${RESEND_API_KEY:-}" && -n "${REPORT_FROM_EMAIL:-}" ]]; then
   echo "Setting scheduled report email secrets..."
   supabase secrets set "RESEND_API_KEY=${RESEND_API_KEY}" "REPORT_FROM_EMAIL=${REPORT_FROM_EMAIL}"
@@ -48,7 +55,7 @@ if [[ -n "${REPORT_LINK_TTL_SECONDS:-}" ]]; then
 fi
 
 echo "Deploying SPMS edge functions..."
-supabase functions deploy verify-paystack project-workflow repository-access verification-lookup scheduled-reports --no-verify-jwt --use-api
+supabase functions deploy verify-paystack project-workflow repository-access verification-lookup scheduled-reports health-check --no-verify-jwt --use-api
 
 echo "Done. Test with:"
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verify-paystack\""
@@ -56,3 +63,5 @@ echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/pro
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/repository-access\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verification-lookup\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/scheduled-reports\""
+echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/health-check\""
+echo "  curl -i \"https://${PROJECT_REF}.supabase.co/functions/v1/health-check\""

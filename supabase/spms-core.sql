@@ -640,6 +640,16 @@ CREATE POLICY "Admins read generated reports"
 
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
+  'repository-downloads',
+  'repository-downloads',
+  false,
+  104857600,
+  ARRAY['application/pdf']
+)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
   'reports',
   'reports',
   false,
@@ -653,6 +663,14 @@ CREATE POLICY "Admins read generated report files"
   ON storage.objects FOR SELECT
   USING (
     bucket_id = 'reports'
+    AND public.is_admin()
+  );
+
+DROP POLICY IF EXISTS "Admins read repository download files" ON storage.objects;
+CREATE POLICY "Admins read repository download files"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'repository-downloads'
     AND public.is_admin()
   );
 

@@ -4,6 +4,14 @@ This project is moving from a static MVP into the full SPMS blueprint:
 student clearance, supervisor approval, library cataloging, public repository
 monetization, and institutional administration.
 
+For machine setup and collaborator instructions, see
+`docs/local-development-setup.md`.
+
+For production deployment, tenant domain provisioning, and handover checks, see
+`docs/production-deployment-runbook.md`.
+
+For security expectations and vulnerability handling, see `SECURITY.md`.
+
 ## Current Production Foundation
 
 - Supabase Auth with role-based profiles: `student`, `teacher`, `library`, `admin`.
@@ -28,19 +36,22 @@ It adds:
 - Public anonymized catalog table.
 - Repository unlock records for paid downloads.
 - Clearance receipt verification records.
+- Tenant payment split settings for institution/SPMS provider accounting.
+- In-app workflow notifications with unread/read state.
 - Audit logs.
 - RLS policies for students, supervisors, library staff, admins, and public catalog readers.
 
 ## Edge Functions
 
-Deploy both functions:
+Deploy all functions:
 
 ```bash
-supabase functions deploy verify-paystack project-workflow repository-access --no-verify-jwt --use-api
+supabase functions deploy verify-paystack project-workflow repository-access verification-lookup scheduled-reports health-check --no-verify-jwt --use-api
 ```
 
 `verify-paystack`:
 
+- `initialize_clearance`: initializes Paystack clearance payments from the backend with configured fee, reference, metadata, and split/subaccount rules.
 - Verifies Paystack transactions server-side.
 - Creates the legacy `submissions` and `payments` records.
 - Creates a real `projects` workflow record when `spms-core.sql` has been applied.
@@ -51,11 +62,36 @@ supabase functions deploy verify-paystack project-workflow repository-access --n
 - `supervisor_decision`: approve or request revision.
 - `library_publish`: verify metadata, assign shelf number, publish anonymized catalog record.
 - `issue_receipt`: issue final clearance receipt after library publication.
+- Emits in-app notifications for submissions, supervisor approvals/revisions, library publication, and receipt issuance.
 
 `repository-access`:
 
-- `get_download_url`: checks whether a user already unlocked a published project and returns a short-lived private signed URL.
-- `verify_download`: verifies the Paystack repository download fee, records the transaction split, creates a persistent unlock, and returns a short-lived signed URL.
+- `get_download_url`: checks whether a user already unlocked a published project and returns a short-lived private signed URL to a per-user watermarked PDF copy.
+- `initialize_download`: initializes paid repository download payments from the backend with configured fee, reference, metadata, and split/subaccount rules.
+- `verify_download`: verifies the Paystack repository download fee, records the transaction split, creates a persistent unlock, and returns a short-lived signed URL to a per-user watermarked PDF copy.
+- Payment records use the tenant-configured institution/provider split percentages and keep Paystack subaccount codes in metadata for reconciliation.
+- Uses `pdf-lib@1.17.1` in the Edge Function to stamp repository downloads with user identity, timestamp, project ID, and project title.
+
+`verification-lookup`:
+
+- Public QR/receipt verification endpoint.
+- Verifies clearance receipt codes.
+- Verifies published project catalog QR payloads without exposing private PDF paths.
+- Renders server-generated SVG QR assets for official receipts and catalog labels.
+
+`scheduled-reports`:
+
+- Lets admins generate one-off CSV reports from the dashboard.
+- Runs due report schedules for student registers, project lifecycle, financial, and archive reports.
+- Stores generated CSV files in the private `reports` storage bucket.
+- Supports authenticated admin execution or external cron execution through `REPORT_CRON_SECRET`.
+- Optionally emails private signed report links through Resend when report delivery secrets are configured.
+
+`health-check`:
+
+- Reports production health for monitoring and handover checks.
+- Verifies Supabase environment, REST database reachability, and required private storage buckets.
+- Returns detailed checks only when `HEALTH_CHECK_SECRET` is absent or supplied through `x-health-secret`.
 
 ## Frontend Upgrade Started
 
@@ -65,14 +101,32 @@ supabase functions deploy verify-paystack project-workflow repository-access --n
 - Library dashboard can load approved projects and publish them to the public catalog.
 - Public repository can read anonymized `public_catalog` records, with demo fallback.
 - Public repository download buttons now route through Paystack and the `repository-access` function for paid unlocks.
+- Paid repository PDFs are generated as watermarked copies before a signed download URL is returned.
+- Admin dashboard can read `admin_overview` metrics and department activity, with legacy fallback.
+- Admin settings can load and save tenant branding, clearance fee, download fee, PDF limit, and currency through `institutions` and `system_configs`.
+- Admin settings can configure institution/provider revenue share percentages, Paystack split codes, and subaccount codes.
+- Clearance and repository payments are initialized server-side before the browser resumes Paystack checkout.
+- Library publishing and clearance receipts now render QR codes tied to the verification endpoint.
+- QR codes prefer server-rendered SVG assets from `verification-lookup`, with browser rendering as fallback.
+- Public repository includes a receipt verification form.
+- Admin academic hierarchy management can create colleges, faculties, and departments from the dashboard.
+- Logged-in users have a notification center with unread badges and mark-as-read support.
+- Admin reports can export student registers, project lifecycle/accreditation data, payment split records, financial PDFs, and archive/audit logs.
+- Admin report automation can create recurring schedules, store report recipients, run due reports, generate one-off report files, email private signed links when configured, and download generated CSV artifacts.
+- Admin analytics now include workflow funnel, revenue split, monthly revenue trend, publication progress, and workflow signal panels backed by live records.
+- Frontend tenant resolution supports URL slug selection, configured default tenant slug, custom domain lookup through `institutions.allowed_domains`, and tenant-specific branding/config.
+- Cloudflare DNS tenant provisioning can be previewed or applied through `npm run dns:cloudflare`.
+- Health monitoring is available through the `health-check` Edge Function.
+- `npm run verify:a11y` checks static accessibility basics: document metadata, image alt text, form labels, named buttons, focus safety, and responsive type guardrails.
+- `npm run verify:security` checks secret hygiene, RLS coverage, private storage, Edge Function CORS/auth patterns, and payment safety.
+- `npm run verify:ui` checks role dashboard surfaces, inline actions, duplicate ids, and admin UI regression guards.
+- `npm run verify:release` checks release docs, env template coverage, and obvious private secret leaks.
+- `npm run verify:lifecycle` validates the static app, Edge Functions, schema capabilities, deploy script, and local server smoke status.
+- GitHub Actions workflow runs the lifecycle verifier for pushes and pull requests.
 
 ## Still Remaining
 
-- Dynamic PDF watermarking before download.
-- Server-generated QR code images.
-- Admin settings UI for fees, academic hierarchy, institution theme, and Paystack split rules.
-- Real analytics charts backed by `admin_overview`.
-- Notifications for student/supervisor/library workflow events.
-- Multi-tenant subdomain provisioning.
+- Email domain authentication and deliverability monitoring for production mail.
+- Provider-specific production DNS credentials and hosting target values for each institution.
 - Full frontend migration from one large `index.html` into a maintainable React/Next.js app.
-- Automated tests and CI/CD.
+- Full Playwright role automation against seeded Supabase test data.

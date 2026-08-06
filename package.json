@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "dns:cloudflare": "node scripts/provision-cloudflare-domain.js",
+    "verify:a11y": "node scripts/verify-accessibility.js",
     "verify:release": "node scripts/verify-release-readiness.js",
     "verify:security": "node scripts/verify-security.js",
     "verify:ui": "node scripts/verify-ui-smoke.js",

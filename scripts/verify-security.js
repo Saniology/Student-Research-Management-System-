@@ -12,6 +12,7 @@ const edgeFunctions = [
   'repository-access',
   'verification-lookup',
   'scheduled-reports',
+  'health-check',
 ];
 
 const rlsTables = [
@@ -151,13 +152,16 @@ function checkEdgeFunctionAuthAndCors() {
     assert(/OPTIONS/.test(content), `${name} handles OPTIONS preflight`);
   });
 
-  ['verify-paystack', 'project-workflow', 'repository-access', 'scheduled-reports'].forEach((name) => {
+  ['verify-paystack', 'project-workflow', 'repository-access', 'scheduled-reports', 'health-check'].forEach((name) => {
     const content = read(`supabase/functions/${name}/index.ts`);
-    assert(/auth\/v1\/user|auth\.getUser|REPORT_CRON_SECRET/.test(content), `${name} validates auth or cron secret inside function`);
+    assert(/auth\/v1\/user|auth\.getUser|REPORT_CRON_SECRET|HEALTH_CHECK_SECRET/.test(content), `${name} validates auth or secret inside function`);
   });
 
   const publicVerification = read('supabase/functions/verification-lookup/index.ts');
   assert(!/file_path|storage_path|signedUrl|signedURL/.test(publicVerification), 'public verification function does not expose private file paths or signed URLs');
+  const healthCheck = read('supabase/functions/health-check/index.ts');
+  assert(/x-health-secret/.test(healthCheck), 'health-check requires x-health-secret for detailed output when configured');
+  assert(!/serviceRoleKey[^;]*jsonResponse|SUPABASE_SERVICE_ROLE_KEY[^;]*jsonResponse/.test(healthCheck), 'health-check does not return service role key material');
 }
 
 function checkSecurityDocs() {

@@ -114,6 +114,10 @@ function assertUiRegressionGuards() {
   assert(/js\/config\.js/.test(html), 'browser configuration file is loaded');
   assert(/validateAppConfig/.test(html), 'browser config is validated before connected actions');
   assert(/ensureAppConfigured/.test(html), 'connected actions have a configuration guard');
+  assert(/portal-hero/.test(html), 'portal home shell exists');
+  assert(/unsplash\.com\/photo-1497366754035-f200968a6e72/.test(html), 'portal hero uses a real visual asset');
+  assert(/\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/.test(html), 'card radius standard is enforced');
+  assert(/focus-visible/.test(html), 'keyboard focus styling exists');
 }
 
 assertUniqueIds();

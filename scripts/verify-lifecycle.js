@@ -88,6 +88,7 @@ function checkRequiredFiles() {
     'index.html',
     'js/config.js',
     'package.json',
+    'SECURITY.md',
     'supabase/schema.sql',
     'supabase/payments.sql',
     'supabase/secure-payments.sql',
@@ -99,8 +100,11 @@ function checkRequiredFiles() {
     'supabase/functions/repository-access/index.ts',
     'supabase/functions/verification-lookup/index.ts',
     'supabase/functions/scheduled-reports/index.ts',
+    'supabase/functions/health-check/index.ts',
     'scripts/provision-cloudflare-domain.js',
+    'scripts/verify-accessibility.js',
     'scripts/verify-release-readiness.js',
+    'scripts/verify-security.js',
     'scripts/verify-ui-smoke.js',
     'docs/local-development-setup.md',
     'docs/production-deployment-runbook.md',
@@ -147,6 +151,9 @@ function checkProductCapabilities() {
   assertContains('supabase/functions/scheduled-reports/index.ts', /RESEND_API_KEY/, 'scheduled reports support optional email delivery');
   assertContains('supabase/functions/scheduled-reports/index.ts', /createSignedReportUrl/, 'scheduled report emails use private signed links');
   assertContains('supabase/functions/scheduled-reports/index.ts', /profiles!payments_student_id_fkey/, 'scheduled financial reports use explicit payment profile join');
+  assertContains('supabase/functions/health-check/index.ts', /HEALTH_CHECK_SECRET/, 'health check supports detailed secret guard');
+  assertContains('supabase/functions/health-check/index.ts', /storage\/v1\/bucket/, 'health check verifies required storage buckets');
+  assertContains('supabase/functions/health-check/index.ts', /status:\s*"ok"|status/, 'health check reports service status');
 
   assertContains('index.html', /resumePaystackCheckout/, 'frontend resumes backend-initialized Paystack checkout');
   assertContains('index.html', /type: 'qr_svg'/, 'frontend requests server-rendered QR SVG assets');
@@ -164,20 +171,34 @@ function checkProductCapabilities() {
   assertContains('index.html', /allowed_domains/, 'frontend manages tenant domains');
   assertContains('index.html', /validateAppConfig/, 'frontend validates browser configuration');
   assertContains('index.html', /app-config-error/, 'frontend exposes configuration errors');
+  assertContains('index.html', /portal-hero/, 'frontend has polished portal home shell');
+  assertContains('index.html', /unsplash\.com\/photo-1497366754035-f200968a6e72/, 'frontend hero uses a real visual asset');
+  assertContains('index.html', /\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/, 'frontend enforces restrained card radius standard');
+  assertContains('index.html', /focus-visible/, 'frontend preserves keyboard focus styling');
 
   assertContains('package.json', /"dns:cloudflare"/, 'Cloudflare DNS provisioning command exists');
+  assertContains('package.json', /"verify:a11y"/, 'accessibility verification command exists');
   assertContains('package.json', /"verify:release"/, 'release readiness verification command exists');
+  assertContains('package.json', /"verify:security"/, 'security verification command exists');
   assertContains('package.json', /"verify:ui"/, 'UI smoke verification command exists');
   assertContains('scripts/provision-cloudflare-domain.js', /CLOUDFLARE_API_TOKEN/, 'DNS provisioning uses Cloudflare API token');
   assertContains('scripts/provision-cloudflare-domain.js', /--dry-run/, 'DNS provisioning supports dry runs');
   assertContains('scripts/provision-cloudflare-domain.js', /allowed_domains/, 'DNS provisioning prints Supabase tenant mapping guidance');
   assertContains('docs/production-deployment-runbook.md', /Tenant Domains/, 'production runbook documents tenant domains');
   assertContains('docs/production-deployment-runbook.md', /npm run dns:cloudflare/, 'production runbook documents DNS automation');
+  assertContains('docs/production-deployment-runbook.md', /health-check/, 'production runbook documents health checks');
   assertContains('docs/release-checklist.md', /Payments/, 'release checklist documents payment gate');
+  assertContains('docs/release-checklist.md', /health-check/, 'release checklist documents health check gate');
   assertContains('scripts/verify-release-readiness.js', /PAYSTACK_SECRET_KEY/, 'release verifier checks required secrets template');
   assertContains('scripts/verify-release-readiness.js', /no obvious private secrets/, 'release verifier checks secret hygiene');
+  assertContains('SECURITY.md', /Secret Handling/, 'security policy documents secret handling');
+  assertContains('scripts/verify-security.js', /Payment Safety|checkPaymentSafety/, 'security verifier checks payment safety');
+  assertContains('scripts/verify-security.js', /ENABLE ROW LEVEL SECURITY/, 'security verifier checks RLS coverage');
+  assertContains('scripts/verify-accessibility.js', /form controls have accessible labels/, 'accessibility verifier checks form labels');
+  assertContains('scripts/verify-accessibility.js', /buttons have accessible names/, 'accessibility verifier checks button names');
   assertContains('scripts/verify-ui-smoke.js', /inline onclick handlers resolve/, 'UI smoke verifier checks inline handlers');
   assertContains('scripts/verify-ui-smoke.js', /role views exist/, 'UI smoke verifier checks role surfaces');
+  assertContains('scripts/verify-ui-smoke.js', /portal home shell exists/, 'UI smoke verifier checks portal shell standard');
 }
 
 function checkDeployConfig() {
@@ -187,6 +208,7 @@ function checkDeployConfig() {
     'repository-access',
     'verification-lookup',
     'scheduled-reports',
+    'health-check',
   ];
 
   const deployScript = read('supabase/deploy-verify-paystack.sh');
@@ -198,7 +220,7 @@ function checkDeployConfig() {
     }
   });
 
-  ['PAYSTACK_SECRET_KEY', 'REPORT_CRON_SECRET', 'RESEND_API_KEY', 'REPORT_FROM_EMAIL'].forEach((secretName) => {
+  ['PAYSTACK_SECRET_KEY', 'REPORT_CRON_SECRET', 'HEALTH_CHECK_SECRET', 'RESEND_API_KEY', 'REPORT_FROM_EMAIL'].forEach((secretName) => {
     if (deployScript.includes(secretName)) {
       pass(`deploy script handles ${secretName}`);
     } else {
@@ -213,8 +235,16 @@ function checkUiSmoke() {
   run('node', ['scripts/verify-ui-smoke.js'], 'UI smoke verification passes');
 }
 
+function checkAccessibility() {
+  run('node', ['scripts/verify-accessibility.js'], 'accessibility verification passes');
+}
+
 function checkReleaseReadiness() {
   run('node', ['scripts/verify-release-readiness.js'], 'release readiness verification passes');
+}
+
+function checkSecurity() {
+  run('node', ['scripts/verify-security.js'], 'security verification passes');
 }
 
 function checkDenoFunctions() {
@@ -231,6 +261,7 @@ function checkDenoFunctions() {
     'supabase/functions/repository-access/index.ts',
     'supabase/functions/verification-lookup/index.ts',
     'supabase/functions/scheduled-reports/index.ts',
+    'supabase/functions/health-check/index.ts',
   ], 'Edge Functions type-check with Deno');
 }
 
@@ -277,7 +308,9 @@ checkRequiredFiles();
 checkHtmlScripts();
 checkProductCapabilities();
 checkDeployConfig();
+checkAccessibility();
 checkUiSmoke();
+checkSecurity();
 checkReleaseReadiness();
 checkDenoFunctions();
 checkLocalServer();
