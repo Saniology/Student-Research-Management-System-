@@ -230,6 +230,24 @@ Deno.serve(async (req) => {
           { method: "DELETE" },
         );
       }
+
+      if (!createdProjectId && isMissingWorkflowSchema(err)) {
+        const [payment] = await insertLegacyPayment(
+          supabaseUrl,
+          supabaseServiceKey,
+          user.id,
+          submission.id,
+          reference,
+          transaction,
+        );
+        return jsonResponse({
+          success: true,
+          payment,
+          submission,
+          legacy_workflow: true,
+        });
+      }
+
       await supabaseRest(
         supabaseUrl,
         supabaseServiceKey,
@@ -243,6 +261,44 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: message }, 500);
   }
 });
+
+async function insertLegacyPayment(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  studentId: string,
+  submissionId: string,
+  reference: string,
+  transaction: Record<string, unknown>,
+) {
+  return await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    "/payments?select=*",
+    {
+      method: "POST",
+      body: {
+        student_id: studentId,
+        submission_id: submissionId,
+        amount: transaction.amount,
+        currency: transaction.currency || "NGN",
+        paystack_reference: reference,
+        paystack_transaction_id: String(transaction.id),
+        status: "success",
+        paid_at: transaction.paid_at || new Date().toISOString(),
+      },
+    },
+  );
+}
+
+function isMissingWorkflowSchema(err: unknown) {
+  const message = err instanceof Error ? err.message : String(err);
+  return (
+    message.includes("projects") ||
+    message.includes("project_id") ||
+    message.includes("transaction_type") ||
+    message.includes("Could not find")
+  );
+}
 
 async function getAuthenticatedUser(
   supabaseUrl: string,

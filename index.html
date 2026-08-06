@@ -638,7 +638,7 @@
         async function loadUserProfile(userId) {
             const { data: profile, error } = await supabaseClient
                 .from('profiles')
-                .select('role, full_name, matric, department, email')
+                .select('role, full_name, matric, department, email, institution_id, department_id, supervisor_id')
                 .eq('id', userId)
                 .single();
 
@@ -647,6 +647,48 @@
             }
             currentUserProfile = profile;
             return profile;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[char]);
+        }
+
+        function statusLabel(status) {
+            return String(status || 'draft').replace(/_/g, ' ');
+        }
+
+        function statusClass(status) {
+            const map = {
+                supervisor_review: 'bg-amber-50 text-amber-700',
+                submitted: 'bg-amber-50 text-amber-700',
+                revision_requested: 'bg-red-50 text-red-700',
+                supervisor_approved: 'bg-blue-50 text-blue-700',
+                library_review: 'bg-indigo-50 text-indigo-700',
+                published: 'bg-emerald-50 text-emerald-700',
+                cleared: 'bg-emerald-50 text-emerald-700',
+                rejected: 'bg-red-50 text-red-700'
+            };
+            return map[status] || 'bg-slate-100 text-slate-600';
+        }
+
+        function workflowMessage(status) {
+            const map = {
+                supervisor_review: 'Your thesis has been routed to your assigned supervisor for review.',
+                submitted: 'Your thesis is submitted and waiting to enter supervisor review.',
+                revision_requested: 'Your supervisor requested revisions. Review the comment, update your PDF, and resubmit.',
+                supervisor_approved: 'Supervisor approval is complete. Library verification is next.',
+                library_review: 'Library staff are checking metadata, shelf mapping, and catalog readiness.',
+                published: 'Your project is published in the institutional catalog. You can request final clearance receipt.',
+                cleared: 'Final digital clearance is complete. Your official receipt is available.',
+                rejected: 'This submission was rejected. Contact your department for guidance.'
+            };
+            return map[status] || 'No active thesis workflow yet.';
         }
 
         function navigateToRole(role) {
@@ -819,17 +861,39 @@
         }
 
         // --- LANDING PAGE PUBLIC REPO ---
-        function loadPublicProjects() {
+        async function loadPublicProjects() {
             const grid = document.getElementById('public-project-grid');
-            grid.innerHTML = projects.map(p => `
+            grid.innerHTML = '<p class="text-slate-500 text-center col-span-full py-8">Loading repository...</p>';
+
+            let catalogItems = projects.map(p => ({
+                title: p.title,
+                abstract: p.abstract,
+                degree: p.degree,
+                department_name: p.dept
+            }));
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('public_catalog')
+                    .select('id, project_id, title, abstract, degree, department_name, published_at')
+                    .order('published_at', { ascending: false })
+                    .limit(12);
+
+                if (!error && data && data.length) catalogItems = data;
+            } catch (err) {
+                console.warn('Using demo public repository:', err.message);
+            }
+
+            grid.innerHTML = catalogItems.map(p => `
                 <div class="glass-card p-6 rounded-xl flex flex-col card-hover border border-slate-200 premium-shadow">
                     <div class="flex justify-between items-start mb-4">
-                        <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${p.degree}</span>
-                        <span class="text-[10px] text-slate-400 font-medium uppercase">${p.dept}</span>
+                        <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${escapeHtml(p.degree || 'Research')}</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase">${escapeHtml(p.department_name || p.dept || 'Department')}</span>
                     </div>
-                    <h3 class="text-base font-display font-bold text-primary mb-3">${p.title}</h3>
+                    <h3 class="text-base font-display font-bold text-primary mb-3">${escapeHtml(p.title)}</h3>
+                    <p class="text-xs text-slate-600 mb-4 flex-grow">${escapeHtml((p.abstract || '').substring(0, 150))}${(p.abstract || '').length > 150 ? '...' : ''}</p>
                     <div class="mt-auto pt-4 flex space-x-2 border-t border-slate-200">
-                        <button onclick="alert('${p.abstract}')" class="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">View Abstract</button>
+                        <button onclick="alert('${escapeHtml(p.abstract || 'No abstract available.').replace(/'/g, '\\&#39;')}')" class="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">View Abstract</button>
                         <button onclick="openAuthModal('signup')" class="flex-1 bg-primary text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700"><i class="fas fa-lock mr-1"></i> Download</button>
                     </div>
                 </div>
@@ -837,9 +901,38 @@
         }
 
         // --- LIBRARY CATALOG LOGIC ---
-        function initLibrary() {
+        async function initLibrary() {
             const deptSelect = document.getElementById('lib-dept');
-            const departments = [...new Set(libraryProjects.map(p => p.dept))].sort();
+            libraryQueueProjects = [];
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('projects')
+                    .select('id, title, abstract, degree, status, shelf_number, doi, created_at, profiles!projects_student_id_fkey(full_name, matric), departments(name)')
+                    .in('status', ['supervisor_approved', 'library_review', 'published', 'cleared'])
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                libraryQueueProjects = (data || []).map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    abstract: p.abstract || '',
+                    degree: p.degree || 'Research',
+                    dept: p.departments?.name || 'Unassigned',
+                    author: p.profiles?.full_name || 'Student',
+                    matric: p.profiles?.matric || '',
+                    status: p.status,
+                    shelf_number: p.shelf_number || '',
+                    doi: p.doi || '',
+                    isReal: true
+                }));
+            } catch (err) {
+                console.warn('Using demo library queue:', err.message);
+                libraryQueueProjects = libraryProjects.map(p => ({ ...p, status: 'supervisor_approved', isReal: false }));
+            }
+
+            document.querySelector('#library .text-2xl').innerText = libraryQueueProjects.length + ' Projects';
+            const departments = [...new Set(libraryQueueProjects.map(p => p.dept))].sort();
             deptSelect.innerHTML = '<option value="All">All Departments</option>' + departments.map(d => `<option value="${d}">${d}</option>`).join('');
             filterLibrary();
         }
@@ -864,7 +957,7 @@
             const dept = document.getElementById('lib-dept').value;
             const degree = document.getElementById('lib-degree').value;
 
-            const filtered = libraryProjects.filter(p => {
+            const filtered = libraryQueueProjects.filter(p => {
                 const matchesSearch = p.title.toLowerCase().includes(search) || p.author.toLowerCase().includes(search) || p.abstract.toLowerCase().includes(search);
                 const matchesDept = (dept === 'All' || p.dept === dept);
                 const matchesDegree = (degree === 'All' || p.degree === degree);
@@ -880,16 +973,16 @@
             if (currentLibraryView === 'grid') {
                 grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
                 grid.innerHTML = filtered.map(p => `
-                    <div class="glass-card p-6 rounded-xl flex flex-col card-hover border border-slate-200 premium-shadow cursor-pointer" onclick="viewLibraryProject(${p.id})">
+                    <div class="glass-card p-6 rounded-xl flex flex-col card-hover border border-slate-200 premium-shadow cursor-pointer" onclick="viewLibraryProject('${p.id}')">
                         <div class="flex justify-between items-start mb-4">
-                            <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${p.degree}</span>
-                            <span class="text-[10px] text-slate-400 font-medium uppercase">${p.dept}</span>
+                            <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${escapeHtml(p.degree)}</span>
+                            <span class="text-[10px] text-slate-400 font-medium uppercase">${escapeHtml(p.dept)}</span>
                         </div>
-                        <h3 class="text-base font-display font-bold text-primary mb-2">${p.title}</h3>
-                        <p class="text-xs text-slate-500 mb-3 font-light">By ${p.author}</p>
-                        <p class="text-xs text-slate-600 mb-4 flex-grow">${p.abstract.substring(0, 100)}...</p>
+                        <h3 class="text-base font-display font-bold text-primary mb-2">${escapeHtml(p.title)}</h3>
+                        <p class="text-xs text-slate-500 mb-3 font-light">By ${escapeHtml(p.author)}</p>
+                        <p class="text-xs text-slate-600 mb-4 flex-grow">${escapeHtml(p.abstract.substring(0, 100))}...</p>
                         <div class="mt-auto pt-4 border-t border-slate-200 flex justify-between items-center">
-                            <span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">Pending Review</span>
+                            <span class="text-[10px] ${statusClass(p.status)} px-2 py-1 rounded font-bold uppercase">${escapeHtml(statusLabel(p.status))}</span>
                             <button class="text-primary text-xs font-bold hover:underline">View Details</button>
                         </div>
                     </div>
@@ -897,20 +990,20 @@
             } else {
                 grid.className = 'flex flex-col gap-4';
                 grid.innerHTML = filtered.map(p => `
-                    <div class="glass-card p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-200 premium-shadow cursor-pointer card-hover" onclick="viewLibraryProject(${p.id})">
+                    <div class="glass-card p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-200 premium-shadow cursor-pointer card-hover" onclick="viewLibraryProject('${p.id}')">
                         <div class="flex-1">
                             <div class="flex items-center space-x-3 mb-1">
-                                <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">${p.degree}</span>
-                                <span class="text-[10px] text-slate-400 font-medium uppercase">${p.dept}</span>
+                                <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">${escapeHtml(p.degree)}</span>
+                                <span class="text-[10px] text-slate-400 font-medium uppercase">${escapeHtml(p.dept)}</span>
                             </div>
-                            <h3 class="text-md font-display font-bold text-primary">${p.title}</h3>
-                            <p class="text-xs text-slate-500">By ${p.author}</p>
+                            <h3 class="text-md font-display font-bold text-primary">${escapeHtml(p.title)}</h3>
+                            <p class="text-xs text-slate-500">By ${escapeHtml(p.author)}</p>
                         </div>
                         <div class="sm:w-1/2 lg:w-1/3">
-                            <p class="text-xs text-slate-600 line-clamp-2">${p.abstract}</p>
+                            <p class="text-xs text-slate-600 line-clamp-2">${escapeHtml(p.abstract)}</p>
                         </div>
                         <div class="flex flex-row sm:flex-col items-end space-x-2 sm:space-y-2">
-                            <span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">Pending</span>
+                            <span class="text-[10px] ${statusClass(p.status)} px-2 py-1 rounded font-bold uppercase">${escapeHtml(statusLabel(p.status))}</span>
                             <button class="text-primary text-xs font-bold hover:underline">View Details</button>
                         </div>
                     </div>
@@ -919,17 +1012,55 @@
         }
 
         function viewLibraryProject(id) {
-            const p = libraryProjects.find(x => x.id === id);
+            const p = libraryQueueProjects.find(x => String(x.id) === String(id));
             if (p) {
+                selectedLibraryProject = p;
                 document.getElementById('lib-modal-degree').innerText = p.degree;
                 document.getElementById('lib-modal-title').innerText = p.title;
                 document.getElementById('lib-modal-author').innerText = p.author;
                 document.getElementById('lib-modal-dept').innerText = p.dept;
                 document.getElementById('lib-modal-abstract').innerText = p.abstract;
+                document.getElementById('lib-modal-status').innerText = statusLabel(p.status);
+                document.getElementById('lib-shelf-input').value = p.shelf_number || '';
+                document.getElementById('lib-doi-input').value = p.doi || '';
+                document.getElementById('lib-comment-input').value = '';
                 document.getElementById('library-modal').classList.add('active');
             }
         }
         function closeLibraryModal() { document.getElementById('library-modal').classList.remove('active'); }
+
+        async function publishLibraryProject() {
+            if (!selectedLibraryProject?.isReal) {
+                alert('Apply supabase/spms-core.sql first to publish real database projects.');
+                return;
+            }
+
+            const shelfNumber = document.getElementById('lib-shelf-input').value.trim();
+            if (!shelfNumber) {
+                alert('Enter a shelf number before publishing.');
+                return;
+            }
+
+            const { data, error } = await supabaseClient.functions.invoke('project-workflow', {
+                body: {
+                    action: 'library_publish',
+                    project_id: selectedLibraryProject.id,
+                    shelf_number: shelfNumber,
+                    doi: document.getElementById('lib-doi-input').value.trim(),
+                    comment: document.getElementById('lib-comment-input').value.trim()
+                }
+            });
+
+            if (error || data?.error) {
+                alert('Publish failed: ' + (data?.error || error.message));
+                return;
+            }
+
+            closeLibraryModal();
+            await initLibrary();
+            await loadPublicProjects();
+            alert('Project verified and published to the public catalog.');
+        }
 
         // --- ADMIN CATALOGUE LOADER ---
         function loadCatalogue() {
@@ -953,8 +1084,9 @@
             const file = event.target.files[0];
             if (!file) return;
             if (file.type !== 'application/pdf') { alert("Error: Only PDF files are allowed."); event.target.value = ''; return; }
+            if (file.size > 104857600) { alert("Error: PDF must not exceed 100MB."); event.target.value = ''; return; }
             selectedFile = file;
-            document.getElementById('file-name').innerText = file.name;
+            document.getElementById('file-name').innerText = file.name + ' (' + (file.size / 1048576).toFixed(1) + 'MB)';
         }
 
         function formatNaira(kobo) {
@@ -975,7 +1107,32 @@
 
             document.getElementById('payment-status').classList.remove('hidden');
             document.getElementById('payment-ref').innerText = 'Reference: ' + payment.paystack_reference;
-            document.getElementById('receipt-section').classList.remove('hidden');
+            renderStudentProjectStatus();
+        }
+
+        function renderStudentProjectStatus() {
+            const card = document.getElementById('project-status-card');
+            const receipt = document.getElementById('receipt-section');
+            if (!card) return;
+
+            if (!currentProject) {
+                card.classList.add('hidden');
+                receipt.classList.add('hidden');
+                return;
+            }
+
+            const title = currentProject.title || currentProject.file_name || 'Submitted Project';
+            const status = currentProject.status || 'supervisor_review';
+            card.classList.remove('hidden');
+            document.getElementById('project-status-title').innerText = title;
+            document.getElementById('project-status-meta').innerText =
+                'Status: ' + statusLabel(status) + (currentProject.degree ? ' • ' + currentProject.degree : '');
+            const badge = document.getElementById('project-status-badge');
+            badge.className = 'self-start md:self-center text-[10px] px-3 py-1 rounded font-bold uppercase ' + statusClass(status);
+            badge.innerText = statusLabel(status);
+            document.getElementById('project-status-note').innerText = currentProject.revision_note || workflowMessage(status);
+
+            receipt.classList.toggle('hidden', !['published', 'cleared'].includes(status));
         }
 
         async function loadStudentDashboard() {
@@ -997,6 +1154,20 @@
                     .order('paid_at', { ascending: false })
                     .limit(1)
                     .maybeSingle();
+
+                try {
+                    const { data: project } = await supabaseClient
+                        .from('projects')
+                        .select('*')
+                        .eq('student_id', currentUser.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+                    currentProject = project || null;
+                    renderStudentProjectStatus();
+                } catch (projectErr) {
+                    console.warn('Project workflow table not available yet:', projectErr.message);
+                }
 
                 if (payment) {
                     hideVerificationRetry();
@@ -1051,6 +1222,9 @@
             try {
                 let fileName = pendingVerification?.fileName || selectedFile?.name;
                 let filePath = pendingVerification?.filePath;
+                const projectTitle = pendingVerification?.title || document.getElementById('project-title-input').value.trim();
+                const projectAbstract = pendingVerification?.abstract || document.getElementById('project-abstract-input').value.trim();
+                const projectDegree = pendingVerification?.degree || document.getElementById('project-degree-input').value;
 
                 if (!fileName) {
                     throw new Error('Thesis file is missing. Re-select your PDF and retry.');
@@ -1063,7 +1237,7 @@
 
                     const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
                     filePath = currentUser.id + '/' + Date.now() + '-' + safeName;
-                    pendingVerification = { reference, fileName, filePath: null, userId: currentUser.id };
+                    pendingVerification = { reference, fileName, filePath: null, title: projectTitle, abstract: projectAbstract, degree: projectDegree, userId: currentUser.id };
                     sessionStorage.setItem('pendingVerification', JSON.stringify(pendingVerification));
 
                     const { data: uploadData, error: uploadError } = await supabaseClient.storage
@@ -1078,13 +1252,17 @@
                     throw new Error('Uploaded file path is missing. Re-select your PDF and retry.');
                 }
 
-                pendingVerification = { reference, fileName, filePath, userId: currentUser.id };
+                pendingVerification = { reference, fileName, filePath, title: projectTitle, abstract: projectAbstract, degree: projectDegree, userId: currentUser.id };
 
                 const { data, error } = await supabaseClient.functions.invoke('verify-paystack', {
                     body: {
                         reference,
                         file_name: fileName,
-                        file_path: filePath
+                        file_path: filePath,
+                        title: projectTitle,
+                        abstract: projectAbstract,
+                        degree: projectDegree,
+                        file_size_bytes: selectedFile?.size || null
                     }
                 });
 
@@ -1105,6 +1283,7 @@
 
                 pendingVerification = null;
                 hideVerificationRetry();
+                currentProject = data.project || currentProject;
                 markPaymentSuccess(data.payment);
                 alert('Payment verified! Your thesis has been submitted to your supervisor.');
             } catch (err) {
@@ -1142,6 +1321,16 @@
         }
 
         function processUpload() {
+            const projectTitle = document.getElementById('project-title-input').value.trim();
+            const projectAbstract = document.getElementById('project-abstract-input').value.trim();
+            if (!projectTitle) {
+                alert('Please enter your approved project title.');
+                return;
+            }
+            if (!projectAbstract || projectAbstract.length < 50) {
+                alert('Please enter a complete abstract before submission.');
+                return;
+            }
             if (!selectedFile) {
                 alert('Please upload your thesis PDF first.');
                 return;
@@ -1251,16 +1440,47 @@
         }
 
         // --- TEACHER LOGIC ---
-        function loadTeacherStudents() {
+        async function loadTeacherStudents() {
             const tableBody = document.getElementById('student-table-body');
-            tableBody.innerHTML = assignedStudents.map(s => `
-                <tr class="hover:bg-slate-50 cursor-pointer" onclick="viewStudent(${s.id})">
-                    <td class="p-4 flex items-center space-x-3"><img src="${s.img}" class="w-10 h-10 rounded-full object-cover" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=${s.name.replace(' ', '+')}&background=065F46&color=fff'"><div><p class="font-bold text-primary">${s.name}</p><p class="text-xs text-slate-400">${s.matric}</p></div></td>
-                    <td class="p-4"><span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${s.degree}</span></td>
-                    <td class="p-4 text-slate-600 max-w-xs">${s.topic}</td>
-                    <td class="p-4"><span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-1 rounded font-bold uppercase">${s.status}</span></td>
+            tableBody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">Loading assigned projects...</td></tr>';
+            supervisorProjects = [];
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('projects')
+                    .select('id, title, abstract, degree, status, revision_note, created_at, profiles!projects_student_id_fkey(full_name, matric, avatar_url)')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                supervisorProjects = (data || []).map(p => ({
+                    id: p.id,
+                    name: p.profiles?.full_name || 'Student',
+                    matric: p.profiles?.matric || '—',
+                    img: p.profiles?.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(p.profiles?.full_name || 'Student') + '&background=065F46&color=fff',
+                    degree: p.degree || 'Research',
+                    topic: p.title,
+                    abstract: p.abstract || '',
+                    status: p.status,
+                    isReal: true
+                }));
+            } catch (err) {
+                console.warn('Using demo supervisor queue:', err.message);
+                supervisorProjects = assignedStudents.map(s => ({ ...s, abstract: 'Demo project record. Apply the SPMS core schema to review real submissions.', isReal: false }));
+            }
+
+            if (supervisorProjects.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">No assigned projects awaiting review.</td></tr>';
+                return;
+            }
+
+            tableBody.innerHTML = supervisorProjects.map(s => `
+                <tr class="hover:bg-slate-50 cursor-pointer" onclick="viewStudent('${s.id}')">
+                    <td class="p-4 flex items-center space-x-3"><img src="${escapeHtml(s.img)}" class="w-10 h-10 rounded-full object-cover" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Student&background=065F46&color=fff'"><div><p class="font-bold text-primary">${escapeHtml(s.name)}</p><p class="text-xs text-slate-400">${escapeHtml(s.matric)}</p></div></td>
+                    <td class="p-4"><span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${escapeHtml(s.degree)}</span></td>
+                    <td class="p-4 text-slate-600 max-w-xs">${escapeHtml(s.topic)}</td>
+                    <td class="p-4"><span class="text-[10px] ${statusClass(s.status)} px-2 py-1 rounded font-bold uppercase">${escapeHtml(statusLabel(s.status))}</span></td>
                     <td class="p-4 text-right" onclick="event.stopPropagation()">
-                        ${s.status === 'Pending' ? `<button onclick="approveStudent(${s.id})" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold">Approve</button>` : `<button class="text-slate-400"><i class="fas fa-eye"></i></button>`}
+                        <button onclick="viewStudent('${s.id}')" class="bg-primary text-white px-3 py-1 rounded text-xs font-bold">Review</button>
                     </td>
                 </tr>
             `).join('');
@@ -1268,7 +1488,7 @@
 
         let currentModalStudentId = null;
         function viewStudent(id) {
-            const s = assignedStudents.find(st => st.id === id);
+            const s = supervisorProjects.find(st => String(st.id) === String(id));
             if (s) {
                 currentModalStudentId = id;
                 document.getElementById('modal-img').src = s.img;
@@ -1276,14 +1496,71 @@
                 document.getElementById('modal-name').innerText = s.name;
                 document.getElementById('modal-matric').innerText = s.matric;
                 document.getElementById('modal-topic').innerText = s.topic;
+                document.getElementById('modal-abstract').innerText = s.abstract || 'No abstract supplied.';
+                document.getElementById('modal-review-comment').value = '';
                 document.getElementById('student-modal').classList.add('active');
             }
         }
         function closeModal() { document.getElementById('student-modal').classList.remove('active'); }
-        function approveStudent(id) {
+        async function approveStudent(id) {
             if(id) currentModalStudentId = id;
-            const student = assignedStudents.find(s => s.id === currentModalStudentId);
-            if (student) { student.status = "Approved"; loadTeacherStudents(); closeModal(); alert(student.name + " approved!"); }
+            const student = supervisorProjects.find(s => String(s.id) === String(currentModalStudentId));
+            if (!student) return;
+            if (!student.isReal) {
+                student.status = "Approved";
+                await loadTeacherStudents();
+                closeModal();
+                alert(student.name + " approved in demo mode.");
+                return;
+            }
+
+            const { data, error } = await supabaseClient.functions.invoke('project-workflow', {
+                body: {
+                    action: 'supervisor_decision',
+                    project_id: student.id,
+                    decision: 'approve',
+                    comment: document.getElementById('modal-review-comment').value.trim()
+                }
+            });
+
+            if (error || data?.error) {
+                alert('Approval failed: ' + (data?.error || error.message));
+                return;
+            }
+            await loadTeacherStudents();
+            closeModal();
+            alert(student.name + ' approved and routed to library verification.');
+        }
+
+        async function requestStudentRevision() {
+            const student = supervisorProjects.find(s => String(s.id) === String(currentModalStudentId));
+            if (!student) return;
+            const comment = document.getElementById('modal-review-comment').value.trim();
+            if (!comment) {
+                alert('Enter a revision comment before sending the request.');
+                return;
+            }
+            if (!student.isReal) {
+                alert('Revision request saved in demo mode. Apply the SPMS core schema for real workflow actions.');
+                return;
+            }
+
+            const { data, error } = await supabaseClient.functions.invoke('project-workflow', {
+                body: {
+                    action: 'supervisor_decision',
+                    project_id: student.id,
+                    decision: 'request_revision',
+                    comment
+                }
+            });
+
+            if (error || data?.error) {
+                alert('Revision request failed: ' + (data?.error || error.message));
+                return;
+            }
+            await loadTeacherStudents();
+            closeModal();
+            alert('Revision request sent to the student.');
         }
 
         restoreSession().finally(() => {
