@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -26,14 +26,14 @@
         }
         * { box-sizing: border-box; }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', sans-serif;
             background:
                 linear-gradient(180deg, #F6F8FA 0%, #EEF3F7 48%, #F8FAFC 100%);
             color: #334155;
             margin: 0;
             text-rendering: optimizeLegibility;
         }
-        h1, h2, h3, h4, .font-display { font-family: 'Inter', sans-serif; color: var(--spms-ink); letter-spacing: 0; }
+        h1, h2, h3, h4, .font-display { font-family: 'Plus Jakarta Sans', sans-serif; color: var(--spms-ink); letter-spacing: 0; }
         .bg-primary { background-color: var(--spms-primary); }
         .text-primary { color: var(--spms-primary); }
         .bg-accent { background-color: var(--spms-accent); }
@@ -46,9 +46,10 @@
         #admin.active-view { display: flex !important; }
         .view, .admin-section { position: relative; }
         .glass-card, .surface-card {
-            background: var(--spms-surface);
-            border: 1px solid var(--spms-border);
-            box-shadow: 0 14px 32px -24px rgba(15, 23, 42, 0.35);
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(203, 213, 225, 0.76);
+            box-shadow: 0 18px 42px -30px rgba(15, 23, 42, 0.42);
+            backdrop-filter: blur(18px) saturate(125%);
         }
         .glass-input {
             background: #FFFFFF;
@@ -61,11 +62,18 @@
             box-shadow: 0 0 0 3px rgba(6, 95, 70, 0.12);
             outline: none;
         }
+        .glass-input::placeholder { color: #94A3B8; }
+        .glass-input, select.glass-input, textarea.glass-input {
+            border-radius: 10px !important;
+            transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, transform 0.18s ease;
+        }
+        .glass-input:hover { border-color: #94A3B8; background: #FFFFFF; }
         .smart-card {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
+            background: rgba(255, 255, 255, 0.82);
+            border: 1px solid rgba(203, 213, 225, 0.76);
             border-radius: 8px;
-            box-shadow: 0 16px 34px -28px rgba(15, 23, 42, 0.45);
+            box-shadow: 0 18px 42px -30px rgba(15, 23, 42, 0.42);
+            backdrop-filter: blur(16px) saturate(120%);
         }
         .smart-list {
             display: grid;
@@ -78,8 +86,8 @@
             align-items: center;
             min-height: 4.25rem;
             padding: 0.9rem 1rem;
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(203, 213, 225, 0.76);
             border-radius: 8px;
             transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
         }
@@ -88,6 +96,81 @@
             border-color: rgba(6, 95, 70, 0.26);
             box-shadow: 0 16px 30px -26px rgba(15, 23, 42, 0.42);
         }
+        #student, #teacher, #library { background: #F4F7FA; }
+        #admin main { background: #F4F7FA !important; }
+        #student .bg-white, #teacher .bg-white, #library .bg-white, #admin main .bg-white {
+            background: rgba(255, 255, 255, 0.78) !important;
+            border-color: rgba(203, 213, 225, 0.76) !important;
+            box-shadow: 0 18px 42px -30px rgba(15, 23, 42, 0.38);
+            backdrop-filter: blur(16px) saturate(120%);
+        }
+        #student .bg-slate-50, #teacher .bg-slate-50, #library .bg-slate-50, #admin main .bg-slate-50 {
+            background: rgba(248, 250, 252, 0.68) !important;
+        }
+        .page-heading {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1.5rem;
+        }
+        .page-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            color: var(--spms-primary);
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.13em;
+            text-transform: uppercase;
+        }
+        .page-eyebrow::before {
+            content: "";
+            width: 0.45rem;
+            height: 0.45rem;
+            border-radius: 999px;
+            background: var(--spms-accent);
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12);
+        }
+        .page-heading h1 { margin-top: 0.55rem; margin-bottom: 0; letter-spacing: 0; }
+        .page-heading-copy { color: #64748B; font-size: 0.86rem; margin-top: 0.55rem; max-width: 42rem; line-height: 1.7; }
+        .page-heading-stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid rgba(203, 213, 225, 0.76);
+            box-shadow: 0 14px 30px -26px rgba(15, 23, 42, 0.45);
+            white-space: nowrap;
+        }
+        .page-heading-stat i { color: var(--spms-primary); }
+        #student-dashboard-content > .glass-card:first-child { border-top: 3px solid var(--spms-accent); }
+        #student-dashboard-content > .glass-card:not(:first-child), #teacher .glass-card, #library .glass-card { border-top: 2px solid rgba(6, 95, 70, 0.12); }
+        #student label, #teacher label, #library label, #admin main label { letter-spacing: 0.06em; }
+        #teacher table tbody tr, #admin main table tbody tr { transition: background-color 0.16s ease, transform 0.16s ease; }
+        #teacher table tbody tr:hover, #admin main table tbody tr:hover { background: rgba(236, 253, 245, 0.58); }
+        #teacher table thead tr, #admin main table thead tr { background: rgba(248, 250, 252, 0.82) !important; }
+        #teacher table th, #admin main table th { font-size: 0.66rem; letter-spacing: 0.08em; }
+        #admin-sidebar { background: #0F172A; border-right: 1px solid rgba(148, 163, 184, 0.16); }
+        #admin-sidebar > div:first-child { background: rgba(15, 23, 42, 0.76); }
+        #admin main { min-width: 0; }
+        #admin .admin-section > h1 { letter-spacing: 0; position: relative; padding-left: 1rem; }
+        #admin .admin-section > h1::before { content: ""; position: absolute; left: 0; top: 0.2rem; bottom: 0.2rem; width: 0.25rem; border-radius: 999px; background: var(--spms-accent); }
+        .modal-shell {
+            position: relative;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.78);
+            box-shadow: 0 30px 90px -42px rgba(2, 6, 23, 0.78), 0 12px 30px -24px rgba(2, 6, 23, 0.56);
+            backdrop-filter: blur(24px) saturate(140%);
+            animation: authModalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .modal-header {
+            background: rgba(255, 255, 255, 0.54);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.26);
+        }
+        .modal-header button { color: #64748B; }
+        .modal-header button:hover { color: #0F172A; }
         .smart-token {
             display: inline-flex;
             align-items: center;
@@ -440,6 +523,9 @@
                 padding-top: 2rem;
                 padding-bottom: 2.25rem;
             }
+            .page-heading { align-items: flex-start; flex-direction: column; gap: 1rem; }
+            .page-heading-stat { width: 100%; justify-content: flex-start; }
+            #library > div > .flex.flex-col { align-items: stretch; }
         }
         @media (min-width: 1024px) {
             .portal-hero-grid {
@@ -603,7 +689,7 @@
     <!-- VIEW 2: STUDENT -->
     <div id="student" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
         <div id="student-dashboard-content" class="max-w-5xl mx-auto">
-            <div class="glass-card rounded-xl p-6 premium-shadow mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+            <div class="glass-card page-lead rounded-xl p-6 premium-shadow mb-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 <img id="student-avatar" src="https://ui-avatars.com/api/?name=Student&background=065F46&color=fff" alt="Student Profile" class="w-24 h-24 rounded-full border-4 border-accent object-cover">
                 <div class="text-center sm:text-left flex-1">
                     <div class="flex items-center justify-center sm:justify-start space-x-2 mb-1">
@@ -684,7 +770,14 @@
     <!-- VIEW 3: TEACHER -->
     <div id="teacher" class="view p-4 sm:p-8 lg:p-12 blueprint-bg min-h-screen">
         <div class="max-w-7xl mx-auto">
-            <h1 class="text-3xl font-display font-bold text-primary mb-8">Supervisor Dashboard</h1>
+            <div class="page-heading mb-8">
+                <div>
+                    <span class="page-eyebrow">Supervisor workspace</span>
+                    <h1 class="text-3xl font-display font-bold text-primary">Supervisor Dashboard</h1>
+                    <p class="page-heading-copy">Review assigned research, leave precise feedback, and move approved projects into the library queue.</p>
+                </div>
+                <span class="page-heading-stat text-xs font-bold text-slate-600"><i class="fas fa-inbox"></i> Review queue</span>
+            </div>
             <div class="glass-card rounded-xl overflow-hidden premium-shadow">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[600px]">
@@ -702,12 +795,16 @@
         <div class="max-w-7xl mx-auto">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
                 <div>
-                    <h1 class="text-3xl font-display font-bold text-primary">Library Catalog & Verification</h1>
-                    <p id="tenant-repository-copy" class="text-slate-500 font-light mt-1">Comprehensive archive of all submitted research across KASU.</p>
+                    <span class="page-eyebrow">Library workspace</span>
+                    <h1 class="text-3xl font-display font-bold text-primary mt-2">Library Catalog & Verification</h1>
+                    <p id="tenant-repository-copy" class="page-heading-copy">Comprehensive archive of all submitted research across KASU.</p>
                 </div>
-                <div class="mt-4 md:mt-0 bg-white p-4 rounded-xl premium-shadow border border-slate-200 text-center">
+                <div class="page-heading-stat mt-4 md:mt-0 text-center">
+                    <i class="fas fa-layer-group"></i>
+                    <div>
                     <p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Verification Queue</p>
                     <p class="text-2xl font-display font-bold text-accent mt-1">50 Projects</p>
+                    </div>
                 </div>
             </div>
 
@@ -742,15 +839,15 @@
     <!-- VIEW 5: ADMIN (Multi-Section) -->
     <div id="admin" class="view min-h-screen">
         <!-- Mobile Top Bar -->
-        <div class="md:hidden bg-white p-4 flex justify-between items-center border-b sticky top-0 z-30">
+        <div class="md:hidden bg-white/80 backdrop-blur-xl p-4 flex justify-between items-center border-b sticky top-0 z-30">
             <button onclick="toggleSidebar()" aria-label="Open admin menu" title="Open admin menu"><i class="fas fa-bars text-xl text-primary"></i></button>
-            <span class="font-display font-bold text-lg text-primary">Admin Panel</span>
+            <span class="font-display font-bold text-lg text-primary flex items-center gap-2"><span class="smart-icon w-8 h-8"><i class="fas fa-chart-line text-sm"></i></span>Admin Panel</span>
         </div>
         
         <div class="flex min-h-screen">
             <!-- Sidebar -->
             <aside id="admin-sidebar" class="w-64 admin-sidebar fixed md:relative inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition duration-200 ease-in-out z-50 flex flex-col flex-shrink-0 min-h-screen">
-                <div class="h-20 flex items-center justify-center border-b border-slate-800 hidden md:flex"><span class="font-display font-bold text-white text-lg">Admin Panel</span></div>
+                <div class="h-20 px-5 flex items-center border-b border-slate-800 hidden md:flex"><span class="smart-icon w-9 h-9 mr-3"><i class="fas fa-chart-line text-sm"></i></span><div><span class="block font-display font-bold text-white text-lg">Admin Panel</span><span class="block text-[9px] uppercase tracking-[0.16em] text-slate-400 mt-0.5">Operations center</span></div></div>
                 <nav class="flex-1 p-4 space-y-1">
                     <a onclick="showAdminSection('dashboard', this)" class="sidebar-link active flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-tachometer-alt w-5"></i> Dashboard</a>
                     <a onclick="showAdminSection('students', this)" class="sidebar-link flex items-center space-x-3 px-4 py-3 rounded-r-lg text-sm font-medium"><i class="fas fa-user-graduate w-5"></i> Students</a>
@@ -1079,12 +1176,12 @@
 
     <!-- LIBRARY DETAIL MODAL -->
     <div id="library-modal" class="modal-overlay">
-        <div class="glass-card rounded-2xl premium-shadow w-full max-w-2xl mx-4 overflow-hidden">
-            <div class="bg-primary p-6 flex justify-between items-center">
-                <span class="text-white font-display font-bold text-lg">Project Verification Details</span>
-                <button onclick="closeLibraryModal()" class="text-white/70 hover:text-white" aria-label="Close library dialog" title="Close"><i class="fas fa-times text-xl"></i></button>
+        <div class="modal-shell rounded-2xl w-full max-w-2xl mx-4 overflow-hidden">
+            <div class="modal-header p-5 sm:p-6 flex justify-between items-center">
+                <div class="flex items-center gap-3"><span class="auth-modal-mark"><i class="fas fa-book-open"></i></span><span class="text-slate-950 font-display font-black text-lg">Project Verification Details</span></div>
+                <button onclick="closeLibraryModal()" class="auth-modal-close" aria-label="Close library dialog" title="Close"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-8">
+            <div class="auth-modal-body p-6 sm:p-8">
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <span id="lib-modal-degree" class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase"></span>
@@ -1122,9 +1219,9 @@
 
     <!-- STUDENT MODAL -->
     <div id="student-modal" class="modal-overlay">
-        <div class="glass-card rounded-2xl premium-shadow w-full max-w-2xl mx-4 overflow-hidden">
-            <div class="bg-primary p-6 flex justify-between items-center"><span class="text-white font-display font-bold text-lg">Student Profile</span><button onclick="closeModal()" class="text-white/70 hover:text-white" aria-label="Close student profile dialog" title="Close"><i class="fas fa-times text-xl"></i></button></div>
-            <div class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="modal-shell rounded-2xl w-full max-w-2xl mx-4 overflow-hidden">
+            <div class="modal-header p-5 sm:p-6 flex justify-between items-center"><div class="flex items-center gap-3"><span class="auth-modal-mark"><i class="fas fa-user-check"></i></span><span class="text-slate-950 font-display font-black text-lg">Student Profile</span></div><button onclick="closeModal()" class="auth-modal-close" aria-label="Close student profile dialog" title="Close"><i class="fas fa-times"></i></button></div>
+            <div class="auth-modal-body p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="md:col-span-1 flex flex-col items-center text-center"><img id="modal-img" src="" alt="Student profile photo" class="w-32 h-32 rounded-full border-4 border-accent object-cover mb-3 premium-shadow"><h3 id="modal-name" class="text-xl font-display font-bold text-primary"></h3><p id="modal-matric" class="text-sm text-slate-500 font-light"></p></div>
                 <div class="md:col-span-2 md:border-l border-slate-200 md:pl-8">
                     <h4 class="text-xs font-bold text-slate-500 uppercase mb-1">Project Title</h4>
