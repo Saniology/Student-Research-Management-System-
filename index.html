@@ -198,6 +198,29 @@
             grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
             gap: 1rem;
         }
+        .landing-skeleton {
+            padding: 0;
+            background: #F8FAFC;
+        }
+        .landing-skeleton-hero {
+            min-height: min(780px, calc(100vh - 5rem));
+            padding: 4.5rem 1rem 3rem;
+            display: flex;
+            align-items: center;
+            background:
+                linear-gradient(112deg, rgba(5, 47, 38, 0.96) 0%, rgba(13, 48, 76, 0.93) 52%, rgba(17, 24, 39, 0.92) 100%),
+                url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=80");
+            background-size: cover;
+            background-position: center;
+        }
+        .landing-skeleton-trust { padding: 3rem 1rem; background: #FFFFFF; border-block: 1px solid #E2E8F0; }
+        .landing-skeleton-repo { padding: 4rem 1rem; background: #F8FAFC; }
+        .landing-skeleton-repo-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
         @keyframes skeletonShimmer {
             100% { transform: translateX(100%); }
         }
@@ -209,10 +232,82 @@
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes modalBackdropIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes authModalIn {
+            from { opacity: 0; transform: translateY(18px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
         .ui-rise { animation: uiRise 0.28s ease both; }
         .blueprint-bg { background: transparent; position: relative; overflow: hidden; }
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 100; justify-content: center; align-items: center; padding: 1rem; }
-        .modal-overlay.active { display: flex; }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(14px) saturate(118%);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .modal-overlay.active { display: flex; animation: modalBackdropIn 0.24s ease both; }
+        .auth-modal-shell {
+            position: relative;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.76);
+            box-shadow: 0 30px 90px -42px rgba(2, 6, 23, 0.78), 0 12px 30px -24px rgba(2, 6, 23, 0.56);
+            backdrop-filter: blur(26px) saturate(145%);
+            animation: authModalIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .auth-modal-header {
+            background: rgba(255, 255, 255, 0.54);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.26);
+        }
+        .auth-modal-mark {
+            width: 2.75rem;
+            height: 2.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            color: white;
+            background: var(--spms-primary);
+            box-shadow: 0 10px 20px -12px rgba(6, 95, 70, 0.8);
+        }
+        .auth-modal-close {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            color: #64748B;
+            background: rgba(248, 250, 252, 0.72);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            transition: color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+        }
+        .auth-modal-close:hover { color: #0F172A; background: #FFFFFF; transform: rotate(4deg); }
+        .auth-modal-body { background: rgba(255, 255, 255, 0.38); }
+        .auth-modal-shell .glass-input {
+            background: rgba(248, 250, 252, 0.72);
+            border-color: rgba(148, 163, 184, 0.34);
+        }
+        .auth-modal-shell .glass-input:focus {
+            background: rgba(255, 255, 255, 0.92);
+            border-color: var(--spms-primary);
+        }
+        .auth-modal-switch {
+            color: var(--spms-primary);
+            font-weight: 800;
+            transition: color 0.16s ease;
+        }
+        .auth-modal-switch:hover { color: #047857; text-decoration: underline; }
         .admin-sidebar { background-color: #111827; color: #CBD5E1; }
         .sidebar-link { transition: all 0.2s; border-left: 3px solid transparent; cursor: pointer; }
         .sidebar-link:hover { background-color: #1F2937; color: #fff; }
@@ -352,6 +447,14 @@
             }
             .skeleton-hero {
                 grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.75fr);
+            }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
@@ -920,11 +1023,21 @@
 
     <!-- AUTH MODAL -->
     <div id="auth-modal" class="modal-overlay">
-        <div class="glass-card rounded-2xl premium-shadow w-full max-w-md mx-4 overflow-hidden">
-            <div class="bg-primary p-6 flex justify-between items-center"><span id="auth-title" class="text-white font-display font-bold text-lg">Login to Portal</span><button onclick="closeAuthModal()" class="text-white/70 hover:text-white" aria-label="Close authentication dialog" title="Close"><i class="fas fa-times text-xl"></i></button></div>
-            <div class="p-8">
-                <p id="auth-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-center"></p>
+        <div class="auth-modal-shell rounded-2xl w-full max-w-md mx-4 overflow-hidden">
+            <div class="auth-modal-header p-5 sm:p-6 flex justify-between items-center gap-4">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="auth-modal-mark"><i class="fas fa-shield-halved"></i></span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] uppercase tracking-[0.18em] font-black text-primary">Secure access</p>
+                        <span id="auth-title" class="block text-slate-950 font-display font-black text-lg truncate">Login to Portal</span>
+                    </div>
+                </div>
+                <button onclick="closeAuthModal()" class="auth-modal-close" aria-label="Close authentication dialog" title="Close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="auth-modal-body p-6 sm:p-8">
+                <p id="auth-error" class="hidden text-sm text-red-700 bg-red-50/85 border border-red-200 rounded-lg p-3 mb-5 text-center"></p>
                 <div id="login-form">
+                    <p class="text-sm text-slate-600 mb-6 leading-relaxed">Use your institutional account to continue to your role-based research workspace.</p>
                     <div class="space-y-4">
                         <div>
                             <label for="login-email" class="text-xs font-bold text-slate-500 uppercase">Email address</label>
@@ -934,12 +1047,15 @@
                             <label for="login-password" class="text-xs font-bold text-slate-500 uppercase">Password</label>
                             <input id="login-password" type="password" aria-label="Login password" placeholder="Enter your password" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
                         </div>
-                        <button id="login-btn" onclick="handleLogin()" class="smart-action w-full bg-accent text-dark px-8 py-3 text-sm hover:bg-amber-400">Sign In</button>
+                        <button id="login-btn" onclick="handleLogin()" class="smart-action w-full bg-primary text-white px-8 py-3 text-sm hover:bg-emerald-700"><i class="fas fa-arrow-right-to-bracket"></i>Sign In</button>
                     </div>
-                    <p class="text-xs text-slate-500 mt-6 text-center">Demo: student@kasu.edu.ng / password</p>
+                    <div class="mt-6 pt-5 border-t border-slate-200/70 text-center">
+                        <p class="text-xs text-slate-500">Demo: <span class="font-mono text-slate-700">student@kasu.edu.ng / password</span></p>
+                        <p class="text-sm text-slate-600 mt-3">New to the portal? <button type="button" onclick="openAuthModal('signup')" class="auth-modal-switch">Create an account</button></p>
+                    </div>
                 </div>
                 <div id="signup-form" class="hidden">
-                    <p class="text-sm text-slate-500 mb-6 text-center">Enter your matric number to verify enrollment, then create your account.</p>
+                    <p class="text-sm text-slate-600 mb-6 leading-relaxed">Enter your matric number to verify enrollment, then create your secure student account.</p>
                     <div class="space-y-4">
                         <div>
                             <label for="signup-matric" class="text-xs font-bold text-slate-500 uppercase">Matric number</label>
@@ -953,8 +1069,9 @@
                             <label for="signup-password" class="text-xs font-bold text-slate-500 uppercase">Password</label>
                             <input id="signup-password" type="password" aria-label="Signup password" placeholder="Minimum 6 characters" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
                         </div>
-                        <button id="signup-btn" onclick="handleSignup()" class="smart-action w-full bg-accent text-dark px-8 py-3 text-sm hover:bg-amber-400">Create Account</button>
+                        <button id="signup-btn" onclick="handleSignup()" class="smart-action w-full bg-primary text-white px-8 py-3 text-sm hover:bg-emerald-700"><i class="fas fa-user-plus"></i>Create Account</button>
                     </div>
+                    <p class="text-sm text-slate-600 mt-6 pt-5 border-t border-slate-200/70 text-center">Already registered? <button type="button" onclick="openAuthModal('login')" class="auth-modal-switch">Sign in</button></p>
                 </div>
             </div>
         </div>
@@ -1070,6 +1187,9 @@
         let currentLibraryView = 'grid'; // 'grid' or 'list'
         const REPOSITORY_FEE_KOBO = 200000; // ₦2,000
         const REPOSITORY_DOWNLOAD_FEE_KOBO = 50000; // ₦500
+        const MIN_PAGE_SKELETON_MS = 1100;
+        const pageSkeletonStartedAt = new Map();
+        const pageSkeletonHideTimers = new Map();
 
         function validateAppConfig() {
             const errors = [];
@@ -1151,27 +1271,45 @@
         function skeletonViewTemplate(viewId, variant = 'default') {
             if (viewId === 'landing') {
                 return `
-                    <div class="skeleton-shell">
-                        <div class="skeleton-hero">
-                            <div class="space-y-5">
-                                ${skel('12rem', 'skel-line skel-dark')}
-                                ${skel('86%', 'skel-title skel-dark h-12')}
-                                ${skel('74%', 'skel-title skel-dark h-8')}
-                                <div class="space-y-2">${skeletonLines(['92%', '74%', '54%'])}</div>
-                                <div class="flex flex-wrap gap-3 pt-2">${skel('8rem', 'skel-button')}${skel('10rem', 'skel-button')}${skel('9rem', 'skel-button')}</div>
-                            </div>
-                            <div class="skeleton-card p-6 space-y-5">
-                                <div class="flex items-center justify-between">${skel('10rem', 'skel-title')}${skel('5rem')}</div>
-                                ${Array.from({ length: 4 }, () => `
-                                    <div class="skel-row">
-                                        ${skel('2.5rem', 'skel-avatar')}
-                                        <div class="space-y-2">${skel('70%')}${skel('92%')}</div>
-                                        ${skel('3.5rem')}
+                    <div class="landing-skeleton">
+                        <section class="landing-skeleton-hero">
+                            <div class="skeleton-shell">
+                                <div class="skeleton-hero">
+                                    <div class="space-y-5">
+                                        ${skel('12rem', 'skel-line skel-dark')}
+                                        ${skel('86%', 'skel-title skel-dark h-12')}
+                                        ${skel('74%', 'skel-title skel-dark h-8')}
+                                        <div class="space-y-2">${skeletonLines(['92%', '74%', '54%'])}</div>
+                                        <div class="flex flex-wrap gap-3 pt-2">${skel('8rem', 'skel-button skel-dark')}${skel('10rem', 'skel-button skel-dark')}${skel('9rem', 'skel-button skel-dark')}</div>
                                     </div>
-                                `).join('')}
+                                    <div class="skeleton-card p-6 space-y-5">
+                                        <div class="flex items-center justify-between">${skel('10rem', 'skel-title')}${skel('5rem')}</div>
+                                        ${Array.from({ length: 4 }, () => `
+                                            <div class="skel-row">
+                                                ${skel('2.5rem', 'skel-avatar')}
+                                                <div class="space-y-2">${skel('70%')}${skel('92%')}</div>
+                                                ${skel('3.5rem')}
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="skeleton-grid-cards mt-8">${Array.from({ length: 4 }, () => skeletonCard(['88%', '76%'])).join('')}</div>
+                        </section>
+                        <section class="landing-skeleton-trust">
+                            <div class="skeleton-shell grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                ${Array.from({ length: 4 }, () => `<div class="skeleton-card p-5 space-y-4">${skel('2rem', 'skel-avatar')}${skel('66%', 'skel-title')}${skeletonLines(['96%', '82%'])}</div>`).join('')}
+                            </div>
+                        </section>
+                        <section class="landing-skeleton-repo">
+                            <div class="skeleton-shell">
+                                <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
+                                    <div class="space-y-3">${skel('10rem')}${skel('20rem', 'skel-title h-9')}</div>
+                                    ${skel('22rem')}
+                                </div>
+                                <div class="skeleton-card p-4 mb-8 grid grid-cols-1 md:grid-cols-[1fr_9rem] gap-3">${skel('100%', 'skel-button')}${skel('9rem', 'skel-button')}</div>
+                                <div class="skeleton-grid-cards">${Array.from({ length: 6 }, () => `<div class="landing-skeleton-repo-card space-y-4">${skel('5rem')}${skel('84%', 'skel-title')}${skeletonLines(['96%', '82%', '62%'])}<div class="grid grid-cols-2 gap-3 pt-2">${skel('100%', 'skel-button')}${skel('100%', 'skel-button')}</div></div>`).join('')}</div>
+                            </div>
+                        </section>
                     </div>
                 `;
             }
@@ -1231,18 +1369,36 @@
         function showPageSkeleton(viewId, variant = 'default') {
             const view = document.getElementById(viewId);
             if (!view) return;
-            hidePageSkeleton(viewId);
+            const pendingHide = pageSkeletonHideTimers.get(viewId);
+            if (pendingHide) window.clearTimeout(pendingHide);
+            pageSkeletonHideTimers.delete(viewId);
+            view.querySelectorAll(':scope > .page-layout-skeleton').forEach(el => el.remove());
+            pageSkeletonStartedAt.set(viewId, performance.now());
             const loader = document.createElement('div');
-            loader.className = 'skeleton-page page-layout-skeleton';
+            loader.className = 'skeleton-page page-layout-skeleton' + (viewId === 'landing' ? ' landing-skeleton' : '');
             loader.setAttribute('aria-hidden', 'true');
             loader.innerHTML = skeletonViewTemplate(viewId, variant);
             view.prepend(loader);
         }
 
-        function hidePageSkeleton(viewId) {
+        function hidePageSkeleton(viewId, immediate = false) {
             const view = document.getElementById(viewId);
             if (!view) return;
-            view.querySelectorAll(':scope > .page-layout-skeleton').forEach(el => el.remove());
+            const startedAt = pageSkeletonStartedAt.get(viewId);
+            const elapsed = startedAt ? performance.now() - startedAt : MIN_PAGE_SKELETON_MS;
+            const remaining = immediate ? 0 : Math.max(0, MIN_PAGE_SKELETON_MS - elapsed);
+            const remove = () => {
+                view.querySelectorAll(':scope > .page-layout-skeleton').forEach(el => el.remove());
+                pageSkeletonStartedAt.delete(viewId);
+                pageSkeletonHideTimers.delete(viewId);
+            };
+            const pendingHide = pageSkeletonHideTimers.get(viewId);
+            if (pendingHide) window.clearTimeout(pendingHide);
+            if (remaining > 0) {
+                pageSkeletonHideTimers.set(viewId, window.setTimeout(remove, remaining));
+            } else {
+                remove();
+            }
         }
 
         function showAdminSectionSkeleton(sectionId) {
@@ -4183,6 +4339,7 @@
             alert('Revision request sent to the student.');
         }
 
+        showPageSkeleton('landing', 'initial');
         loadTenantContext().then(() => {
             if (applyRolePreview()) return null;
             return restoreSession();
