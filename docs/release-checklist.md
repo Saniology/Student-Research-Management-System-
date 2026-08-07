@@ -12,8 +12,11 @@ Use this checklist before a production handover or institutional demo.
 - Run `npm run verify:a11y`.
 - Run `npm run verify:config`.
 - Run `npm run verify:db`.
+- Run `npm run verify:dr`.
+- Run `npm run verify:governance`.
 - Run `npm run verify:edge`.
 - Run `npm run verify:email`.
+- Run `npm run verify:monitor`.
 - Start the local server and run `npm run verify:render`.
 - With the local server still running, run `npm run verify:roles`.
 - With the local server still running, run `npm run verify:interactions`.
@@ -32,6 +35,10 @@ Use this checklist before a production handover or institutional demo.
   `reports`.
 - Confirm RLS remains enabled on workflow, payment, report, and notification
   tables.
+- Complete `docs/disaster-recovery-runbook.md`.
+- Run `npm run verify:dr`.
+- Confirm latest database backup timestamp, storage backup timestamp, restore
+  drill owner, and encrypted backup location are recorded before handover.
 
 ## Edge Functions
 
@@ -45,6 +52,25 @@ Use this checklist before a production handover or institutional demo.
 - Run `npm run verify:deploy`.
 - Confirm every Edge Function `OPTIONS` request returns `HTTP 204`.
 - Confirm `health-check` returns `status: ok` after SQL and bucket setup.
+
+## Monitoring
+
+- Complete `docs/production-monitoring-runbook.md`.
+- Run `npm run verify:monitor`.
+- Confirm uptime monitor, alert recipients, escalation order,
+  `HEALTH_CHECK_SECRET`, `REPORT_CRON_SECRET`, and latest successful
+  `npm run verify:deploy` result are recorded before handover.
+
+## Data Governance
+
+- Complete `docs/data-governance-privacy-runbook.md`.
+- Run `npm run verify:governance`.
+- Confirm the data owner, repository owner, payment owner, technical owner, and
+  privacy contact are named before handover.
+- Confirm the approved retention schedule covers student records, receipts,
+  payments, audit logs, generated reports, and watermarked repository copies.
+- Confirm the latest access review and public catalog privacy review are
+  recorded.
 
 ## Payments
 
@@ -89,5 +115,7 @@ Use this checklist before a production handover or institutional demo.
 
 - Share `docs/local-development-setup.md` with collaborators.
 - Share `docs/production-deployment-runbook.md` with the project owner/admin.
+- Share `docs/data-governance-privacy-runbook.md` with the institution data
+  owner, library owner, finance owner, technical owner, and privacy contact.
 - Keep Supabase owner credentials, Paystack secret keys, service role keys, and
   DNS provider tokens private.

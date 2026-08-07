@@ -225,17 +225,22 @@ For owner handover/release readiness:
 ```bash
 npm run verify:config
 npm run verify:db
+npm run verify:dr
+npm run verify:governance
 npm run verify:edge
 npm run verify:email
+npm run verify:monitor
 npm run verify:security
 npm run verify:workflow
 npm run verify:release
 ```
 
-These checks cover browser public config, database schema contracts, Edge
-Function CORS/action/error contracts, email deliverability handover, security
-posture, workflow contracts, the production env template, release checklist, and
-obvious private secret leaks in release-facing files.
+These checks cover browser public config, database schema contracts, disaster
+recovery handover, data governance and privacy handover, Edge Function
+CORS/action/error contracts, email
+deliverability handover, monitoring handover, security posture, workflow
+contracts, the production env template, release checklist, and obvious private
+secret leaks in release-facing files.
 
 With the local server running, check actual browser rendering:
 

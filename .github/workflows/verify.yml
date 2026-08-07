@@ -63,11 +63,20 @@ jobs:
       - name: Verify database schema
         run: npm run verify:db
 
+      - name: Verify disaster recovery handover
+        run: npm run verify:dr
+
+      - name: Verify data governance handover
+        run: npm run verify:governance
+
       - name: Verify Edge Function contracts
         run: npm run verify:edge
 
       - name: Verify email deliverability handover
         run: npm run verify:email
+
+      - name: Verify monitoring handover
+        run: npm run verify:monitor
 
       - name: Verify workflow contracts
         run: npm run verify:workflow

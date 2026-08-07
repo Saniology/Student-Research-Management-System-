@@ -18,6 +18,7 @@
         :root {
             --spms-primary: #065F46;
             --spms-accent: #F59E0B;
+            --spms-info: #2563EB;
             --spms-ink: #111827;
             --spms-muted: #64748B;
             --spms-border: #D8DEE8;
@@ -38,11 +39,12 @@
         .bg-accent { background-color: var(--spms-accent); }
         .text-accent { color: var(--spms-accent); }
         .premium-shadow { box-shadow: 0 14px 32px -24px rgba(15, 23, 42, 0.35); }
-        .card-hover { transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease; }
+        .card-hover { transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease; }
         .card-hover:hover { transform: translateY(-2px); border-color: rgba(6, 95, 70, 0.25); box-shadow: 0 18px 34px -28px rgba(15, 23, 42, 0.45); }
         .view { display: none !important; }
         .active-view { display: block !important; }
         #admin.active-view { display: flex !important; }
+        .view, .admin-section { position: relative; }
         .glass-card, .surface-card {
             background: var(--spms-surface);
             border: 1px solid var(--spms-border);
@@ -59,6 +61,155 @@
             box-shadow: 0 0 0 3px rgba(6, 95, 70, 0.12);
             outline: none;
         }
+        .smart-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            box-shadow: 0 16px 34px -28px rgba(15, 23, 42, 0.45);
+        }
+        .smart-list {
+            display: grid;
+            gap: 0.75rem;
+        }
+        .smart-row {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 0.875rem;
+            align-items: center;
+            min-height: 4.25rem;
+            padding: 0.9rem 1rem;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+        .smart-row:hover {
+            transform: translateY(-1px);
+            border-color: rgba(6, 95, 70, 0.26);
+            box-shadow: 0 16px 30px -26px rgba(15, 23, 42, 0.42);
+        }
+        .smart-token {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 1.8rem;
+            padding: 0 0.7rem;
+            border-radius: 8px;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            color: #475569;
+            font-size: 0.68rem;
+            line-height: 1;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .smart-token.primary {
+            background: rgba(6, 95, 70, 0.08);
+            border-color: rgba(6, 95, 70, 0.16);
+            color: var(--spms-primary);
+        }
+        .smart-token.accent {
+            background: rgba(245, 158, 11, 0.12);
+            border-color: rgba(245, 158, 11, 0.22);
+            color: #92400E;
+        }
+        .smart-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #ECFDF5;
+            color: var(--spms-primary);
+            flex-shrink: 0;
+        }
+        .smart-action {
+            min-height: 2.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            border-radius: 8px;
+            font-weight: 800;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+        }
+        .smart-action:hover { transform: translateY(-1px); }
+        .skeleton-page {
+            position: absolute;
+            inset: 0;
+            z-index: 30;
+            padding: inherit;
+            background: rgba(248, 250, 252, 0.96);
+            backdrop-filter: blur(2px);
+            animation: skeletonFadeIn 0.18s ease both;
+            pointer-events: none;
+        }
+        .skeleton-shell {
+            max-width: 80rem;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .skeleton-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            box-shadow: 0 14px 32px -28px rgba(15, 23, 42, 0.35);
+            overflow: hidden;
+        }
+        .skel {
+            display: block;
+            position: relative;
+            overflow: hidden;
+            background: #E5EAF0;
+            border-radius: 8px;
+        }
+        .skel::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.68), transparent);
+            animation: skeletonShimmer 1.2s ease-in-out infinite;
+        }
+        .skel-dark { background: rgba(255, 255, 255, 0.18); }
+        .skel-line { height: 0.85rem; }
+        .skel-title { height: 1.35rem; }
+        .skel-button { height: 2.75rem; }
+        .skel-avatar { width: 4rem; height: 4rem; border-radius: 999px; }
+        .skel-row {
+            display: grid;
+            grid-template-columns: 2.5rem minmax(0, 1fr) 5rem;
+            gap: 0.85rem;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .skel-row:last-child { border-bottom: 0; }
+        .skeleton-hero {
+            min-height: 28rem;
+            display: grid;
+            gap: 2rem;
+            align-items: center;
+        }
+        .skeleton-grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+            gap: 1rem;
+        }
+        @keyframes skeletonShimmer {
+            100% { transform: translateX(100%); }
+        }
+        @keyframes skeletonFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes uiRise {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ui-rise { animation: uiRise 0.28s ease both; }
         .blueprint-bg { background: transparent; position: relative; overflow: hidden; }
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); z-index: 100; justify-content: center; align-items: center; padding: 1rem; }
         .modal-overlay.active { display: flex; }
@@ -77,24 +228,88 @@
             box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
         }
         .portal-hero {
-            min-height: min(760px, calc(100vh - 8rem));
+            min-height: min(780px, calc(100vh - 7rem));
             display: flex;
             align-items: center;
-            padding: 4rem 1rem 3rem;
+            padding: 4.5rem 1rem 3rem;
             background:
-                linear-gradient(120deg, rgba(6, 95, 70, 0.95), rgba(15, 23, 42, 0.88)),
+                linear-gradient(112deg, rgba(5, 47, 38, 0.94) 0%, rgba(13, 48, 76, 0.9) 52%, rgba(17, 24, 39, 0.86) 100%),
                 url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1800&q=80");
             background-size: cover;
             background-position: center;
         }
+        .portal-hero-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 2rem;
+            align-items: center;
+        }
         .hero-panel {
-            background: rgba(255, 255, 255, 0.96);
-            border: 1px solid rgba(255, 255, 255, 0.72);
-            box-shadow: 0 24px 60px -36px rgba(15, 23, 42, 0.7);
+            background: rgba(255, 255, 255, 0.97);
+            border: 1px solid rgba(255, 255, 255, 0.76);
+            box-shadow: 0 24px 60px -38px rgba(15, 23, 42, 0.74);
+        }
+        .hero-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.45rem 0.75rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.11);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+        }
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .operations-board {
+            width: 100%;
+            max-width: 30rem;
+            justify-self: end;
+        }
+        .pipeline-row {
+            display: grid;
+            grid-template-columns: 2.5rem 1fr auto;
+            gap: 0.85rem;
+            align-items: center;
+            padding: 0.85rem 0;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        .pipeline-row:last-child { border-bottom: 0; }
+        .pipeline-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: #ECFDF5;
+            color: var(--spms-primary);
+        }
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            min-height: 1.65rem;
+            padding: 0 0.55rem;
+            border-radius: 8px;
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            color: #475569;
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
         }
         .metric-tile {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            min-height: 8.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
         .process-step {
             display: grid;
@@ -131,6 +346,14 @@
                 padding-bottom: 2.25rem;
             }
         }
+        @media (min-width: 1024px) {
+            .portal-hero-grid {
+                grid-template-columns: minmax(0, 1.05fr) minmax(24rem, 0.78fr);
+            }
+            .skeleton-hero {
+                grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.75fr);
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50">
@@ -154,55 +377,68 @@
     <!-- VIEW 1: LANDING -->
     <div id="landing" class="view active-view blueprint-bg min-h-[calc(100vh-5rem)]">
         <section class="portal-hero">
-            <div class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-8 lg:gap-12 items-center">
+            <div class="max-w-7xl mx-auto w-full portal-hero-grid">
                 <div class="text-white">
-                    <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 rounded-lg mb-6">
+                    <div class="hero-kicker mb-6">
                         <span class="bg-accent w-2 h-2 rounded-full"></span>
                         <span id="tenant-hero-eyebrow" class="text-xs font-bold uppercase tracking-wider text-white/85">Kaduna State University</span>
                     </div>
+                    <p class="text-sm md:text-base text-amber-200 font-bold uppercase tracking-wider mb-4">Institution research clearance portal</p>
                     <h1 id="tenant-hero-title" class="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.02] mb-6">KASU SPMS</h1>
-                    <p class="text-xl md:text-2xl text-amber-200 font-semibold mb-5">Final-year project clearance, approvals, payments, receipts, and repository access in one operational portal.</p>
-                    <p class="text-base md:text-lg text-emerald-50 max-w-2xl mb-8 leading-relaxed">Built for students, supervisors, library teams, finance, and administrators who need a reliable academic workflow from upload to verified clearance.</p>
-                    <div class="flex flex-col sm:flex-row gap-3">
+                    <p class="text-lg md:text-2xl text-white font-semibold mb-5 max-w-3xl">A single workspace for final-year submissions, supervisor review, library publishing, verified receipts, Paystack reconciliation, and controlled repository access.</p>
+                    <p class="text-sm md:text-base text-emerald-50 max-w-2xl mb-8 leading-relaxed">The portal keeps private thesis files behind role policies and signed links while publishing only approved catalog metadata for public discovery.</p>
+                    <div class="hero-actions">
                         <button onclick="openAuthModal('login')" class="bg-accent text-slate-950 px-6 py-3 rounded-lg text-sm font-bold hover:bg-amber-300 transition premium-shadow"><i class="fas fa-arrow-right-to-bracket mr-2"></i>Login</button>
                         <a href="#repo" onclick="scrollToRepository()" class="bg-white/10 border border-white/25 text-white px-6 py-3 rounded-lg text-sm font-bold hover:bg-white/15 transition text-center"><i class="fas fa-magnifying-glass mr-2"></i>Browse Repository</a>
+                        <button onclick="openAuthModal('signup')" class="bg-white text-slate-900 px-6 py-3 rounded-lg text-sm font-bold hover:bg-slate-100 transition"><i class="fas fa-user-plus mr-2"></i>Create Account</button>
                     </div>
                 </div>
 
-                <div class="hero-panel hidden md:block rounded-xl p-5 md:p-6">
+                <div id="portal-operations-board" class="hero-panel operations-board hidden md:block rounded-xl p-5 md:p-6">
                     <div class="flex items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-5">
                         <div>
-                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Live Workflow Desk</p>
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Operations Board</p>
                             <h2 class="text-xl font-black text-slate-950 mt-1">Clearance Pipeline</h2>
                         </div>
-                        <span class="text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1 rounded-lg font-bold uppercase">Ready</span>
+                        <span class="status-chip"><i class="fas fa-circle text-[7px] text-emerald-500"></i>Ready</span>
                     </div>
-                    <div class="space-y-3">
-                        <div class="process-step">
-                            <span class="process-step-icon"><i class="fas fa-file-upload"></i></span>
+                    <div>
+                        <div class="pipeline-row">
+                            <span class="pipeline-icon"><i class="fas fa-file-upload"></i></span>
                             <div>
                                 <p class="text-sm font-bold text-slate-900">Student Submission</p>
-                                <p class="text-xs text-slate-500 mt-1">Metadata, PDF, and repository fee are captured together.</p>
+                                <p class="text-xs text-slate-500 mt-1">Metadata, PDF, and clearance fee captured together.</p>
                             </div>
+                            <span class="status-chip">PDF</span>
                         </div>
-                        <div class="process-step">
-                            <span class="process-step-icon"><i class="fas fa-user-check"></i></span>
+                        <div class="pipeline-row">
+                            <span class="pipeline-icon"><i class="fas fa-user-check"></i></span>
                             <div>
                                 <p class="text-sm font-bold text-slate-900">Supervisor Review</p>
-                                <p class="text-xs text-slate-500 mt-1">Approvals and revision requests are tracked as workflow states.</p>
+                                <p class="text-xs text-slate-500 mt-1">Approvals, revisions, and comments stay auditable.</p>
                             </div>
+                            <span class="status-chip">RLS</span>
                         </div>
-                        <div class="process-step">
-                            <span class="process-step-icon"><i class="fas fa-book-open"></i></span>
+                        <div class="pipeline-row">
+                            <span class="pipeline-icon"><i class="fas fa-book-open"></i></span>
                             <div>
                                 <p class="text-sm font-bold text-slate-900">Library Publishing</p>
-                                <p class="text-xs text-slate-500 mt-1">Catalog records, QR verification, receipts, and paid downloads stay auditable.</p>
+                                <p class="text-xs text-slate-500 mt-1">Public metadata, shelf details, and QR verification.</p>
                             </div>
+                            <span class="status-chip">QR</span>
+                        </div>
+                        <div class="pipeline-row">
+                            <span class="pipeline-icon"><i class="fas fa-receipt"></i></span>
+                            <div>
+                                <p class="text-sm font-bold text-slate-900">Finance Evidence</p>
+                                <p class="text-xs text-slate-500 mt-1">Paystack references and split records support reconciliation.</p>
+                            </div>
+                            <span class="status-chip">Audit</span>
                         </div>
                     </div>
                     <div class="grid grid-cols-3 gap-3 mt-5">
                         <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
-                            <p class="text-[10px] uppercase font-bold text-slate-500">Fee</p>
+                            <p class="text-[10px] uppercase font-bold text-slate-500">Clearance</p>
                             <p class="text-lg font-black text-primary mt-1">₦2,000</p>
                         </div>
                         <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
@@ -217,13 +453,25 @@
                 </div>
             </div>
         </section>
-        <section class="py-12 bg-white border-y border-slate-200">
+        <section id="portal-trust-band" class="py-12 bg-white border-y border-slate-200">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-                    <div class="metric-tile bg-slate-50 border-slate-200 p-5 rounded-xl"><p class="text-3xl font-black text-primary">18,425</p><p class="text-xs uppercase tracking-wider text-slate-500 font-bold mt-2">Students</p></div>
-                    <div class="metric-tile bg-slate-50 border-slate-200 p-5 rounded-xl"><p class="text-3xl font-black text-primary">4,021</p><p class="text-xs uppercase tracking-wider text-slate-500 font-bold mt-2">Projects</p></div>
-                    <div class="metric-tile bg-slate-50 border-slate-200 p-5 rounded-xl"><p class="text-3xl font-black text-primary">3,812</p><p class="text-xs uppercase tracking-wider text-slate-500 font-bold mt-2">Approved</p></div>
-                    <div class="metric-tile bg-slate-50 border-slate-200 p-5 rounded-xl"><p class="text-3xl font-black text-primary">76</p><p class="text-xs uppercase tracking-wider text-slate-500 font-bold mt-2">Departments</p></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="metric-tile p-5 rounded-xl">
+                        <span class="text-primary text-xl"><i class="fas fa-user-lock"></i></span>
+                        <div><p class="text-sm font-black text-slate-950">Role-Based Access</p><p class="text-xs text-slate-500 mt-2 leading-relaxed">Students, supervisors, library staff, and admins see only the records they need.</p></div>
+                    </div>
+                    <div class="metric-tile p-5 rounded-xl">
+                        <span class="text-blue-600 text-xl"><i class="fas fa-shield-halved"></i></span>
+                        <div><p class="text-sm font-black text-slate-950">Private Storage</p><p class="text-xs text-slate-500 mt-2 leading-relaxed">Thesis files, reports, and paid downloads stay in private buckets with signed access.</p></div>
+                    </div>
+                    <div class="metric-tile p-5 rounded-xl">
+                        <span class="text-amber-500 text-xl"><i class="fas fa-qrcode"></i></span>
+                        <div><p class="text-sm font-black text-slate-950">Verification Ready</p><p class="text-xs text-slate-500 mt-2 leading-relaxed">Receipts and published catalog entries can be checked without exposing PDFs.</p></div>
+                    </div>
+                    <div class="metric-tile p-5 rounded-xl">
+                        <span class="text-slate-700 text-xl"><i class="fas fa-chart-simple"></i></span>
+                        <div><p class="text-sm font-black text-slate-950">Admin Evidence</p><p class="text-xs text-slate-500 mt-2 leading-relaxed">Payments, reports, audit logs, and monitoring support institutional handover.</p></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -678,19 +926,34 @@
                 <p id="auth-error" class="hidden text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4 text-center"></p>
                 <div id="login-form">
                     <div class="space-y-4">
-                        <input id="login-email" type="email" aria-label="Login email" placeholder="Email (e.g. student@kasu.edu.ng)" class="w-full p-3 glass-input rounded-lg text-sm">
-                        <input id="login-password" type="password" aria-label="Login password" placeholder="Password" class="w-full p-3 glass-input rounded-lg text-sm">
-                        <button id="login-btn" onclick="handleLogin()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign In</button>
+                        <div>
+                            <label for="login-email" class="text-xs font-bold text-slate-500 uppercase">Email address</label>
+                            <input id="login-email" type="email" aria-label="Login email" placeholder="student@kasu.edu.ng" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label for="login-password" class="text-xs font-bold text-slate-500 uppercase">Password</label>
+                            <input id="login-password" type="password" aria-label="Login password" placeholder="Enter your password" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                        </div>
+                        <button id="login-btn" onclick="handleLogin()" class="smart-action w-full bg-accent text-dark px-8 py-3 text-sm hover:bg-amber-400">Sign In</button>
                     </div>
                     <p class="text-xs text-slate-500 mt-6 text-center">Demo: student@kasu.edu.ng / password</p>
                 </div>
                 <div id="signup-form" class="hidden">
                     <p class="text-sm text-slate-500 mb-6 text-center">Enter your matric number to verify enrollment, then create your account.</p>
                     <div class="space-y-4">
-                        <input id="signup-matric" type="text" aria-label="Matric number" placeholder="e.g. KASU/SCI/20/123" class="w-full p-3 glass-input rounded-lg text-sm">
-                        <input id="signup-email" type="email" aria-label="Signup email" placeholder="Email address" class="w-full p-3 glass-input rounded-lg text-sm">
-                        <input id="signup-password" type="password" aria-label="Signup password" placeholder="Password (min. 6 characters)" class="w-full p-3 glass-input rounded-lg text-sm">
-                        <button id="signup-btn" onclick="handleSignup()" class="w-full bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition">Sign Up</button>
+                        <div>
+                            <label for="signup-matric" class="text-xs font-bold text-slate-500 uppercase">Matric number</label>
+                            <input id="signup-matric" type="text" aria-label="Matric number" placeholder="KASU/SCI/20/123" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label for="signup-email" class="text-xs font-bold text-slate-500 uppercase">Email address</label>
+                            <input id="signup-email" type="email" aria-label="Signup email" placeholder="student@kasu.edu.ng" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label for="signup-password" class="text-xs font-bold text-slate-500 uppercase">Password</label>
+                            <input id="signup-password" type="password" aria-label="Signup password" placeholder="Minimum 6 characters" class="mt-1 w-full p-3 glass-input rounded-lg text-sm">
+                        </div>
+                        <button id="signup-btn" onclick="handleSignup()" class="smart-action w-full bg-accent text-dark px-8 py-3 text-sm hover:bg-amber-400">Create Account</button>
                     </div>
                 </div>
             </div>
@@ -832,6 +1095,193 @@
             showAppConfigError();
             alert('Set Supabase URL and anon key in js/config.js before using connected portal features.');
             return false;
+        }
+
+        function skel(width = '100%', extra = 'skel-line') {
+            return `<span class="skel ${extra}" style="width:${width}"></span>`;
+        }
+
+        function skeletonLines(widths = ['100%', '82%', '64%']) {
+            return widths.map(width => skel(width)).join('');
+        }
+
+        function skeletonCard(lines = ['70%', '95%', '82%']) {
+            return `
+                <div class="skeleton-card p-5 space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        ${skel('5rem', 'skel-line')}
+                        ${skel('4rem', 'skel-line')}
+                    </div>
+                    ${skel('78%', 'skel-title')}
+                    <div class="space-y-2">${skeletonLines(lines)}</div>
+                    <div class="grid grid-cols-2 gap-3 pt-2">
+                        ${skel('100%', 'skel-button')}
+                        ${skel('100%', 'skel-button')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function skeletonRows(count = 5, columns = 5) {
+            return Array.from({ length: count }, () => `
+                <tr>
+                    ${Array.from({ length: columns }, (_, index) => `
+                        <td class="p-4">
+                            <div class="${index === 0 ? 'flex items-center gap-3' : ''}">
+                                ${index === 0 ? `${skel('2.5rem', 'skel-avatar')}<div class="flex-1 space-y-2">${skel('70%')}${skel('45%')}</div>` : skel(index === columns - 1 ? '4rem' : '80%')}
+                            </div>
+                        </td>
+                    `).join('')}
+                </tr>
+            `).join('');
+        }
+
+        function skeletonBarList(count = 5) {
+            return Array.from({ length: count }, () => `
+                <div class="space-y-2">
+                    <div class="flex justify-between gap-3">
+                        ${skel('42%')}
+                        ${skel('3rem')}
+                    </div>
+                    ${skel('100%', 'skel-line h-3')}
+                </div>
+            `).join('');
+        }
+
+        function skeletonViewTemplate(viewId, variant = 'default') {
+            if (viewId === 'landing') {
+                return `
+                    <div class="skeleton-shell">
+                        <div class="skeleton-hero">
+                            <div class="space-y-5">
+                                ${skel('12rem', 'skel-line skel-dark')}
+                                ${skel('86%', 'skel-title skel-dark h-12')}
+                                ${skel('74%', 'skel-title skel-dark h-8')}
+                                <div class="space-y-2">${skeletonLines(['92%', '74%', '54%'])}</div>
+                                <div class="flex flex-wrap gap-3 pt-2">${skel('8rem', 'skel-button')}${skel('10rem', 'skel-button')}${skel('9rem', 'skel-button')}</div>
+                            </div>
+                            <div class="skeleton-card p-6 space-y-5">
+                                <div class="flex items-center justify-between">${skel('10rem', 'skel-title')}${skel('5rem')}</div>
+                                ${Array.from({ length: 4 }, () => `
+                                    <div class="skel-row">
+                                        ${skel('2.5rem', 'skel-avatar')}
+                                        <div class="space-y-2">${skel('70%')}${skel('92%')}</div>
+                                        ${skel('3.5rem')}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="skeleton-grid-cards mt-8">${Array.from({ length: 4 }, () => skeletonCard(['88%', '76%'])).join('')}</div>
+                    </div>
+                `;
+            }
+
+            if (viewId === 'student') {
+                return `
+                    <div class="skeleton-shell max-w-5xl">
+                        <div class="skeleton-card p-6 mb-8 flex items-center gap-6">
+                            ${skel('6rem', 'skel-avatar')}
+                            <div class="flex-1 space-y-3">${skel('14rem', 'skel-title')}${skel('10rem')}${skel('16rem')}</div>
+                        </div>
+                        <div class="skeleton-card p-6 mb-6 space-y-5">
+                            ${skel('18rem', 'skel-title')}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">${skel('100%', 'skel-button')}${skel('100%', 'skel-button')}${skel('100%', 'skel-button md:col-span-2 h-28')}</div>
+                            ${skel('100%', 'skel-button h-32')}
+                        </div>
+                        <div class="skeleton-card p-6 grid grid-cols-1 md:grid-cols-[1fr_12rem] gap-4">${skeletonLines(['60%', '42%'])}${skel('100%', 'skel-button')}</div>
+                    </div>
+                `;
+            }
+
+            if (viewId === 'teacher') {
+                return `
+                    <div class="skeleton-shell">
+                        ${skel('18rem', 'skel-title h-9')}
+                        <div class="skeleton-card mt-8 overflow-hidden"><table class="w-full min-w-[600px]"><tbody>${skeletonRows(6, 5)}</tbody></table></div>
+                    </div>
+                `;
+            }
+
+            if (viewId === 'library') {
+                return `
+                    <div class="skeleton-shell">
+                        <div class="flex justify-between gap-6 mb-8">${skel('24rem', 'skel-title h-9')}${skel('8rem', 'skel-button')}</div>
+                        <div class="skeleton-card p-4 mb-8 grid grid-cols-1 md:grid-cols-[1fr_12rem_10rem_6rem] gap-4">${skel('100%', 'skel-button')}${skel('100%', 'skel-button')}${skel('100%', 'skel-button')}${skel('100%', 'skel-button')}</div>
+                        <div class="skeleton-grid-cards">${Array.from({ length: 6 }, () => skeletonCard()).join('')}</div>
+                    </div>
+                `;
+            }
+
+            if (viewId === 'admin') {
+                return `
+                    <div class="skeleton-shell max-w-none grid grid-cols-1 md:grid-cols-[16rem_1fr] min-h-screen">
+                        <div class="hidden md:block bg-slate-900 p-5 space-y-4">${skel('9rem', 'skel-title skel-dark')}${Array.from({ length: 8 }, () => skel('100%', 'skel-button skel-dark')).join('')}</div>
+                        <div class="p-4 md:p-8 space-y-8">
+                            ${skel('18rem', 'skel-title h-9')}
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-3">${skel('60%')}${skel('48%', 'skel-title h-8')}</div>`).join('')}</div>
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-5">${skel('45%', 'skel-title')}${skeletonBarList(4)}</div>`).join('')}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `<div class="skeleton-shell">${skeletonCard()}</div>`;
+        }
+
+        function showPageSkeleton(viewId, variant = 'default') {
+            const view = document.getElementById(viewId);
+            if (!view) return;
+            hidePageSkeleton(viewId);
+            const loader = document.createElement('div');
+            loader.className = 'skeleton-page page-layout-skeleton';
+            loader.setAttribute('aria-hidden', 'true');
+            loader.innerHTML = skeletonViewTemplate(viewId, variant);
+            view.prepend(loader);
+        }
+
+        function hidePageSkeleton(viewId) {
+            const view = document.getElementById(viewId);
+            if (!view) return;
+            view.querySelectorAll(':scope > .page-layout-skeleton').forEach(el => el.remove());
+        }
+
+        function showAdminSectionSkeleton(sectionId) {
+            const section = document.getElementById('admin-' + sectionId);
+            if (!section) return;
+            section.querySelectorAll(':scope > .admin-section-skeleton').forEach(el => el.remove());
+            const loader = document.createElement('div');
+            loader.className = 'skeleton-page admin-section-skeleton';
+            loader.setAttribute('aria-hidden', 'true');
+            const templates = {
+                dashboard: `<div class="skeleton-shell">${skel('18rem', 'skel-title h-9')}<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-3">${skel('60%')}${skel('48%', 'skel-title h-8')}</div>`).join('')}</div><div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-5">${skel('45%', 'skel-title')}${skeletonBarList(4)}</div>`).join('')}</div></div>`,
+                students: `<div class="skeleton-shell">${skel('18rem', 'skel-title h-9')}<div class="skeleton-card mt-8 overflow-hidden"><table class="w-full min-w-[600px]"><tbody>${skeletonRows(4, 4)}</tbody></table></div></div>`,
+                supervisors: `<div class="skeleton-shell">${skel('20rem', 'skel-title h-9')}<div class="smart-list mt-8">${Array.from({ length: 3 }, () => `<div class="skeleton-card p-6 flex items-center gap-4">${skel('4rem', 'skel-avatar')}<div class="flex-1 space-y-3">${skel('50%', 'skel-title')}${skel('34%')}</div>${skel('6rem', 'skel-button')}</div>`).join('')}</div></div>`,
+                uploads: `<div class="skeleton-shell">${skel('15rem', 'skel-title h-9')}<div class="skeleton-card mt-8 overflow-hidden"><table class="w-full min-w-[600px]"><tbody>${skeletonRows(4, 4)}</tbody></table></div></div>`,
+                payments: `<div class="skeleton-shell">${skel('18rem', 'skel-title h-9')}<div class="skeleton-card mt-8 overflow-hidden"><table class="w-full min-w-[600px]"><tbody>${skeletonRows(6, 6)}</tbody></table></div></div>`,
+                reports: `<div class="skeleton-shell">${skel('16rem', 'skel-title h-9')}<div class="skeleton-grid-cards mt-8">${Array.from({ length: 4 }, () => skeletonCard(['75%', '60%'])).join('')}</div><div class="skeleton-card mt-8 p-6 grid grid-cols-1 md:grid-cols-2 gap-6">${skeletonBarList(4)}${skeletonBarList(4)}</div></div>`,
+                departments: `<div class="skeleton-shell">${skel('22rem', 'skel-title h-9')}<div class="skeleton-grid-cards mt-8">${Array.from({ length: 3 }, () => skeletonCard(['72%', '50%'])).join('')}</div><div class="skeleton-card mt-8 p-6 space-y-5">${Array.from({ length: 4 }, () => `<div class="space-y-3">${skel('40%', 'skel-title')}${skeletonLines(['90%', '76%'])}</div>`).join('')}</div></div>`,
+                settings: `<div class="skeleton-shell">${skel('16rem', 'skel-title h-9')}<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8"><div class="lg:col-span-2 skeleton-card p-6 space-y-5"><div class="grid grid-cols-1 md:grid-cols-2 gap-4">${Array.from({ length: 12 }, () => skel('100%', 'skel-button')).join('')}</div>${skel('10rem', 'skel-button')}</div><div class="skeleton-card p-6 space-y-5">${skel('70%', 'skel-title')}${skel('100%', 'skel-button h-40')}</div></div></div>`,
+            };
+            loader.innerHTML = templates[sectionId] || templates.dashboard;
+            section.prepend(loader);
+        }
+
+        function hideAdminSectionSkeleton(sectionId) {
+            const section = document.getElementById('admin-' + sectionId);
+            if (!section) return;
+            section.querySelectorAll(':scope > .admin-section-skeleton').forEach(el => el.remove());
+        }
+
+        function setGridSkeleton(containerId, count = 6) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = Array.from({ length: count }, () => skeletonCard()).join('');
+        }
+
+        function setTableSkeleton(tbodyId, columns = 5, rows = 5) {
+            const tbody = document.getElementById(tbodyId);
+            if (!tbody) return;
+            tbody.innerHTML = skeletonRows(rows, columns);
         }
 
         // Official User Provided Pictures
@@ -1265,6 +1715,7 @@
         }
 
         async function loadAdminDashboard() {
+            showAdminSectionSkeleton('dashboard');
             setMetric('metric-total-students', '—');
             setMetric('metric-total-revenue', '—');
             setMetric('metric-total-uploads', '—');
@@ -1290,6 +1741,8 @@
 
             await loadAdminAnalytics();
             await loadDepartmentActivity();
+            hideAdminSectionSkeleton('dashboard');
+            hidePageSkeleton('admin');
         }
 
         async function loadAdminDashboardFallback() {
@@ -1355,10 +1808,10 @@
         function resetAdminAnalytics() {
             ['analytics-workflow-chart', 'analytics-revenue-chart', 'analytics-monthly-chart', 'analytics-publication-chart'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.innerHTML = '<p class="text-sm text-slate-400">Loading chart...</p>';
+                if (el) el.innerHTML = skeletonBarList(4);
             });
             const signals = document.getElementById('analytics-signal-list');
-            if (signals) signals.innerHTML = '<li>Loading workflow signals...</li>';
+            if (signals) signals.innerHTML = Array.from({ length: 4 }, () => `<li>${skel('85%')}</li>`).join('');
             setAnalyticsStatus('');
         }
 
@@ -1524,6 +1977,7 @@
         async function loadDepartmentActivity() {
             const container = document.getElementById('department-activity-list');
             if (!container) return;
+            container.innerHTML = skeletonBarList(5);
 
             try {
                 const { data, error } = await supabaseClient
@@ -1555,6 +2009,7 @@
         }
 
         async function loadAdminSettings() {
+            showAdminSectionSkeleton('settings');
             const status = document.getElementById('settings-save-status');
             try {
                 const institution = currentInstitution?.id ? currentInstitution : await loadTenantContext();
@@ -1567,10 +2022,12 @@
                 currentSystemConfig = config;
                 populateAdminSettings(institution, config);
                 if (status) status.innerText = '';
+                hideAdminSectionSkeleton('settings');
             } catch (err) {
                 console.warn('Admin settings unavailable:', err.message);
                 populateAdminSettings(null, null);
                 if (status) status.innerText = 'Apply supabase/spms-core.sql to enable saved tenant settings.';
+                hideAdminSectionSkeleton('settings');
             }
         }
 
@@ -1874,6 +2331,7 @@
             else if (role === 'library') renderLibraryPreview();
             else if (role === 'admin') renderAdminPreview();
             applyRolePreviewAction(role);
+            hidePageSkeleton(role);
             updateNav();
             return true;
         }
@@ -1921,7 +2379,7 @@
                 return;
             }
 
-            setAuthLoading('signup-btn', true, 'Sign Up');
+            setAuthLoading('signup-btn', true, 'Create Account');
             try {
                 const { data: registry, error: registryError } = await supabaseClient
                     .from('students_registry')
@@ -1961,7 +2419,7 @@
             } catch (err) {
                 showAuthError(err.message || 'Sign up failed. Please try again.');
             } finally {
-                setAuthLoading('signup-btn', false, 'Sign Up');
+                setAuthLoading('signup-btn', false, 'Create Account');
             }
         }
 
@@ -2009,6 +2467,8 @@
         function navigate(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
             document.getElementById(viewId).classList.add('active-view');
+            showPageSkeleton(viewId);
+            window.setTimeout(() => hidePageSkeleton(viewId), 5000);
             window.scrollTo(0, 0);
             updateNav();
             if (viewId === 'landing') loadPublicProjects();
@@ -2198,11 +2658,15 @@
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
             if (link) link.classList.add('active');
             if (window.innerWidth < 768) { toggleSidebar(); }
+            showAdminSectionSkeleton(id);
             if (id === 'dashboard') loadAdminDashboard();
             if (id === 'departments') loadCatalogue();
             if (id === 'payments') loadAdminPayments();
             if (id === 'reports') { loadReportsSummary(); loadReportAutomation(); }
             if (id === 'settings') loadAdminSettings();
+            if (['students', 'supervisors', 'uploads'].includes(id)) {
+                window.setTimeout(() => hideAdminSectionSkeleton(id), 450);
+            }
         }
 
         function setReportsStatus(message, tone = 'info') {
@@ -2247,13 +2711,16 @@
 
         async function loadReportAutomation() {
             if (currentUserRole !== 'admin') return;
+            showAdminSectionSkeleton('reports');
             try {
                 if (!currentInstitution?.id) currentInstitution = await loadTenantContext();
                 await Promise.all([loadReportSchedules(), loadGeneratedReports()]);
                 setReportAutomationStatus('');
+                hideAdminSectionSkeleton('reports');
             } catch (err) {
                 setReportAutomationStatus('Report automation unavailable: apply supabase/spms-core.sql and deploy scheduled-reports.', 'error');
                 console.warn('Report automation unavailable:', err.message);
+                hideAdminSectionSkeleton('reports');
             }
         }
 
@@ -2330,7 +2797,7 @@
         async function loadReportSchedules() {
             const list = document.getElementById('report-schedules-list');
             if (!list) return;
-            list.innerHTML = '<p class="p-4 text-sm text-slate-400">Loading schedules...</p>';
+            list.innerHTML = `<div class="p-4 space-y-4">${skeletonBarList(3)}</div>`;
 
             let query = supabaseClient
                 .from('report_schedules')
@@ -2359,7 +2826,7 @@
         async function loadGeneratedReports() {
             const list = document.getElementById('generated-reports-list');
             if (!list) return;
-            list.innerHTML = '<p class="p-4 text-sm text-slate-400">Loading generated reports...</p>';
+            list.innerHTML = `<div class="p-4 space-y-4">${skeletonBarList(3)}</div>`;
 
             let query = supabaseClient
                 .from('generated_reports')
@@ -2689,7 +3156,7 @@
         // --- LANDING PAGE PUBLIC REPO ---
         async function loadPublicProjects() {
             const grid = document.getElementById('public-project-grid');
-            grid.innerHTML = '<p class="text-slate-500 text-center col-span-full py-8">Loading repository...</p>';
+            setGridSkeleton('public-project-grid', 6);
 
             let catalogItems = projects.map(p => ({
                 id: 'demo-' + p.id,
@@ -2718,17 +3185,18 @@
             grid.innerHTML = publicCatalogItems.map(p => `
                 <div class="glass-card p-6 rounded-xl flex flex-col card-hover border border-slate-200 premium-shadow">
                     <div class="flex justify-between items-start mb-4">
-                        <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${escapeHtml(p.degree || 'Research')}</span>
-                        <span class="text-[10px] text-slate-400 font-medium uppercase">${escapeHtml(p.department_name || p.dept || 'Department')}</span>
+                        <span class="smart-token primary">${escapeHtml(p.degree || 'Research')}</span>
+                        <span class="smart-token">${escapeHtml(p.department_name || p.dept || 'Department')}</span>
                     </div>
                     <h3 class="text-base font-display font-bold text-primary mb-3">${escapeHtml(p.title)}</h3>
                     <p class="text-xs text-slate-600 mb-4 flex-grow">${escapeHtml((p.abstract || '').substring(0, 150))}${(p.abstract || '').length > 150 ? '...' : ''}</p>
                     <div class="mt-auto pt-4 flex space-x-2 border-t border-slate-200">
-                        <button onclick="showPublicAbstract('${p.id}')" class="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">View Abstract</button>
-                        <button onclick="handleRepositoryDownload('${p.id}')" class="flex-1 bg-primary text-white py-2 rounded-lg text-xs font-bold hover:bg-emerald-700"><i class="fas fa-lock mr-1"></i> Download</button>
+                        <button onclick="showPublicAbstract('${p.id}')" class="smart-action flex-1 border border-slate-300 text-slate-700 py-2 text-xs hover:bg-slate-50">Read Abstract</button>
+                        <button onclick="handleRepositoryDownload('${p.id}')" class="smart-action flex-1 bg-primary text-white py-2 text-xs hover:bg-emerald-700"><i class="fas fa-lock mr-1"></i> Download</button>
                     </div>
                 </div>
             `).join('');
+            hidePageSkeleton('landing');
         }
 
         function showPublicAbstract(itemId) {
@@ -2826,6 +3294,8 @@
 
         // --- LIBRARY CATALOG LOGIC ---
         async function initLibrary() {
+            showPageSkeleton('library');
+            setGridSkeleton('library-grid', 6);
             const deptSelect = document.getElementById('lib-dept');
             libraryQueueProjects = [];
 
@@ -2860,6 +3330,7 @@
             const departments = [...new Set(libraryQueueProjects.map(p => p.dept))].sort();
             deptSelect.innerHTML = '<option value="All">All Departments</option>' + departments.map(d => `<option value="${d}">${d}</option>`).join('');
             filterLibrary();
+            hidePageSkeleton('library');
         }
 
         function setLibraryView(mode) {
@@ -2898,38 +3369,39 @@
             if (currentLibraryView === 'grid') {
                 grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
                 grid.innerHTML = filtered.map(p => `
-                    <div class="glass-card p-6 rounded-xl flex flex-col card-hover border border-slate-200 premium-shadow cursor-pointer" onclick="viewLibraryProject('${p.id}')">
+                    <div class="smart-card p-6 flex flex-col card-hover cursor-pointer ui-rise" onclick="viewLibraryProject('${p.id}')">
                         <div class="flex justify-between items-start mb-4">
-                            <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${escapeHtml(p.degree)}</span>
-                            <span class="text-[10px] text-slate-400 font-medium uppercase">${escapeHtml(p.dept)}</span>
+                            <span class="smart-token primary">${escapeHtml(p.degree)}</span>
+                            <span class="smart-token">${escapeHtml(p.dept)}</span>
                         </div>
                         <h3 class="text-base font-display font-bold text-primary mb-2">${escapeHtml(p.title)}</h3>
                         <p class="text-xs text-slate-500 mb-3 font-light">By ${escapeHtml(p.author)}</p>
                         <p class="text-xs text-slate-600 mb-4 flex-grow">${escapeHtml(p.abstract.substring(0, 100))}...</p>
                         <div class="mt-auto pt-4 border-t border-slate-200 flex justify-between items-center">
-                            <span class="text-[10px] ${statusClass(p.status)} px-2 py-1 rounded font-bold uppercase">${escapeHtml(statusLabel(p.status))}</span>
-                            <button class="text-primary text-xs font-bold hover:underline">View Details</button>
+                            <span class="smart-token accent">${escapeHtml(statusLabel(p.status))}</span>
+                            <button class="smart-action text-primary text-xs px-3 hover:bg-emerald-50">Review</button>
                         </div>
                     </div>
                 `).join('');
             } else {
-                grid.className = 'flex flex-col gap-4';
+                grid.className = 'smart-list';
                 grid.innerHTML = filtered.map(p => `
-                    <div class="glass-card p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-slate-200 premium-shadow cursor-pointer card-hover" onclick="viewLibraryProject('${p.id}')">
+                    <div class="smart-row cursor-pointer ui-rise" onclick="viewLibraryProject('${p.id}')">
+                        <span class="smart-icon"><i class="fas fa-book-open"></i></span>
                         <div class="flex-1">
                             <div class="flex items-center space-x-3 mb-1">
-                                <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">${escapeHtml(p.degree)}</span>
-                                <span class="text-[10px] text-slate-400 font-medium uppercase">${escapeHtml(p.dept)}</span>
+                                <span class="smart-token primary">${escapeHtml(p.degree)}</span>
+                                <span class="smart-token">${escapeHtml(p.dept)}</span>
                             </div>
                             <h3 class="text-md font-display font-bold text-primary">${escapeHtml(p.title)}</h3>
                             <p class="text-xs text-slate-500">By ${escapeHtml(p.author)}</p>
                         </div>
-                        <div class="sm:w-1/2 lg:w-1/3">
+                        <div class="hidden lg:block lg:w-1/3">
                             <p class="text-xs text-slate-600 line-clamp-2">${escapeHtml(p.abstract)}</p>
                         </div>
-                        <div class="flex flex-row sm:flex-col items-end space-x-2 sm:space-y-2">
-                            <span class="text-[10px] ${statusClass(p.status)} px-2 py-1 rounded font-bold uppercase">${escapeHtml(statusLabel(p.status))}</span>
-                            <button class="text-primary text-xs font-bold hover:underline">View Details</button>
+                        <div class="flex flex-row sm:flex-col items-end gap-2">
+                            <span class="smart-token accent">${escapeHtml(statusLabel(p.status))}</span>
+                            <button class="smart-action text-primary text-xs px-3 hover:bg-emerald-50">Review</button>
                         </div>
                     </div>
                 `).join('');
@@ -3124,20 +3596,32 @@
 
         // --- ADMIN CATALOGUE LOADER ---
         async function loadCatalogue() {
-            await loadAcademicHierarchy();
+            showAdminSectionSkeleton('departments');
             const container = document.getElementById('catalogue-container');
+            if (container) {
+                container.innerHTML = Array.from({ length: 4 }, () => `
+                    <div class="skeleton-card p-5 space-y-4">
+                        ${skel('48%', 'skel-title')}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            ${Array.from({ length: 3 }, () => `<div class="space-y-3">${skel('70%')}${skeletonLines(['96%', '80%', '62%'])}</div>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+            await loadAcademicHierarchy();
             if (!container) return;
             let html = '';
             kasuCatalogue.forEach(college => {
                 html += `<div class="border border-slate-200 rounded-xl p-5"><h4 class="text-md font-bold text-primary mb-4 flex items-center"><i class="fas fa-landmark mr-2 text-accent"></i> ${college.college}</h4><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
                 college.faculties.forEach(faculty => {
                     html += `<div class="bg-slate-50 p-4 rounded-lg border border-slate-100"><p class="text-xs font-bold text-dark uppercase mb-3 pb-2 border-b border-slate-200">${faculty.name}</p><div class="flex flex-wrap gap-2">`;
-                    faculty.courses.forEach(course => { html += `<span class="text-[11px] bg-white text-slate-600 px-2 py-1 rounded border border-slate-200 shadow-sm">${course}</span>`; });
+                    faculty.courses.forEach(course => { html += `<span class="smart-token normal-case">${course}</span>`; });
                     html += `</div></div>`;
                 });
                 html += `</div></div>`;
             });
             container.innerHTML = html;
+            hideAdminSectionSkeleton('departments');
         }
 
         // --- STUDENT UPLOAD & PAYSTACK PAYMENT ---
@@ -3212,6 +3696,7 @@
 
         async function loadStudentDashboard() {
             if (!currentUser || currentUserRole !== 'student') return;
+            showPageSkeleton('student');
 
             try {
                 const profile = await loadUserProfile(currentUser.id);
@@ -3250,8 +3735,10 @@
                 } else {
                     restorePendingVerification();
                 }
+                hidePageSkeleton('student');
             } catch (err) {
                 console.error('Failed to load student dashboard:', err.message);
+                hidePageSkeleton('student');
             }
         }
 
@@ -3468,8 +3955,13 @@
         }
 
         async function loadAdminPayments() {
+            showAdminSectionSkeleton('payments');
             const tbody = document.getElementById('admin-payments-body');
-            if (!tbody) return;
+            if (!tbody) {
+                hideAdminSectionSkeleton('payments');
+                return;
+            }
+            setTableSkeleton('admin-payments-body', 6, 6);
 
             let { data: payments, error } = await supabaseClient
                 .from('payments')
@@ -3487,11 +3979,13 @@
 
             if (error) {
                 tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-500">Could not load payments. Run supabase/payments.sql first.</td></tr>';
+                hideAdminSectionSkeleton('payments');
                 return;
             }
 
             if (!payments || payments.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-slate-400">No payments recorded yet.</td></tr>';
+                hideAdminSectionSkeleton('payments');
                 return;
             }
 
@@ -3507,10 +4001,11 @@
                         <td class="p-4 text-slate-700">${formatNaira(p.amount)}</td>
                         <td class="p-4 text-slate-500">${formattedDate}</td>
                         <td class="p-4 text-slate-500 font-mono text-xs">${p.paystack_reference}</td>
-                        <td class="p-4"><span class="text-[10px] ${statusClass} px-2 py-1 rounded font-bold uppercase">${p.status}</span></td>
+                        <td class="p-4"><span class="smart-token accent">${p.status}</span></td>
                     </tr>
                 `;
             }).join('');
+            hideAdminSectionSkeleton('payments');
         }
 
         // --- PDF RECEIPT GENERATOR ---
@@ -3563,8 +4058,9 @@
 
         // --- TEACHER LOGIC ---
         async function loadTeacherStudents() {
+            showPageSkeleton('teacher');
             const tableBody = document.getElementById('student-table-body');
-            tableBody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">Loading assigned projects...</td></tr>';
+            setTableSkeleton('student-table-body', 5, 6);
             supervisorProjects = [];
 
             try {
@@ -3592,20 +4088,22 @@
 
             if (supervisorProjects.length === 0) {
                 tableBody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-400">No assigned projects awaiting review.</td></tr>';
+                hidePageSkeleton('teacher');
                 return;
             }
 
             tableBody.innerHTML = supervisorProjects.map(s => `
-                <tr class="hover:bg-slate-50 cursor-pointer" onclick="viewStudent('${s.id}')">
+                <tr class="hover:bg-slate-50 cursor-pointer ui-rise" onclick="viewStudent('${s.id}')">
                     <td class="p-4 flex items-center space-x-3"><img src="${escapeHtml(s.img)}" class="w-10 h-10 rounded-full object-cover" alt="Profile" onerror="this.src='https://ui-avatars.com/api/?name=Student&background=065F46&color=fff'"><div><p class="font-bold text-primary">${escapeHtml(s.name)}</p><p class="text-xs text-slate-400">${escapeHtml(s.matric)}</p></div></td>
-                    <td class="p-4"><span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded font-bold uppercase">${escapeHtml(s.degree)}</span></td>
+                    <td class="p-4"><span class="smart-token primary">${escapeHtml(s.degree)}</span></td>
                     <td class="p-4 text-slate-600 max-w-xs">${escapeHtml(s.topic)}</td>
-                    <td class="p-4"><span class="text-[10px] ${statusClass(s.status)} px-2 py-1 rounded font-bold uppercase">${escapeHtml(statusLabel(s.status))}</span></td>
+                    <td class="p-4"><span class="smart-token accent">${escapeHtml(statusLabel(s.status))}</span></td>
                     <td class="p-4 text-right" onclick="event.stopPropagation()">
-                        <button onclick="viewStudent('${s.id}')" class="bg-primary text-white px-3 py-1 rounded text-xs font-bold">Review</button>
+                        <button onclick="viewStudent('${s.id}')" class="smart-action bg-primary text-white px-3 py-1 text-xs">Review</button>
                     </td>
                 </tr>
             `).join('');
+            hidePageSkeleton('teacher');
         }
 
         let currentModalStudentId = null;

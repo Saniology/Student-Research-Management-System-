@@ -104,9 +104,12 @@ function checkRequiredFiles() {
     'scripts/provision-cloudflare-domain.js',
     'scripts/verify-accessibility.js',
     'scripts/verify-browser-config.js',
+    'scripts/verify-data-governance.js',
     'scripts/verify-database-schema.js',
+    'scripts/verify-disaster-recovery.js',
     'scripts/verify-edge-functions.js',
     'scripts/verify-email-deliverability.js',
+    'scripts/verify-monitoring.js',
     'scripts/verify-release-readiness.js',
     'scripts/verify-rendered-ui.js',
     'scripts/verify-role-interactions.js',
@@ -115,8 +118,11 @@ function checkRequiredFiles() {
     'scripts/verify-supabase-deployment.js',
     'scripts/verify-ui-smoke.js',
     'scripts/verify-workflow-contracts.js',
+    'docs/disaster-recovery-runbook.md',
+    'docs/data-governance-privacy-runbook.md',
     'docs/local-development-setup.md',
     'docs/production-email-deliverability.md',
+    'docs/production-monitoring-runbook.md',
     'docs/production-deployment-runbook.md',
     'docs/release-checklist.md',
     'docs/spms-implementation-roadmap.md',
@@ -183,6 +189,17 @@ function checkProductCapabilities() {
   assertContains('index.html', /validateAppConfig/, 'frontend validates browser configuration');
   assertContains('index.html', /app-config-error/, 'frontend exposes configuration errors');
   assertContains('index.html', /portal-hero/, 'frontend has polished portal home shell');
+  assertContains('index.html', /portal-operations-board/, 'frontend has operational workflow board');
+  assertContains('index.html', /portal-trust-band/, 'frontend has institutional trust band');
+  assertContains('index.html', /smart-card/, 'frontend has smart card UI tokens');
+  assertContains('index.html', /smart-token/, 'frontend has smart list token UI');
+  assertContains('index.html', /skeleton-page/, 'frontend has page skeleton surfaces');
+  assertContains('index.html', /skeletonShimmer/, 'frontend skeleton loaders animate');
+  assertContains('index.html', /skeletonViewTemplate/, 'frontend has page-specific skeleton templates');
+  assertContains('index.html', /showPageSkeleton\('student'\)/, 'student page uses shaped skeleton loader');
+  assertContains('index.html', /showPageSkeleton\('teacher'\)/, 'supervisor page uses shaped skeleton loader');
+  assertContains('index.html', /showPageSkeleton\('library'\)/, 'library page uses shaped skeleton loader');
+  assertContains('index.html', /showAdminSectionSkeleton\('dashboard'\)/, 'admin dashboard uses shaped skeleton loader');
   assertContains('index.html', /unsplash\.com\/photo-1497366754035-f200968a6e72/, 'frontend hero uses a real visual asset');
   assertContains('index.html', /\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/, 'frontend enforces restrained card radius standard');
   assertContains('index.html', /focus-visible/, 'frontend preserves keyboard focus styling');
@@ -196,12 +213,15 @@ function checkProductCapabilities() {
   assertContains('package.json', /"verify:deploy"/, 'Supabase deployment smoke command exists');
   assertContains('package.json', /"verify:a11y"/, 'accessibility verification command exists');
   assertContains('package.json', /"verify:db"/, 'database schema verification command exists');
+  assertContains('package.json', /"verify:dr"/, 'disaster recovery verification command exists');
+  assertContains('package.json', /"verify:governance"/, 'data governance verification command exists');
   assertContains('package.json', /"verify:edge"/, 'Edge Function contract verification command exists');
   assertContains('package.json', /"verify:email"/, 'email deliverability verification command exists');
   assertContains('package.json', /"verify:release"/, 'release readiness verification command exists');
   assertContains('package.json', /"verify:render"/, 'rendered UI verification command exists');
   assertContains('package.json', /"verify:roles"/, 'role rendering verification command exists');
   assertContains('package.json', /"verify:interactions"/, 'role interaction verification command exists');
+  assertContains('package.json', /"verify:monitor"/, 'monitoring verification command exists');
   assertContains('package.json', /"verify:security"/, 'security verification command exists');
   assertContains('package.json', /"verify:ui"/, 'UI smoke verification command exists');
   assertContains('package.json', /"verify:workflow"/, 'workflow contract verification command exists');
@@ -210,6 +230,9 @@ function checkProductCapabilities() {
   assertContains('scripts/provision-cloudflare-domain.js', /allowed_domains/, 'DNS provisioning prints Supabase tenant mapping guidance');
   assertContains('docs/production-deployment-runbook.md', /Tenant Domains/, 'production runbook documents tenant domains');
   assertContains('docs/production-deployment-runbook.md', /npm run verify:config/, 'production runbook documents browser config verification');
+  assertContains('docs/production-deployment-runbook.md', /disaster-recovery-runbook\.md/, 'production runbook documents disaster recovery');
+  assertContains('docs/production-deployment-runbook.md', /data-governance-privacy-runbook\.md/, 'production runbook documents data governance');
+  assertContains('docs/production-deployment-runbook.md', /production-monitoring-runbook\.md/, 'production runbook documents monitoring');
   assertContains('docs/production-deployment-runbook.md', /npm run dns:cloudflare/, 'production runbook documents DNS automation');
   assertContains('docs/production-deployment-runbook.md', /npm run verify:deploy/, 'production runbook documents deployment smoke verification');
   assertContains('docs/production-deployment-runbook.md', /health-check/, 'production runbook documents health checks');
@@ -222,8 +245,11 @@ function checkProductCapabilities() {
   assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions runs role rendering verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:interactions/, 'GitHub Actions runs role interaction verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:db/, 'GitHub Actions runs database schema verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:dr/, 'GitHub Actions runs disaster recovery verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:governance/, 'GitHub Actions runs data governance verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:edge/, 'GitHub Actions runs Edge Function contract verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:email/, 'GitHub Actions runs email deliverability verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:monitor/, 'GitHub Actions runs monitoring verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:workflow/, 'GitHub Actions runs workflow contract verification');
   assertContains('.github/workflows/verify.yml', /python3 -m http\.server 5500/, 'GitHub Actions starts local static app');
   assertContains('.github/workflows/verify.yml', /npm run verify:lifecycle/, 'GitHub Actions runs lifecycle verification');
@@ -233,6 +259,12 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-browser-config.js', /browser files contain only public config/, 'browser config verifier checks frontend secret hygiene');
   assertContains('scripts/verify-database-schema.js', /requiredForeignKeys/, 'database verifier checks foreign key contracts');
   assertContains('scripts/verify-database-schema.js', /requiredIndexes/, 'database verifier checks performance indexes');
+  assertContains('scripts/verify-disaster-recovery.js', /Recovery point objective/, 'DR verifier checks RPO');
+  assertContains('scripts/verify-disaster-recovery.js', /thesis-pdfs/, 'DR verifier checks thesis bucket backup coverage');
+  assertContains('scripts/verify-disaster-recovery.js', /restore drill/i, 'DR verifier checks restore drills');
+  assertContains('scripts/verify-data-governance.js', /Data Classification/, 'governance verifier checks data classification');
+  assertContains('scripts/verify-data-governance.js', /Data Subject Requests/, 'governance verifier checks data subject requests');
+  assertContains('scripts/verify-data-governance.js', /public catalog schema excludes private paths/, 'governance verifier checks public catalog privacy boundary');
   assertContains('scripts/verify-edge-functions.js', /corsHeaders/, 'Edge Function verifier checks CORS headers');
   assertContains('scripts/verify-edge-functions.js', /Method not allowed/, 'Edge Function verifier checks method guards');
   assertContains('scripts/verify-edge-functions.js', /verify_jwt/, 'Edge Function verifier checks gateway JWT config');
@@ -240,6 +272,9 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-email-deliverability.js', /DMARC/, 'email verifier checks DMARC guidance');
   assertContains('scripts/verify-email-deliverability.js', /suppression/, 'email verifier checks suppression monitoring');
   assertContains('scripts/verify-email-deliverability.js', /createSignedReportUrl/, 'email verifier checks signed report links');
+  assertContains('scripts/verify-monitoring.js', /monthly availability/, 'monitoring verifier checks uptime target');
+  assertContains('scripts/verify-monitoring.js', /health-check/, 'monitoring verifier checks health endpoint coverage');
+  assertContains('scripts/verify-monitoring.js', /Alert Routing/, 'monitoring verifier checks alert routing');
   assertContains('scripts/verify-workflow-contracts.js', /edgeContracts/, 'workflow verifier checks Edge Function contracts');
   assertContains('scripts/verify-workflow-contracts.js', /projectStatuses/, 'workflow verifier checks project statuses');
   assertContains('scripts/verify-workflow-contracts.js', /verificationTypes/, 'workflow verifier checks verification lookup types');
@@ -349,12 +384,24 @@ function checkDatabaseSchema() {
   run('node', ['scripts/verify-database-schema.js'], 'database schema verification passes');
 }
 
+function checkDisasterRecovery() {
+  run('node', ['scripts/verify-disaster-recovery.js'], 'disaster recovery verification passes');
+}
+
+function checkDataGovernance() {
+  run('node', ['scripts/verify-data-governance.js'], 'data governance verification passes');
+}
+
 function checkEdgeFunctions() {
   run('node', ['scripts/verify-edge-functions.js'], 'Edge Function contract verification passes');
 }
 
 function checkEmailDeliverability() {
   run('node', ['scripts/verify-email-deliverability.js'], 'email deliverability verification passes');
+}
+
+function checkMonitoring() {
+  run('node', ['scripts/verify-monitoring.js'], 'monitoring verification passes');
 }
 
 function checkReleaseReadiness() {
@@ -437,8 +484,11 @@ checkRenderedUi();
 checkRoleRendering();
 checkRoleInteractions();
 checkDatabaseSchema();
+checkDisasterRecovery();
+checkDataGovernance();
 checkEdgeFunctions();
 checkEmailDeliverability();
+checkMonitoring();
 checkSecurity();
 checkWorkflowContracts();
 checkReleaseReadiness();

@@ -123,8 +123,11 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - `npm run verify:a11y` checks static accessibility basics: document metadata, image alt text, form labels, named buttons, focus safety, and responsive type guardrails.
 - `npm run verify:config` checks browser-safe Supabase/Paystack configuration, anon JWT project matching, placeholder rejection, and secret hygiene in frontend files.
 - `npm run verify:db` checks SQL run order, RLS coverage, foreign keys, indexes, constraints, private storage buckets, and `SECURITY DEFINER` search paths.
+- `npm run verify:dr` checks backup scope, RPO/RTO, restore drills, storage recovery coverage, post-restore validation, and incident handover evidence.
+- `npm run verify:governance` checks data classification, retention, data subject requests, access review, public/private boundaries, private buckets, and governance handover evidence.
 - `npm run verify:edge` checks Edge Function CORS preflight behavior, allowed methods, action/type contracts, JSON error handling, deploy config, and live smoke verifier coverage.
 - `npm run verify:email` checks production email deliverability handover, mail-secret safety, signed report links, and scheduled report fallback behavior.
+- `npm run verify:monitor` checks uptime, health-check, cron, payment, email, alert routing, incident evidence, and monitoring handover coverage.
 - `npm run verify:render` captures Chrome/Chromium desktop and mobile screenshots from the local app and validates that rendered pages are non-trivial PNGs.
 - `npm run verify:roles` renders local-only student, supervisor, library, and admin preview surfaces in Chrome/Chromium and checks role-specific DOM content plus screenshots.
 - `npm run verify:interactions` opens local-only workflow states for student receipt, supervisor review, library cataloging, and admin reports to catch broken modal/section interactions.

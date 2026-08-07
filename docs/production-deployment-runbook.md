@@ -7,6 +7,15 @@ For the final handover gate, also use `docs/release-checklist.md`.
 For scheduled report email delivery, also use
 `docs/production-email-deliverability.md` before setting live sender secrets.
 
+For production backup, restore, and incident response, also use
+`docs/disaster-recovery-runbook.md`.
+
+For uptime, health checks, alert routing, and incident evidence, also use
+`docs/production-monitoring-runbook.md`.
+
+For student records, retention, public/private boundaries, access reviews, and
+privacy requests, also use `docs/data-governance-privacy-runbook.md`.
+
 ## 1. Database
 
 Apply SQL in this order from the Supabase SQL Editor:
@@ -151,8 +160,11 @@ Before handing over:
 npm run verify:a11y
 npm run verify:config
 npm run verify:db
+npm run verify:dr
+npm run verify:governance
 npm run verify:edge
 npm run verify:email
+npm run verify:monitor
 npm run verify:deploy
 npm run verify:security
 npm run verify:ui
@@ -167,8 +179,11 @@ Expected result:
 Accessibility verification complete: 0 failure(s).
 Browser config verification complete: 0 failure(s).
 Database schema verification complete: 0 failure(s).
+Disaster recovery verification complete: 0 failure(s).
+Data governance verification complete: 0 failure(s).
 Edge Function contract verification complete: 0 failure(s).
 Email deliverability verification complete: 0 failure(s).
+Monitoring verification complete: 0 failure(s).
 Security verification complete: 0 failure(s).
 Workflow contract verification complete: 0 failure(s).
 Release readiness verification complete: 0 failure(s).

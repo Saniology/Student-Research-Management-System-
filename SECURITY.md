@@ -26,6 +26,9 @@
   and generated reports should be accessed through policy-controlled reads or
   short-lived signed URLs.
 - Public endpoints must return only controlled public verification/catalog data.
+- Data classification, retention, access reviews, data subject requests, and
+  public/private catalog boundaries are maintained in
+  `docs/data-governance-privacy-runbook.md`.
 
 ## Edge Functions
 
@@ -54,6 +57,7 @@ Run these checks before handover:
 
 ```bash
 npm run verify:security
+npm run verify:governance
 npm run verify:release
 npm run verify:lifecycle
 ```

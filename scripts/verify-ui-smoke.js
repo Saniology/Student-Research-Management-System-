@@ -115,6 +115,18 @@ function assertUiRegressionGuards() {
   assert(/validateAppConfig/.test(html), 'browser config is validated before connected actions');
   assert(/ensureAppConfigured/.test(html), 'connected actions have a configuration guard');
   assert(/portal-hero/.test(html), 'portal home shell exists');
+  assert(/portal-operations-board/.test(html), 'portal operations board exists');
+  assert(/portal-trust-band/.test(html), 'portal trust band exists');
+  assert(/smart-card/.test(html), 'smart card UI system exists');
+  assert(/smart-token/.test(html), 'smart token UI system exists');
+  assert(/skeleton-page/.test(html), 'page skeleton UI exists');
+  assert(/skeletonShimmer/.test(html), 'skeleton loaders are animated');
+  assert(/skeletonViewTemplate/.test(html), 'page-specific skeleton templates exist');
+  assert(/showPageSkeleton\('student'\)/.test(html), 'student page uses shaped skeleton loader');
+  assert(/showPageSkeleton\('teacher'\)/.test(html), 'supervisor page uses shaped skeleton loader');
+  assert(/showPageSkeleton\('library'\)/.test(html), 'library page uses shaped skeleton loader');
+  assert(/showAdminSectionSkeleton\('dashboard'\)/.test(html), 'admin dashboard uses shaped skeleton loader');
+  assert(/showAdminSectionSkeleton\(id\)/.test(html), 'admin section navigation uses shaped skeleton loader');
   assert(/unsplash\.com\/photo-1497366754035-f200968a6e72/.test(html), 'portal hero uses a real visual asset');
   assert(/\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/.test(html), 'card radius standard is enforced');
   assert(/focus-visible/.test(html), 'keyboard focus styling exists');
