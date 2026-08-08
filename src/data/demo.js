@@ -11,7 +11,7 @@ export const demoReviewProjects = demoProjects.map((project, index) => ({
   ...project,
   status: index % 3 === 0 ? 'supervisor_review' : index % 3 === 1 ? 'revision_requested' : 'supervisor_approved',
   isDemo: true,
-  revision_note: index % 3 === 1 ? 'Please clarify the methodology section and upload the corrected PDF.' : '',
+  revision_note: index % 3 === 1 ? 'Please clarify the methodology section, upload the corrected PDF, and resubmit without paying the clearance fee again.' : '',
 }));
 
 export const demoStats = { students: '18,425', submitted: '4,021', approved: '3,812', departments: '76' };

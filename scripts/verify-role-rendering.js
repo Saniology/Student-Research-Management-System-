@@ -8,7 +8,7 @@ const { spawnSync } = require('child_process');
 
 const root = path.resolve(__dirname, '..');
 const required = process.argv.includes('--required');
-const baseUrl = process.env.SPMS_RENDER_URL || 'http://127.0.0.1:5500/';
+const baseUrl = process.env.SPMS_RENDER_URL || 'http://127.0.0.1:5510/';
 const outputDir = process.env.SPMS_ROLE_RENDER_OUTPUT_DIR || path.join(os.tmpdir(), 'spms-role-render-checks');
 const failures = [];
 const warnings = [];
@@ -199,7 +199,7 @@ async function main() {
 
   const serverOk = await checkServer();
   if (!serverOk) {
-    const message = `local app is not reachable at ${baseUrl}; start it with python3 -m http.server 5500 --bind 0.0.0.0`;
+    const message = `local app is not reachable at ${baseUrl}; start it with npm run dev -- --host 127.0.0.1 --port 5510`;
     if (required) fail(message);
     else warn(message);
     finish();

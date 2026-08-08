@@ -1,6 +1,6 @@
 const { defineConfig } = require('@playwright/test');
 
-const baseURL = process.env.SPMS_E2E_URL || 'http://127.0.0.1:5500';
+const baseURL = process.env.SPMS_E2E_URL || 'http://127.0.0.1:5510';
 
 module.exports = defineConfig({
   testDir: './tests/e2e',
@@ -16,9 +16,9 @@ module.exports = defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5500',
+    command: 'npm run dev -- --host 127.0.0.1 --port 5510',
     url: `${baseURL}/`,
-    reuseExistingServer: true,
+    reuseExistingServer: process.env.SPMS_REUSE_SERVER === 'true',
     timeout: 30_000,
   },
 });

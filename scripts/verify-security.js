@@ -51,6 +51,10 @@ function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
+function frontendSource() {
+  return ['index.html', 'src/App.jsx', 'src/lib/contracts.js', 'src/lib/supabase.js'].map(read).join('\n');
+}
+
 function exists(relativePath) {
   return fs.existsSync(path.join(root, relativePath));
 }
@@ -99,9 +103,9 @@ function checkSecretHygiene() {
 }
 
 function checkPaymentSafety() {
-  const html = read('index.html');
+  const html = frontendSource();
   assert(!/PaystackPop\.setup|openIframe\(/.test(html), 'browser does not create Paystack transactions directly');
-  assert(/resumePaystackCheckout/.test(html), 'browser only resumes backend-initialized Paystack checkout');
+  assert(/resumeTransaction|retryPaymentVerification/.test(html), 'browser only resumes backend-initialized Paystack checkout');
 
   ['supabase/functions/verify-paystack/index.ts', 'supabase/functions/repository-access/index.ts'].forEach((file) => {
     const content = read(file);
@@ -137,7 +141,7 @@ function checkStoragePrivacy() {
   ['thesis-pdfs', 'repository-downloads', 'reports'].forEach((bucket) => {
     assert(new RegExp(`'${bucket}'[\\s\\S]{0,80}false`).test(sql), `${bucket} bucket is private`);
   });
-  assert(/createSignedUrl/.test(read('index.html')), 'frontend downloads generated reports through signed URLs');
+  assert(/createSignedUrl/.test(frontendSource()), 'frontend downloads generated reports through signed URLs');
   assert(/createSignedReportUrl/.test(read('supabase/functions/scheduled-reports/index.ts')), 'scheduled report email uses signed URLs');
   assert(/watermarkPdf/.test(read('supabase/functions/repository-access/index.ts')), 'repository downloads are watermarked');
 }

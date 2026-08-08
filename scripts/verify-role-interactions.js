@@ -6,7 +6,7 @@ const { spawnSync } = require('child_process');
 
 const root = path.resolve(__dirname, '..');
 const required = process.argv.includes('--required');
-const baseUrl = process.env.SPMS_RENDER_URL || 'http://127.0.0.1:5500/';
+const baseUrl = process.env.SPMS_RENDER_URL || 'http://127.0.0.1:5510/';
 const failures = [];
 const warnings = [];
 
@@ -41,7 +41,7 @@ const scenarios = [
     checks: [
       'data-role-preview="teacher"',
       'data-role-preview-action="open_review"',
-      'id="student-modal" class="modal-overlay active"',
+      'role="dialog" aria-modal="true"',
       'Preview approval note for automated supervisor interaction coverage.',
       'Approve Project',
     ],
@@ -53,7 +53,7 @@ const scenarios = [
     checks: [
       'data-role-preview="library"',
       'data-role-preview-action="open_catalog_record"',
-      'id="library-modal" class="modal-overlay active"',
+      'role="dialog" aria-modal="true"',
       'Preview catalog note for automated library interaction coverage.',
       'Verify &amp; Publish',
     ],
@@ -65,8 +65,8 @@ const scenarios = [
     checks: [
       'data-role-preview="admin"',
       'data-role-preview-action="open_reports"',
-      'id="admin-reports" class="admin-section active"',
-      'Preview reports loaded for workflow export',
+      'id="admin-reports"',
+      'Scheduled reporting controls',
       'project-lifecycle-preview.csv',
     ],
   },
@@ -77,7 +77,7 @@ const scenarios = [
     checks: [
       'data-role-preview="admin"',
       'data-role-preview-action="open_assignments"',
-      'id="admin-supervisors" class="admin-section active"',
+      'id="admin-supervisors"',
       'Unassigned Review Queue',
       'Web-Based E-Voting System',
       '>Assign<',
@@ -195,7 +195,7 @@ async function main() {
 
   const serverOk = await checkServer();
   if (!serverOk) {
-    const message = `local app is not reachable at ${baseUrl}; start it with python3 -m http.server 5500 --bind 0.0.0.0`;
+    const message = `local app is not reachable at ${baseUrl}; start it with npm run dev -- --host 127.0.0.1 --port 5510`;
     if (required) fail(message);
     else warn(message);
     finish();

@@ -24,6 +24,10 @@ function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
+function frontendSource() {
+  return ['index.html', 'js/config.js', 'src/App.jsx', 'src/lib/supabase.js', 'src/lib/contracts.js'].map(read).join('\n');
+}
+
 function assignment(content, name) {
   const pattern = new RegExp(`window\\.${name}\\s*=\\s*['"]([^'"]*)['"]\\s*;`);
   const match = content.match(pattern);
@@ -85,12 +89,12 @@ function checkBrowserSecretHygiene() {
 }
 
 function checkRuntimeValidation() {
-  const html = read('index.html');
-  assert(/function validateAppConfig/.test(html), 'frontend validates browser configuration at runtime');
-  assert(/showAppConfigError/.test(html), 'frontend shows configuration errors');
-  assert(/YOUR_SUPABASE|anon_key_here|replace/i.test(html), 'frontend rejects placeholder config values');
-  assert(/PAYSTACK_PUBLIC_KEY/.test(html) && /pk_test|pk_live/.test(html), 'frontend references Paystack public key format');
-  assert(!/PaystackPop\.setup|openIframe\(/.test(html), 'frontend does not initialize Paystack directly with browser config');
+  const source = frontendSource();
+  assert(/function validateAppConfig/.test(source), 'frontend validates browser configuration at runtime');
+  assert(/showAppConfigError|config-alert|app-config-error/.test(source), 'frontend shows configuration errors');
+  assert(/YOUR_SUPABASE|anon_key_here|replace/i.test(source), 'frontend rejects placeholder config values');
+  assert(/PAYSTACK_PUBLIC_KEY/.test(source) && /pk_test|pk_live/.test(source), 'frontend references Paystack public key format');
+  assert(!/PaystackPop\.setup|openIframe\(/.test(source), 'frontend does not initialize Paystack directly with browser config');
 }
 
 function checkDocs() {

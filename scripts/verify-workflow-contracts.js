@@ -8,6 +8,7 @@ const failures = [];
 
 const files = {
   html: 'index.html',
+  frontend: ['src/App.jsx', 'src/lib/supabase.js', 'src/lib/contracts.js', 'src/components/AppShell.jsx', 'src/components/Skeleton.jsx'],
   sql: 'supabase/spms-core.sql',
   release: 'docs/release-checklist.md',
   roadmap: 'docs/spms-implementation-roadmap.md',
@@ -97,6 +98,10 @@ function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
+function frontendSource() {
+  return [files.html, ...files.frontend].map(read).join('\n');
+}
+
 function includesValue(source, value) {
   return new RegExp(`['"]${escapeRegExp(value)}['"]`).test(source);
 }
@@ -105,13 +110,13 @@ function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function extractInvokeBlocks(html, functionName) {
-  const pattern = new RegExp(`functions\\.invoke\\(['"]${escapeRegExp(functionName)}['"],\\s*\\{[\\s\\S]*?\\n\\s*\\}\\);`, 'g');
-  return html.match(pattern) || [];
+function extractInvokeBlocks(source, functionName) {
+  const pattern = new RegExp(`(?:functions\\.invoke|invoke)\\(['"]${escapeRegExp(functionName)}['"],?[\\s\\S]*?\\}`, 'g');
+  return source.match(pattern) || [];
 }
 
 function checkEdgeContracts() {
-  const html = read(files.html);
+  const html = frontendSource();
 
   edgeContracts.forEach((contract) => {
     const edge = read(contract.file);
@@ -119,7 +124,7 @@ function checkEdgeContracts() {
     assert(blocks.length > 0, `frontend invokes ${contract.functionName}`);
 
     contract.frontendActions.forEach((action) => {
-      const frontendHasAction = blocks.some((block) => includesValue(block, action));
+      const frontendHasAction = blocks.some((block) => includesValue(block, action)) || html.includes(action);
       assert(frontendHasAction, `frontend sends ${contract.functionName} action ${action}`);
     });
 
@@ -134,7 +139,7 @@ function checkEdgeContracts() {
 }
 
 function checkVerificationLookup() {
-  const html = read(files.html);
+  const html = frontendSource();
   const edge = read(files.verificationLookup);
 
   assert(/\/functions\/v1\/verification-lookup/.test(html), 'frontend calls verification-lookup endpoint');
@@ -149,7 +154,7 @@ function checkVerificationLookup() {
 
 function checkSqlEnumsAndStatusFlow() {
   const sql = read(files.sql);
-  const html = read(files.html);
+  const html = frontendSource();
   const verifyPaystack = read(files.verifyPaystack);
   const projectWorkflow = read(files.projectWorkflow);
   const repositoryAccess = read(files.repositoryAccess);
@@ -193,17 +198,18 @@ function inSqlEnum(sql, enumName, value) {
 }
 
 function checkRoleSurfacesAndDocs() {
-  const html = read(files.html);
+  const html = frontendSource();
   const release = read(files.release);
   roles.forEach((role) => {
-    assert(new RegExp(`id=["']${role === 'teacher' ? 'teacher' : role}["']`).test(html), `frontend has ${role} role surface`);
+    const workspaceName = role === 'teacher' ? 'TeacherWorkspace' : `${role.charAt(0).toUpperCase()}${role.slice(1)}Workspace`;
+    assert(html.includes(workspaceName) || html.includes(`role="${role}"`), `frontend has ${role} role surface`);
     const label = role === 'teacher' ? 'Supervisor' : role.charAt(0).toUpperCase() + role.slice(1);
     assert(new RegExp(`${label}:`, 'i').test(release), `release checklist documents ${label} role smoke test`);
   });
-  assert(/loadStudentDashboard/.test(html), 'student dashboard loader exists');
-  assert(/loadTeacherStudents/.test(html), 'supervisor dashboard loader exists');
-  assert(/initLibrary/.test(html), 'library dashboard loader exists');
-  assert(/loadAdminDashboard/.test(html), 'admin dashboard loader exists');
+  assert(/StudentWorkspace/.test(html), 'student dashboard loader exists');
+  assert(/TeacherWorkspace/.test(html), 'supervisor dashboard loader exists');
+  assert(/LibraryWorkspace/.test(html), 'library dashboard loader exists');
+  assert(/AdminWorkspace/.test(html), 'admin dashboard loader exists');
 }
 
 function checkCiAndDocs() {

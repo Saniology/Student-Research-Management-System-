@@ -15,27 +15,27 @@ test.describe('SPMS role workflows', () => {
   test('student can reach the clearance receipt state', async ({ page }) => {
     await openPreview(page, 'student', 'show_receipt');
     await expect(page.getByText('Digital Clearance Receipt', { exact: true })).toBeVisible();
-    await expect(page.getByText('Reference: SPMS-PREVIEW-STUDENT', { exact: true })).toBeVisible();
+    await expect(page.getByText('SPMS-PREVIEW-STUDENT', { exact: true })).toBeVisible();
     await expect(page.locator('#receipt-section')).toBeVisible();
   });
 
   test('student can reach the no-fee revision resubmission state', async ({ page }) => {
     await openPreview(page, 'student', 'show_revision');
-    await expect(page.getByText('Revision Required', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Revision requested/).first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Upload Revision & Resubmit' })).toBeEnabled();
-    await expect(page.getByText('without paying the clearance fee again.', { exact: false })).toBeVisible();
+    await expect(page.getByText(/no second payment/).first()).toBeVisible();
   });
 
   test('supervisor can open a project review workspace', async ({ page }) => {
     await openPreview(page, 'teacher', 'open_review');
-    await expect(page.locator('#student-modal')).toBeVisible();
+    await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.locator('#modal-review-comment')).toHaveValue('Preview approval note for automated supervisor interaction coverage.');
     await expect(page.getByRole('button', { name: 'Approve Project' })).toBeVisible();
   });
 
   test('library staff can open catalog verification details', async ({ page }) => {
     await openPreview(page, 'library', 'open_catalog_record');
-    await expect(page.locator('#library-modal')).toBeVisible();
+    await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.locator('#lib-comment-input')).toHaveValue('Preview catalog note for automated library interaction coverage.');
     await expect(page.getByRole('button', { name: /Verify & Publish/ })).toBeVisible();
   });
@@ -43,7 +43,7 @@ test.describe('SPMS role workflows', () => {
   test('admin can open scheduled reporting controls', async ({ page }) => {
     await openPreview(page, 'admin', 'open_reports');
     await expect(page.locator('#admin-reports')).toBeVisible();
-    await expect(page.getByText('Preview reports loaded for workflow export, scheduled delivery, and generated report checks.', { exact: true })).toBeVisible();
+    await expect(page.getByText('Scheduled reporting controls', { exact: true })).toBeVisible();
     await expect(page.getByText('project-lifecycle-preview.csv', { exact: true })).toBeVisible();
   });
 
@@ -74,10 +74,10 @@ test.describe('SPMS seeded Supabase role smoke', () => {
 
       await page.goto('/', { waitUntil: 'domcontentloaded' });
       await page.getByRole('button', { name: /Login/ }).first().click();
-      await page.locator('#login-email').fill(email);
-      await page.locator('#login-password').fill(password);
-      await page.locator('#login-btn').click();
-      await expect(page.locator(`#${role === 'teacher' ? 'teacher' : role}.active-view`)).toBeVisible({ timeout: 30_000 });
+      await page.locator('#auth-email').fill(email);
+      await page.locator('#auth-password').fill(password);
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await expect(page.getByRole('heading', { name: role === 'teacher' ? 'Supervisor review queue' : role === 'library' ? 'Library verification desk' : role === 'admin' ? 'Analytics hub' : 'Your clearance workspace' })).toBeVisible({ timeout: 30_000 });
     });
   }
 });

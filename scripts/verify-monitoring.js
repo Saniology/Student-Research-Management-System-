@@ -19,6 +19,10 @@ function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
+function frontendSource() {
+  return ['index.html', 'src/App.jsx', 'src/lib/contracts.js', 'src/lib/supabase.js'].map(read).join('\n');
+}
+
 function exists(relativePath) {
   return fs.existsSync(path.join(root, relativePath));
 }
@@ -63,7 +67,7 @@ function checkSystemSupport() {
   assert(/HEALTH_CHECK_SECRET/.test(read('.env.production.example')), 'env template includes HEALTH_CHECK_SECRET');
   assert(/REPORT_CRON_SECRET/.test(read('.env.production.example')), 'env template includes REPORT_CRON_SECRET');
   assert(/run_due/.test(read('supabase/functions/scheduled-reports/index.ts')), 'scheduled reports support run_due');
-  assert(/retryPaymentVerification/.test(read('index.html')), 'frontend supports payment verification retry');
+  assert(/retryPaymentVerification/.test(frontendSource()), 'frontend supports payment verification retry');
 }
 
 function checkDocsAndAutomation() {

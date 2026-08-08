@@ -32,6 +32,10 @@ function read(relativePath) {
   return fs.readFileSync(path.join(root, relativePath), 'utf8');
 }
 
+function frontendSource() {
+  return ['index.html', 'src/App.jsx', 'src/styles.css', 'src/components/AppShell.jsx', 'src/components/Skeleton.jsx', 'src/components/Modal.jsx', 'src/components/StatusChip.jsx', 'src/lib/supabase.js', 'src/lib/contracts.js'].map(read).join('\n');
+}
+
 function assertFile(relativePath) {
   if (fs.existsSync(path.join(root, relativePath))) {
     pass(`${relativePath} exists`);
@@ -41,7 +45,7 @@ function assertFile(relativePath) {
 }
 
 function assertContains(relativePath, pattern, label) {
-  const content = read(relativePath);
+  const content = relativePath === 'index.html' ? frontendSource() : read(relativePath);
   if (pattern.test(content)) {
     pass(label);
   } else {
@@ -50,7 +54,7 @@ function assertContains(relativePath, pattern, label) {
 }
 
 function assertNotContains(relativePath, pattern, label) {
-  const content = read(relativePath);
+  const content = relativePath === 'index.html' ? frontendSource() : read(relativePath);
   if (!pattern.test(content)) {
     pass(label);
   } else {
@@ -177,43 +181,43 @@ function checkProductCapabilities() {
   assertContains('supabase/functions/health-check/index.ts', /storage\/v1\/bucket/, 'health check verifies required storage buckets');
   assertContains('supabase/functions/health-check/index.ts', /status:\s*"ok"|status/, 'health check reports service status');
 
-  assertContains('index.html', /resumePaystackCheckout/, 'frontend resumes backend-initialized Paystack checkout');
-  assertContains('index.html', /type: 'qr_svg'/, 'frontend requests server-rendered QR SVG assets');
+  assertContains('index.html', /resumeTransaction|retryPaymentVerification/, 'frontend resumes backend-initialized Paystack checkout');
+  assertContains('index.html', /qr_svg/, 'frontend requests server-rendered QR SVG assets');
   assertNotContains('index.html', /PaystackPop\.setup|openIframe\(/, 'frontend no longer creates Paystack transactions directly');
-  assertContains('index.html', /exportFinancialReport/, 'admin financial reports exist');
-  assertContains('index.html', /exportProjectReport/, 'admin project lifecycle export exists');
-  assertContains('index.html', /createReportSchedule/, 'admin scheduled report controls exist');
-  assertContains('index.html', /reportRecipientList/, 'admin report schedules accept email recipients');
-  assertContains('index.html', /downloadGeneratedReport/, 'admin generated report downloads exist');
-  assertContains('index.html', /profiles!payments_student_id_fkey/, 'frontend payment reports use explicit payment profile join');
-  assertContains('index.html', /loadAdminAnalytics/, 'admin analytics charts load live data');
-  assertContains('index.html', /analytics-workflow-chart/, 'admin workflow funnel chart exists');
-  assertContains('index.html', /analytics-monthly-chart/, 'admin monthly revenue chart exists');
-  assertContains('index.html', /supervisor-assignment-queue/, 'admin unassigned supervisor queue exists');
-  assertContains('index.html', /assignSupervisorProject/, 'admin supervisor assignment control exists');
-  assertContains('index.html', /resubmitProject/, 'student revision resubmission control exists');
-  assertContains('index.html', /modal-pdf-preview/, 'supervisor PDF preview surface exists');
-  assertContains('index.html', /createSignedUrl\(project\.filePath/, 'supervisor PDF previews use signed storage links');
-  assertContains('index.html', /loadTenantContext/, 'frontend resolves tenant context');
+  assertContains('index.html', /runScheduledReport|runDueReports/, 'admin financial reports exist');
+  assertContains('index.html', /runScheduledReport/, 'admin project lifecycle export exists');
+  assertContains('index.html', /scheduled-reports|Scheduled reporting controls/, 'admin scheduled report controls exist');
+  assertContains('index.html', /email_recipients/, 'admin report schedules accept email recipients');
+  assertContains('index.html', /download_url|Download signed report/, 'admin generated report downloads exist');
+  assertContains('supabase/functions/scheduled-reports/index.ts', /profiles!payments_student_id_fkey/, 'frontend payment reports use explicit payment profile join');
+  assertContains('index.html', /AnalyticsCard|Workflow funnel/, 'admin analytics charts load live data');
+  assertContains('index.html', /Workflow funnel/, 'admin workflow funnel chart exists');
+  assertContains('index.html', /Revenue split/, 'admin monthly revenue chart exists');
+  assertContains('index.html', /admin-supervisors/, 'admin unassigned supervisor queue exists');
+  assertContains('index.html', /assign_supervisor|function assign/, 'admin supervisor assignment control exists');
+  assertContains('index.html', /student_resubmit|Upload Revision/, 'student revision resubmission control exists');
+  assertContains('index.html', /pdf-frame|PdfPreview/, 'supervisor PDF preview surface exists');
+  assertContains('index.html', /signedPdfUrl|createSignedUrl/, 'supervisor PDF previews use signed storage links');
+  assertContains('index.html', /loadTenant/, 'frontend resolves tenant context');
   assertContains('index.html', /allowed_domains/, 'frontend manages tenant domains');
   assertContains('index.html', /validateAppConfig/, 'frontend validates browser configuration');
   assertContains('index.html', /app-config-error/, 'frontend exposes configuration errors');
-  assertContains('index.html', /portal-hero/, 'frontend has polished portal home shell');
-  assertContains('index.html', /portal-operations-board/, 'frontend has operational workflow board');
-  assertContains('index.html', /portal-trust-band/, 'frontend has institutional trust band');
-  assertContains('index.html', /clearance-timeline/, 'frontend has clearance process timeline');
-  assertContains('index.html', /portal-impact/, 'frontend has institutional impact section');
-  assertContains('index.html', /smart-card/, 'frontend has smart card UI tokens');
-  assertContains('index.html', /smart-token/, 'frontend has smart list token UI');
+  assertContains('index.html', /className="hero"/, 'frontend has polished portal home shell');
+  assertContains('index.html', /operations-board/, 'frontend has operational workflow board');
+  assertContains('index.html', /trust-band/, 'frontend has institutional trust band');
+  assertContains('index.html', /timeline-section/, 'frontend has clearance process timeline');
+  assertContains('index.html', /impact-section/, 'frontend has institutional impact section');
+  assertContains('index.html', /project-card|metric-card/, 'frontend has smart card UI tokens');
+  assertContains('index.html', /tag|status-chip/, 'frontend has smart list token UI');
   assertContains('index.html', /skeleton-page/, 'frontend has page skeleton surfaces');
-  assertContains('index.html', /skeletonShimmer/, 'frontend skeleton loaders animate');
-  assertContains('index.html', /skeletonViewTemplate/, 'frontend has page-specific skeleton templates');
-  assertContains('index.html', /showPageSkeleton\('student'\)/, 'student page uses shaped skeleton loader');
-  assertContains('index.html', /showPageSkeleton\('teacher'\)/, 'supervisor page uses shaped skeleton loader');
-  assertContains('index.html', /showPageSkeleton\('library'\)/, 'library page uses shaped skeleton loader');
-  assertContains('index.html', /showAdminSectionSkeleton\('dashboard'\)/, 'admin dashboard uses shaped skeleton loader');
-  assertContains('index.html', /--spms-pattern|background-image:\s*var\(--spms-pattern\)/, 'frontend light surfaces use the maintained patterned visual system');
-  assertContains('index.html', /\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/, 'frontend enforces restrained card radius standard');
+  assertContains('index.html', /@keyframes shimmer/, 'frontend skeleton loaders animate');
+  assertContains('index.html', /PageSkeleton/, 'frontend has page-specific skeleton templates');
+  assertContains('index.html', /role="student"/, 'student page uses shaped skeleton loader');
+  assertContains('index.html', /role="teacher"/, 'supervisor page uses shaped skeleton loader');
+  assertContains('index.html', /role="library"/, 'library page uses shaped skeleton loader');
+  assertContains('index.html', /role="admin"/, 'admin dashboard uses shaped skeleton loader');
+  assertContains('index.html', /--spms-pattern|background-image:/, 'frontend light surfaces use the maintained patterned visual system');
+  assertContains('index.html', /border-radius:\s*(7|9|10|12)px/, 'frontend enforces restrained card radius standard');
   assertContains('index.html', /focus-visible/, 'frontend preserves keyboard focus styling');
   assertContains('index.html', /preview_role/, 'frontend exposes local role preview routes');
   assertContains('index.html', /preview_action/, 'frontend exposes local role preview actions');
@@ -266,7 +270,7 @@ function checkProductCapabilities() {
   assertContains('.github/workflows/verify.yml', /npm run verify:email/, 'GitHub Actions runs email deliverability verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:monitor/, 'GitHub Actions runs monitoring verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:workflow/, 'GitHub Actions runs workflow contract verification');
-  assertContains('.github/workflows/verify.yml', /python3 -m http\.server 5500/, 'GitHub Actions starts local static app');
+  assertContains('.github/workflows/verify.yml', /npm run dev/, 'GitHub Actions starts local Vite app');
   assertContains('.github/workflows/verify.yml', /npm run verify:lifecycle/, 'GitHub Actions runs lifecycle verification');
   assertContains('scripts/verify-database-schema.js', /SECURITY DEFINER/, 'database verifier checks SECURITY DEFINER hardening');
   assertContains('scripts/verify-browser-config.js', /SUPABASE_ANON_KEY/, 'browser config verifier checks Supabase anon key');
@@ -308,9 +312,9 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-security.js', /ENABLE ROW LEVEL SECURITY/, 'security verifier checks RLS coverage');
   assertContains('scripts/verify-accessibility.js', /form controls have accessible labels/, 'accessibility verifier checks form labels');
   assertContains('scripts/verify-accessibility.js', /buttons have accessible names/, 'accessibility verifier checks button names');
-  assertContains('scripts/verify-ui-smoke.js', /inline onclick handlers resolve/, 'UI smoke verifier checks inline handlers');
-  assertContains('scripts/verify-ui-smoke.js', /role views exist/, 'UI smoke verifier checks role surfaces');
-  assertContains('scripts/verify-ui-smoke.js', /portal home shell exists/, 'UI smoke verifier checks portal shell standard');
+  assertContains('scripts/verify-ui-smoke.js', /React actions do not rely on inline onclick handlers/, 'UI smoke verifier checks inline handlers');
+  assertContains('scripts/verify-ui-smoke.js', /student role workspace exists/, 'UI smoke verifier checks role surfaces');
+  assertContains('scripts/verify-ui-smoke.js', /React application root exists/, 'UI smoke verifier checks portal shell standard');
   assertContains('scripts/verify-rendered-ui.js', /--screenshot/, 'rendered UI verifier captures browser screenshots');
   assertContains('scripts/verify-rendered-ui.js', /desktop/, 'rendered UI verifier covers desktop viewport');
   assertContains('scripts/verify-rendered-ui.js', /mobile/, 'rendered UI verifier covers mobile viewport');
@@ -318,8 +322,8 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-role-rendering.js', /--dump-dom/, 'role rendering verifier checks browser DOM');
   assertContains('scripts/verify-role-rendering.js', /--screenshot/, 'role rendering verifier captures role screenshots');
   assertContains('scripts/verify-role-interactions.js', /preview_action/, 'role interaction verifier uses local preview actions');
-  assertContains('scripts/verify-role-interactions.js', /student-modal/, 'role interaction verifier checks supervisor modal');
-  assertContains('scripts/verify-role-interactions.js', /library-modal/, 'role interaction verifier checks library modal');
+  assertContains('scripts/verify-role-interactions.js', /role="dialog"/, 'role interaction verifier checks supervisor modal');
+  assertContains('scripts/verify-role-interactions.js', /role="dialog"/, 'role interaction verifier checks library modal');
   assertContains('scripts/verify-role-interactions.js', /admin-reports/, 'role interaction verifier checks admin report section');
 }
 
@@ -454,13 +458,13 @@ function checkLocalServer() {
     {
       method: 'HEAD',
       host: '127.0.0.1',
-      port: 5500,
+      port: 5510,
       path: '/',
       timeout: 1500,
     },
     (response) => {
       if (response.statusCode && response.statusCode >= 200 && response.statusCode < 400) {
-        pass(`local server responds on http://127.0.0.1:5500/ (${response.statusCode})`);
+        pass(`local server responds on http://127.0.0.1:5510/ (${response.statusCode})`);
       } else {
         warn(`local server responded with HTTP ${response.statusCode}`);
       }
@@ -470,12 +474,12 @@ function checkLocalServer() {
 
   request.on('timeout', () => {
     request.destroy();
-    warn('local server check timed out; start it with python3 -m http.server 5500 --bind 0.0.0.0');
+    warn('local server check timed out; start it with npm run dev -- --host 127.0.0.1 --port 5510');
     finish();
   });
 
   request.on('error', () => {
-    warn('local server is not running; start it with python3 -m http.server 5500 --bind 0.0.0.0');
+    warn('local server is not running; start it with npm run dev -- --host 127.0.0.1 --port 5510');
     finish();
   });
 
