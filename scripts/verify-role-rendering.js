@@ -16,22 +16,26 @@ const warnings = [];
 const roles = [
   {
     name: 'student',
-    checks: ['data-role-preview="student"', 'Musa Abdullahi', 'Digital Clearance Receipt', 'Web-Based E-Voting System'],
+    action: 'show_receipt',
+    checks: ['data-role-preview="student"', 'Your clearance workspace', 'Digital Clearance Receipt', 'SPMS-PREVIEW-STUDENT'],
     viewport: { width: 1280, height: 920, minBytes: 60000 },
   },
   {
     name: 'teacher',
-    checks: ['data-role-preview="teacher"', 'Supervisor Dashboard', 'Preview queue loaded', 'Review'],
+    action: 'open_review',
+    checks: ['data-role-preview="teacher"', 'Supervisor review queue', 'Assigned students', 'Review'],
     viewport: { width: 1280, height: 920, minBytes: 60000 },
   },
   {
     name: 'library',
-    checks: ['data-role-preview="library"', 'Library Catalog &amp; Verification', 'Verification Queue', 'Decentralized E-Voting System'],
+    action: 'open_catalog_record',
+    checks: ['data-role-preview="library"', 'Library verification desk', 'Verification queue', 'Climate Change Adaptation in Northern Nigeria'],
     viewport: { width: 1280, height: 920, minBytes: 70000 },
   },
   {
     name: 'admin',
-    checks: ['data-role-preview="admin"', 'Analytics Hub', 'Preview analytics loaded', 'Institution share'],
+    action: 'open_reports',
+    checks: ['data-role-preview="admin"', 'Analytics hub', 'Scheduled reporting controls', 'Project lifecycle'],
     viewport: { width: 1366, height: 960, minBytes: 70000 },
   },
 ];
@@ -72,6 +76,8 @@ function findChrome() {
 function roleUrl(role) {
   const url = new URL(baseUrl);
   url.searchParams.set('preview_role', role);
+  const scenario = roles.find(item => item.name === role);
+  if (scenario?.action) url.searchParams.set('preview_action', scenario.action);
   return url.toString();
 }
 
