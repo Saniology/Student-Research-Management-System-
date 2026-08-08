@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KASU SPMS</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23065F46'/><text x='50' y='68' font-size='48' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>K</text></svg>">
+    <link rel="icon" type="image/jpeg" href="assets/kasu-logo.jpeg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://js.paystack.co/v2/inline.js"></script>
@@ -23,12 +23,18 @@
             --spms-muted: #64748B;
             --spms-border: #D8DEE8;
             --spms-surface: #FFFFFF;
+            --spms-pattern:
+                linear-gradient(45deg, transparent 49.55%, rgba(6, 95, 70, 0.07) 49.7%, rgba(6, 95, 70, 0.07) 50.3%, transparent 50.45%),
+                linear-gradient(-45deg, transparent 49.55%, rgba(6, 95, 70, 0.07) 49.7%, rgba(6, 95, 70, 0.07) 50.3%, transparent 50.45%),
+                radial-gradient(circle at 50% 50%, transparent 0 31px, rgba(6, 95, 70, 0.07) 31.5px 32.5px, transparent 33px),
+                radial-gradient(circle at 50% 50%, transparent 0 8px, rgba(6, 95, 70, 0.07) 8.5px 9.5px, transparent 10px);
         }
         * { box-sizing: border-box; }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background:
-                linear-gradient(180deg, #F6F8FA 0%, #EEF3F7 48%, #F8FAFC 100%);
+            background-color: #FFFFFF;
+            background-image: var(--spms-pattern);
+            background-size: 150px 150px;
             color: #334155;
             margin: 0;
             text-rendering: optimizeLegibility;
@@ -96,8 +102,11 @@
             border-color: rgba(6, 95, 70, 0.26);
             box-shadow: 0 16px 30px -26px rgba(15, 23, 42, 0.42);
         }
-        #student, #teacher, #library { background: #F4F7FA; }
-        #admin main { background: #F4F7FA !important; }
+        #student, #teacher, #library, #admin main, #portal-trust-band, #repo {
+            background-color: #FFFFFF !important;
+            background-image: var(--spms-pattern) !important;
+            background-size: 150px 150px !important;
+        }
         #student .bg-white, #teacher .bg-white, #library .bg-white, #admin main .bg-white {
             background: rgba(255, 255, 255, 0.78) !important;
             border-color: rgba(203, 213, 225, 0.76) !important;
@@ -154,7 +163,39 @@
         #teacher table th, #admin main table th { font-size: 0.66rem; letter-spacing: 0.08em; }
         #admin-sidebar { background: #0F172A; border-right: 1px solid rgba(148, 163, 184, 0.16); }
         #admin-sidebar > div:first-child { background: rgba(15, 23, 42, 0.76); }
-        #admin main { min-width: 0; }
+        #admin main {
+            min-width: 0;
+            width: 100%;
+        }
+        #admin main > .admin-section {
+            width: 100%;
+            max-width: none;
+        }
+        .admin-dashboard-section { min-width: 0; }
+        .admin-metric-card {
+            min-height: 8.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .admin-metric-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            color: var(--spms-primary);
+            background: #ECFDF5;
+        }
+        .admin-analytics-card {
+            min-height: 19rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .admin-analytics-card > div:last-child { flex: 1; }
+        .admin-dashboard-section .bg-white { border-radius: 8px; }
         #admin .admin-section > h1 { letter-spacing: 0; position: relative; padding-left: 1rem; }
         #admin .admin-section > h1::before { content: ""; position: absolute; left: 0; top: 0.2rem; bottom: 0.2rem; width: 0.25rem; border-radius: 999px; background: var(--spms-accent); }
         .modal-shell {
@@ -283,7 +324,9 @@
         }
         .landing-skeleton {
             padding: 0;
-            background: #F8FAFC;
+            background-color: #FFFFFF;
+            background-image: var(--spms-pattern);
+            background-size: 150px 150px;
         }
         .landing-skeleton-hero {
             min-height: min(780px, calc(100vh - 5rem));
@@ -296,8 +339,8 @@
             background-size: cover;
             background-position: center;
         }
-        .landing-skeleton-trust { padding: 3rem 1rem; background: #FFFFFF; border-block: 1px solid #E2E8F0; }
-        .landing-skeleton-repo { padding: 4rem 1rem; background: #F8FAFC; }
+        .landing-skeleton-trust { padding: 3rem 1rem; background-color: rgba(255, 255, 255, 0.76); background-image: var(--spms-pattern); background-size: 150px 150px; border-block: 1px solid #E2E8F0; }
+        .landing-skeleton-repo { padding: 4rem 1rem; background-color: rgba(255, 255, 255, 0.84); background-image: var(--spms-pattern); background-size: 150px 150px; }
         .landing-skeleton-repo-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -447,6 +490,18 @@
             max-width: 30rem;
             justify-self: end;
         }
+        .portal-hero .hero-actions a {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: #FFFFFF;
+        }
+        .portal-hero .hero-actions a:hover { background: rgba(255, 255, 255, 0.15); }
+        .portal-hero .hero-actions button:last-child {
+            background: rgba(255, 255, 255, 0.84);
+            border: 1px solid rgba(6, 95, 70, 0.16);
+            color: #0F172A;
+        }
+        .portal-hero .hero-actions button:last-child:hover { background: #FFFFFF; }
         .pipeline-row {
             display: grid;
             grid-template-columns: 2.5rem 1fr auto;
@@ -509,6 +564,87 @@
             background: rgba(6, 95, 70, 0.08);
             color: var(--spms-primary);
         }
+        .clearance-process-section {
+            background-color: rgba(255, 255, 255, 0.84);
+            background-image: var(--spms-pattern);
+            background-size: 150px 150px;
+            border-block: 1px solid rgba(216, 222, 232, 0.9);
+        }
+        .clearance-timeline {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 1.25rem;
+            align-items: start;
+        }
+        .clearance-step {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-width: 0;
+        }
+        .clearance-step:not(:last-child)::after {
+            content: "→";
+            position: absolute;
+            top: 1.1rem;
+            right: -0.85rem;
+            color: #CBD5E1;
+            font-size: 1.4rem;
+            font-weight: 800;
+        }
+        .clearance-step-icon {
+            width: 3.5rem;
+            height: 3.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            color: var(--spms-primary);
+            background: rgba(255, 255, 255, 0.88);
+            border: 2px solid #E2E8F0;
+            box-shadow: 0 12px 24px -20px rgba(15, 23, 42, 0.62);
+        }
+        .clearance-step:last-child .clearance-step-icon {
+            color: #FFFFFF;
+            background: var(--spms-primary);
+            border-color: var(--spms-primary);
+        }
+        .clearance-step-label {
+            margin-top: 0.8rem;
+            color: var(--spms-primary);
+            font-size: 0.72rem;
+            font-weight: 800;
+            line-height: 1.35;
+        }
+        .portal-impact {
+            background: var(--spms-primary);
+            color: #FFFFFF;
+        }
+        .impact-card {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 20px 40px -32px rgba(2, 44, 34, 0.7);
+        }
+        .impact-value {
+            color: var(--spms-accent);
+            font-family: 'Fraunces', serif;
+            font-size: 2.75rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .impact-label {
+            display: block;
+            margin-top: 0.65rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.74rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
         table thead tr { background: #F8FAFC; }
         table th { color: #475569; white-space: nowrap; }
         button, a[onclick], .cursor-pointer { touch-action: manipulation; }
@@ -526,6 +662,10 @@
             .page-heading { align-items: flex-start; flex-direction: column; gap: 1rem; }
             .page-heading-stat { width: 100%; justify-content: flex-start; }
             #library > div > .flex.flex-col { align-items: stretch; }
+            .clearance-timeline { grid-template-columns: 1fr; gap: 1.5rem; }
+            .clearance-step { flex-direction: row; align-items: center; gap: 0.9rem; text-align: left; }
+            .clearance-step:not(:last-child)::after { content: "↓"; top: 3.55rem; right: auto; left: 1.15rem; }
+            .clearance-step-label { margin-top: 0; }
         }
         @media (min-width: 1024px) {
             .portal-hero-grid {
@@ -551,7 +691,7 @@
     <nav class="portal-nav backdrop-blur-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-20">
             <button type="button" class="flex items-center space-x-3 text-left" onclick="navigate('landing')" aria-label="Go to home">
-                <img id="tenant-logo" src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg?auth_key=1883957539-c26e32e54017417fa3f43a008332e2bf-0-65c12dd7c1dd680811e323fff26a3285" alt="KASU Logo" class="h-12 w-12 object-contain rounded-full" onerror="this.src='https://ui-avatars.com/api/?name=KASU&background=065F46&color=fff&bold=true'">
+                <img id="tenant-logo" src="assets/kasu-logo.jpeg" alt="Kaduna State University logo" class="h-12 w-12 object-contain" onerror="this.src='https://ui-avatars.com/api/?name=KASU&background=065F46&color=fff&bold=true'">
                 <div class="flex flex-col leading-tight">
                     <span id="tenant-nav-name" class="font-display font-bold text-lg text-primary">KASU SPMS</span>
                     <span class="hidden sm:block text-[10px] text-slate-500 uppercase tracking-widest">Student Project Management System</span>
@@ -642,25 +782,47 @@
                 </div>
             </div>
         </section>
-        <section id="portal-trust-band" class="py-12 bg-white border-y border-slate-200">
-            <div class="max-w-7xl mx-auto px-4">
+        <section id="portal-trust-band" class="clearance-process-section py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <span class="page-eyebrow">Simple, auditable workflow</span>
+                    <h2 class="text-3xl md:text-4xl font-display font-bold text-primary mt-3">The Clearance Process</h2>
+                    <p class="text-sm text-slate-500 mt-3 max-w-2xl mx-auto">Every stage is visible, accountable, and connected from the first student submission to final digital clearance.</p>
+                </div>
+                <div class="clearance-timeline" aria-label="Clearance process timeline">
+                    <div class="clearance-step">
+                        <span class="clearance-step-icon"><i class="fas fa-user-graduate"></i></span>
+                        <span class="clearance-step-label">Student Login</span>
+                    </div>
+                    <div class="clearance-step">
+                        <span class="clearance-step-icon"><i class="fas fa-file-arrow-up"></i></span>
+                        <span class="clearance-step-label">Upload Thesis</span>
+                    </div>
+                    <div class="clearance-step">
+                        <span class="clearance-step-icon"><i class="fas fa-circle-check"></i></span>
+                        <span class="clearance-step-label">Supervisor Approval</span>
+                    </div>
+                    <div class="clearance-step">
+                        <span class="clearance-step-icon"><i class="fas fa-book-open"></i></span>
+                        <span class="clearance-step-label">Library Verification</span>
+                    </div>
+                    <div class="clearance-step">
+                        <span class="clearance-step-icon"><i class="fas fa-award"></i></span>
+                        <span class="clearance-step-label">Clearance Completed</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="portal-impact" class="portal-impact py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl md:text-4xl font-display font-bold text-white">Institutional Impact</h2>
+                </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="metric-tile p-5 rounded-xl">
-                        <span class="text-primary text-xl"><i class="fas fa-user-lock"></i></span>
-                        <div><p class="text-sm font-black text-slate-950">Role-Based Access</p><p class="text-xs text-slate-500 mt-2 leading-relaxed">Students, supervisors, library staff, and admins see only the records they need.</p></div>
-                    </div>
-                    <div class="metric-tile p-5 rounded-xl">
-                        <span class="text-blue-600 text-xl"><i class="fas fa-shield-halved"></i></span>
-                        <div><p class="text-sm font-black text-slate-950">Private Storage</p><p class="text-xs text-slate-500 mt-2 leading-relaxed">Thesis files, reports, and paid downloads stay in private buckets with signed access.</p></div>
-                    </div>
-                    <div class="metric-tile p-5 rounded-xl">
-                        <span class="text-amber-500 text-xl"><i class="fas fa-qrcode"></i></span>
-                        <div><p class="text-sm font-black text-slate-950">Verification Ready</p><p class="text-xs text-slate-500 mt-2 leading-relaxed">Receipts and published catalog entries can be checked without exposing PDFs.</p></div>
-                    </div>
-                    <div class="metric-tile p-5 rounded-xl">
-                        <span class="text-slate-700 text-xl"><i class="fas fa-chart-simple"></i></span>
-                        <div><p class="text-sm font-black text-slate-950">Admin Evidence</p><p class="text-xs text-slate-500 mt-2 leading-relaxed">Payments, reports, audit logs, and monitoring support institutional handover.</p></div>
-                    </div>
+                    <div class="impact-card"><span class="impact-value">18,425</span><span class="impact-label">Students</span></div>
+                    <div class="impact-card"><span class="impact-value">4,021</span><span class="impact-label">Projects Submitted</span></div>
+                    <div class="impact-card"><span class="impact-value">3,812</span><span class="impact-label">Approved</span></div>
+                    <div class="impact-card"><span class="impact-value">76</span><span class="impact-label">Departments</span></div>
                 </div>
             </div>
         </section>
@@ -864,28 +1026,35 @@
             <main class="flex-1 p-4 md:p-8 bg-slate-50 overflow-y-auto">
                 
                 <!-- Dashboard Section -->
-                <div id="admin-dashboard" class="admin-section active">
-                    <h1 class="text-3xl font-display font-bold text-primary mb-8">Analytics Hub</h1>
+                <div id="admin-dashboard" class="admin-section active admin-dashboard-section">
+                    <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-8">
+                        <div>
+                            <span class="page-eyebrow">Operations overview</span>
+                            <h1 class="text-3xl font-display font-bold text-primary mt-2">Analytics Hub</h1>
+                            <p class="page-heading-copy">A live view of submissions, approvals, revenue reconciliation, and library output across the institution.</p>
+                        </div>
+                        <div class="page-heading-stat"><i class="fas fa-circle-check"></i><span><strong class="block text-sm text-primary">Workspace ready</strong><small class="block text-xs text-slate-500 mt-0.5">Monitoring active workflows</small></span></div>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Students</p><p id="metric-total-students" class="text-3xl font-display font-bold text-primary mt-1">—</p></div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Revenue</p><p id="metric-total-revenue" class="text-3xl font-display font-bold text-emerald-600 mt-1">—</p></div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Uploads</p><p id="metric-total-uploads" class="text-3xl font-display font-bold text-primary mt-1">—</p></div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Approvals</p><p id="metric-pending-approvals" class="text-3xl font-display font-bold text-accent mt-1">—</p></div>
+                        <div class="admin-metric-card bg-white p-6 rounded-xl premium-shadow border border-slate-200 card-hover"><div class="flex items-center justify-between"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Students</p><span class="admin-metric-icon"><i class="fas fa-user-graduate"></i></span></div><p id="metric-total-students" class="text-3xl font-display font-bold text-primary">—</p></div>
+                        <div class="admin-metric-card bg-white p-6 rounded-xl premium-shadow border border-slate-200 card-hover"><div class="flex items-center justify-between"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Revenue</p><span class="admin-metric-icon"><i class="fas fa-naira-sign"></i></span></div><p id="metric-total-revenue" class="text-3xl font-display font-bold text-emerald-600">—</p></div>
+                        <div class="admin-metric-card bg-white p-6 rounded-xl premium-shadow border border-slate-200 card-hover"><div class="flex items-center justify-between"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Total Uploads</p><span class="admin-metric-icon"><i class="fas fa-file-arrow-up"></i></span></div><p id="metric-total-uploads" class="text-3xl font-display font-bold text-primary">—</p></div>
+                        <div class="admin-metric-card bg-white p-6 rounded-xl premium-shadow border border-slate-200 card-hover"><div class="flex items-center justify-between"><p class="text-xs uppercase tracking-wider text-slate-500 font-bold">Pending Approvals</p><span class="admin-metric-icon text-amber-700 bg-amber-50"><i class="fas fa-hourglass-half"></i></span></div><p id="metric-pending-approvals" class="text-3xl font-display font-bold text-accent">—</p></div>
                     </div>
                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                        <div class="admin-analytics-card bg-white p-6 rounded-xl premium-shadow border border-slate-200 card-hover">
                             <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-display font-bold text-primary">Workflow Funnel</h3><span class="text-[11px] text-slate-400 font-bold uppercase">Live Status</span></div>
                             <div id="analytics-workflow-chart" class="space-y-4 min-h-56"></div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                        <div class="admin-analytics-card bg-white p-6 rounded-xl premium-shadow border border-slate-200 card-hover">
                             <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-display font-bold text-primary">Revenue Split</h3><span class="text-[11px] text-slate-400 font-bold uppercase">Reconciliation</span></div>
                             <div id="analytics-revenue-chart" class="space-y-4 min-h-56"></div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                        <div class="admin-analytics-card bg-white p-6 rounded-xl premium-shadow border border-slate-200 card-hover">
                             <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-display font-bold text-primary">Monthly Revenue</h3><span class="text-[11px] text-slate-400 font-bold uppercase">Last 6 Months</span></div>
                             <div id="analytics-monthly-chart" class="min-h-56"></div>
                         </div>
-                        <div class="bg-white p-6 rounded-xl premium-shadow border border-slate-200">
+                        <div class="admin-analytics-card bg-white p-6 rounded-xl premium-shadow border border-slate-200 card-hover">
                             <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-display font-bold text-primary">Publication Progress</h3><span class="text-[11px] text-slate-400 font-bold uppercase">Library Output</span></div>
                             <div id="analytics-publication-chart" class="space-y-4 min-h-56"></div>
                         </div>
@@ -1241,7 +1410,7 @@
     <!-- HIDDEN PDF RECEIPT TEMPLATE -->
     <div id="receipt-template">
         <div style="display: flex; align-items: center; border-bottom: 2px solid #065F46; padding-bottom: 20px; margin-bottom: 30px;">
-            <img id="receipt-tenant-logo" src="https://z-cdn-media.chatglm.cn/files/b732f78e-ee47-4c45-9e89-0fb04ebf4265.jpeg" alt="KASU Logo" style="width: 80px; height: 80px; margin-right: 20px;">
+            <img id="receipt-tenant-logo" src="assets/kasu-logo.jpeg" alt="Kaduna State University logo" style="width: 80px; height: 80px; margin-right: 20px; object-fit: contain;">
             <div>
                 <h1 id="receipt-tenant-name" style="color: #065F46; font-size: 24px; margin: 0; font-family: 'Fraunces', serif;">Kaduna State University</h1>
                 <p style="color: #F59E0B; font-size: 16px; font-weight: bold; margin: 5px 0 0 0;">Official Digital Clearance Receipt</p>
@@ -1392,9 +1561,24 @@
                                 </div>
                             </div>
                         </section>
-                        <section class="landing-skeleton-trust">
-                            <div class="skeleton-shell grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                ${Array.from({ length: 4 }, () => `<div class="skeleton-card p-5 space-y-4">${skel('2rem', 'skel-avatar')}${skel('66%', 'skel-title')}${skeletonLines(['96%', '82%'])}</div>`).join('')}
+                        <section class="landing-skeleton-trust clearance-process-section">
+                            <div class="skeleton-shell">
+                                <div class="text-center space-y-3 mb-10">
+                                    <div class="flex justify-center">${skel('12rem')}</div>
+                                    <div class="flex justify-center">${skel('20rem', 'skel-title h-9')}</div>
+                                    <div class="flex justify-center">${skel('30rem')}</div>
+                                </div>
+                                <div class="clearance-timeline" aria-hidden="true">
+                                    ${Array.from({ length: 5 }, () => `<div class="clearance-step">${skel('3.5rem', 'skel-avatar')}${skel('7rem')}</div>`).join('')}
+                                </div>
+                            </div>
+                        </section>
+                        <section class="landing-skeleton-impact portal-impact py-16">
+                            <div class="skeleton-shell">
+                                <div class="flex justify-center mb-10">${skel('16rem', 'skel-title skel-dark h-9')}</div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    ${Array.from({ length: 4 }, () => `<div class="impact-card space-y-3">${skel('8rem', 'skel-title skel-dark h-10')}${skel('5rem', 'skel-dark')}</div>`).join('')}
+                                </div>
                             </div>
                         </section>
                         <section class="landing-skeleton-repo">
@@ -1452,7 +1636,7 @@
                     <div class="skeleton-shell max-w-none grid grid-cols-1 md:grid-cols-[16rem_1fr] min-h-screen">
                         <div class="hidden md:block bg-slate-900 p-5 space-y-4">${skel('9rem', 'skel-title skel-dark')}${Array.from({ length: 8 }, () => skel('100%', 'skel-button skel-dark')).join('')}</div>
                         <div class="p-4 md:p-8 space-y-8">
-                            ${skel('18rem', 'skel-title h-9')}
+                            <div class="flex justify-between gap-6">${skel('24rem', 'skel-title h-9')}${skel('12rem', 'skel-button')}</div>
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-3">${skel('60%')}${skel('48%', 'skel-title h-8')}</div>`).join('')}</div>
                             <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-5">${skel('45%', 'skel-title')}${skeletonBarList(4)}</div>`).join('')}</div>
                         </div>
@@ -1506,7 +1690,7 @@
             loader.className = 'skeleton-page admin-section-skeleton';
             loader.setAttribute('aria-hidden', 'true');
             const templates = {
-                dashboard: `<div class="skeleton-shell">${skel('18rem', 'skel-title h-9')}<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-3">${skel('60%')}${skel('48%', 'skel-title h-8')}</div>`).join('')}</div><div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-5">${skel('45%', 'skel-title')}${skeletonBarList(4)}</div>`).join('')}</div></div>`,
+                dashboard: `<div class="skeleton-shell">${`<div class="flex justify-between gap-6">${skel('24rem', 'skel-title h-9')}${skel('12rem', 'skel-button')}</div>`}<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-3">${skel('60%')}${skel('48%', 'skel-title h-8')}</div>`).join('')}</div><div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8">${Array.from({ length: 4 }, () => `<div class="skeleton-card p-6 space-y-5">${skel('45%', 'skel-title')}${skeletonBarList(4)}</div>`).join('')}</div></div>`,
                 students: `<div class="skeleton-shell">${skel('18rem', 'skel-title h-9')}<div class="skeleton-card mt-8 overflow-hidden"><table class="w-full min-w-[600px]"><tbody>${skeletonRows(4, 4)}</tbody></table></div></div>`,
                 supervisors: `<div class="skeleton-shell">${skel('20rem', 'skel-title h-9')}<div class="smart-list mt-8">${Array.from({ length: 3 }, () => `<div class="skeleton-card p-6 flex items-center gap-4">${skel('4rem', 'skel-avatar')}<div class="flex-1 space-y-3">${skel('50%', 'skel-title')}${skel('34%')}</div>${skel('6rem', 'skel-button')}</div>`).join('')}</div></div>`,
                 uploads: `<div class="skeleton-shell">${skel('15rem', 'skel-title h-9')}<div class="skeleton-card mt-8 overflow-hidden"><table class="w-full min-w-[600px]"><tbody>${skeletonRows(4, 4)}</tbody></table></div></div>`,
@@ -1925,15 +2109,25 @@
             const logo = document.getElementById('tenant-logo');
             const receiptLogo = document.getElementById('receipt-tenant-logo');
             const logoUrl = institution.logo_url || '';
-            const fallbackLogo = `https://ui-avatars.com/api/?name=${encodeURIComponent(shortName)}&background=065F46&color=fff&bold=true`;
+            const isKasuTenant = shortName.toUpperCase() === 'KASU' || fullName.toLowerCase().includes('kaduna state university');
+            const fallbackLogo = isKasuTenant
+                ? 'assets/kasu-logo.jpeg'
+                : `https://ui-avatars.com/api/?name=${encodeURIComponent(shortName)}&background=065F46&color=fff&bold=true`;
             if (logo) {
                 logo.src = logoUrl || fallbackLogo;
                 logo.alt = `${shortName} Logo`;
-                logo.onerror = function() { this.src = fallbackLogo; };
+                logo.onerror = function() {
+                    this.onerror = null;
+                    this.src = fallbackLogo;
+                };
             }
             if (receiptLogo) {
                 receiptLogo.src = logoUrl || fallbackLogo;
                 receiptLogo.alt = `${shortName} Logo`;
+                receiptLogo.onerror = function() {
+                    this.onerror = null;
+                    this.src = fallbackLogo;
+                };
             }
             refreshStudentPaymentCta();
         }
@@ -2525,17 +2719,45 @@
                     </div>
                 `).join('');
             }
-            const revenue = document.getElementById('analytics-revenue-chart');
-            if (revenue) revenue.innerHTML = '<p class="text-sm text-slate-600">Institution share: 80% • SPMS provider share: 20%</p>';
+            renderHorizontalBars('analytics-revenue-chart', [
+                { label: 'Institution share', value: 674000000, display: '₦6.74m', color: 'bg-primary' },
+                { label: 'SPMS Provider Share', value: 168500000, display: '₦1.69m', color: 'bg-accent' },
+                { label: 'Reconciled Total', value: 842500000, display: '₦8.43m', color: 'bg-slate-400' }
+            ]);
             const monthly = document.getElementById('analytics-monthly-chart');
-            if (monthly) monthly.innerHTML = '<p class="text-sm text-slate-600">Preview trend: ₦8.4m reconciled across clearance and repository payments.</p>';
-            const publication = document.getElementById('analytics-publication-chart');
-            if (publication) publication.innerHTML = '<p class="text-sm text-slate-600">Published catalog records are ready for public QR verification.</p>';
+            if (monthly) {
+                const previewMonths = [
+                    ['Mar', 48], ['Apr', 64], ['May', 58], ['Jun', 78], ['Jul', 70], ['Aug', 92]
+                ];
+                monthly.innerHTML = `
+                    <div class="h-56 flex items-end gap-3 border-l border-b border-slate-200 px-2 pb-2">
+                        ${previewMonths.map(([label, height]) => `<div class="flex-1 flex flex-col items-center gap-2 min-w-0"><div class="w-full max-w-12 bg-primary rounded-t" style="height:${height}%" title="Preview revenue ${label}"></div><span class="text-[10px] text-slate-500">${label}</span></div>`).join('')}
+                    </div>
+                    <p class="text-xs text-slate-500 mt-3">Preview trend: ₦8.43m reconciled this cycle.</p>
+                `;
+            }
+            renderHorizontalBars('analytics-publication-chart', [
+                { label: 'Published Catalog Items', value: 3812, display: '3,812 / 4,021', color: 'bg-emerald-500' },
+                { label: 'Cleared Receipts', value: 3610, display: '3,610 / 4,021', color: 'bg-primary' },
+                { label: 'Awaiting Library', value: 216, display: '216', color: 'bg-indigo-500' }
+            ]);
             setText('analytics-status', 'Preview analytics loaded for admin verification.');
             const signals = document.getElementById('analytics-signal-list');
             if (signals) signals.innerHTML = '<li>216 projects awaiting staff action.</li><li>612 students cleared this cycle.</li>';
             const departments = document.getElementById('department-activity-list');
-            if (departments) departments.innerHTML = '<p class="text-sm text-slate-600">Computer Science leads preview activity with 340 uploads.</p>';
+            if (departments) {
+                departments.innerHTML = [
+                    ['Computer Science', 340, 100],
+                    ['Economics', 286, 84],
+                    ['Microbiology', 214, 63],
+                    ['Mass Communication', 172, 51]
+                ].map(([name, count, width]) => `
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1"><span class="text-primary">${name}</span><span>${count}</span></div>
+                        <div class="w-full bg-slate-100 rounded-full h-3"><div class="bg-accent h-3 rounded-full" style="width:${width}%"></div></div>
+                    </div>
+                `).join('');
+            }
         }
 
         function showAdminPreviewSection(id) {

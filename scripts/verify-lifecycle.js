@@ -191,6 +191,8 @@ function checkProductCapabilities() {
   assertContains('index.html', /portal-hero/, 'frontend has polished portal home shell');
   assertContains('index.html', /portal-operations-board/, 'frontend has operational workflow board');
   assertContains('index.html', /portal-trust-band/, 'frontend has institutional trust band');
+  assertContains('index.html', /clearance-timeline/, 'frontend has clearance process timeline');
+  assertContains('index.html', /portal-impact/, 'frontend has institutional impact section');
   assertContains('index.html', /smart-card/, 'frontend has smart card UI tokens');
   assertContains('index.html', /smart-token/, 'frontend has smart list token UI');
   assertContains('index.html', /skeleton-page/, 'frontend has page skeleton surfaces');
@@ -200,7 +202,7 @@ function checkProductCapabilities() {
   assertContains('index.html', /showPageSkeleton\('teacher'\)/, 'supervisor page uses shaped skeleton loader');
   assertContains('index.html', /showPageSkeleton\('library'\)/, 'library page uses shaped skeleton loader');
   assertContains('index.html', /showAdminSectionSkeleton\('dashboard'\)/, 'admin dashboard uses shaped skeleton loader');
-  assertContains('index.html', /unsplash\.com\/photo-1497366754035-f200968a6e72/, 'frontend hero uses a real visual asset');
+  assertContains('index.html', /--spms-pattern|background-image:\s*var\(--spms-pattern\)/, 'frontend light surfaces use the maintained patterned visual system');
   assertContains('index.html', /\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/, 'frontend enforces restrained card radius standard');
   assertContains('index.html', /focus-visible/, 'frontend preserves keyboard focus styling');
   assertContains('index.html', /preview_role/, 'frontend exposes local role preview routes');

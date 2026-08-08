@@ -117,6 +117,8 @@ function assertUiRegressionGuards() {
   assert(/portal-hero/.test(html), 'portal home shell exists');
   assert(/portal-operations-board/.test(html), 'portal operations board exists');
   assert(/portal-trust-band/.test(html), 'portal trust band exists');
+  assert(/clearance-timeline/.test(html), 'clearance process timeline exists');
+  assert(/portal-impact/.test(html), 'institutional impact section exists');
   assert(/smart-card/.test(html), 'smart card UI system exists');
   assert(/smart-token/.test(html), 'smart token UI system exists');
   assert(/skeleton-page/.test(html), 'page skeleton UI exists');
@@ -127,7 +129,7 @@ function assertUiRegressionGuards() {
   assert(/showPageSkeleton\('library'\)/.test(html), 'library page uses shaped skeleton loader');
   assert(/showAdminSectionSkeleton\('dashboard'\)/.test(html), 'admin dashboard uses shaped skeleton loader');
   assert(/showAdminSectionSkeleton\(id\)/.test(html), 'admin section navigation uses shaped skeleton loader');
-  assert(/unsplash\.com\/photo-1497366754035-f200968a6e72/.test(html), 'portal hero uses a real visual asset');
+  assert(/--spms-pattern|background-image:\s*var\(--spms-pattern\)/.test(html), 'light portal surfaces use the maintained patterned visual system');
   assert(/\.rounded-lg,\s*\.rounded-xl,\s*\.rounded-2xl/.test(html), 'card radius standard is enforced');
   assert(/focus-visible/.test(html), 'keyboard focus styling exists');
 }
