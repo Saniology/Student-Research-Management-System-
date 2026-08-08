@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     const [actor] = await supabaseRest(
       supabaseUrl,
       supabaseServiceKey,
-      `/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,role,full_name,matric`,
+      `/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,role,full_name,matric,institution_id`,
     );
     if (!actor) return jsonResponse({ error: "Profile not found" }, 404);
 
@@ -42,6 +42,14 @@ Deno.serve(async (req) => {
 
     if (action === "supervisor_decision") {
       return await handleSupervisorDecision(supabaseUrl, supabaseServiceKey, actor, body);
+    }
+
+    if (action === "student_resubmit") {
+      return await handleStudentResubmission(supabaseUrl, supabaseServiceKey, actor, body);
+    }
+
+    if (action === "assign_supervisor") {
+      return await handleAssignSupervisor(supabaseUrl, supabaseServiceKey, actor, body);
     }
 
     if (action === "library_publish") {
@@ -58,6 +66,94 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: message }, 500);
   }
 });
+
+async function handleAssignSupervisor(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  actor: Profile,
+  body: Record<string, unknown>,
+) {
+  if (actor.role !== "admin") {
+    return jsonResponse({ error: "Only admins can assign supervisors" }, 403);
+  }
+
+  const projectId = requireString(body.project_id, "project_id");
+  const supervisorId = requireString(body.supervisor_id, "supervisor_id");
+  const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
+  if (!project) return jsonResponse({ error: "Project not found" }, 404);
+
+  const supervisors = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/profiles?id=eq.${encodeURIComponent(supervisorId)}&role=eq.teacher&select=id,full_name,institution_id,department_id`,
+  );
+  const supervisor = supervisors[0];
+  if (!supervisor) return jsonResponse({ error: "Selected supervisor was not found" }, 404);
+
+  if (
+    project.institution_id &&
+    supervisor.institution_id &&
+    project.institution_id !== supervisor.institution_id
+  ) {
+    return jsonResponse({ error: "Supervisor must belong to the same institution" }, 400);
+  }
+
+  const nextStatus = project.status === "submitted" ? "supervisor_review" : project.status;
+  const [updated] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*`,
+    {
+      method: "PATCH",
+      body: {
+        supervisor_id: supervisor.id,
+        status: nextStatus,
+        updated_at: new Date().toISOString(),
+      },
+    },
+  );
+
+  await supabaseRest(supabaseUrl, serviceRoleKey, "/audit_logs", {
+    method: "POST",
+    body: {
+      actor_id: actor.id,
+      action: "supervisor_assigned",
+      entity_type: "project",
+      entity_id: projectId,
+      metadata: {
+        supervisor_id: supervisor.id,
+        from_status: project.status,
+        to_status: nextStatus,
+      },
+    },
+  });
+
+  if (project.status === "submitted") {
+    await supabaseRest(supabaseUrl, serviceRoleKey, "/project_reviews", {
+      method: "POST",
+      body: {
+        project_id: projectId,
+        actor_id: actor.id,
+        action: "submitted",
+        comment: "Supervisor assigned by an administrator.",
+        from_status: "submitted",
+        to_status: "supervisor_review",
+      },
+    });
+  }
+
+  await notifyUsers(supabaseUrl, serviceRoleKey, {
+    recipientIds: compactIds([project.student_id, supervisor.id]),
+    actorId: actor.id,
+    institutionId: project.institution_id || actor.institution_id || null,
+    projectId,
+    title: "Supervisor assigned",
+    message: `"${project.title}" is now assigned to ${supervisor.full_name || "a supervisor"} for review.`,
+    metadata: { status: nextStatus, supervisor_id: supervisor.id },
+  });
+
+  return jsonResponse({ success: true, project: updated, supervisor });
+}
 
 async function handleSupervisorDecision(
   supabaseUrl: string,
@@ -145,6 +241,107 @@ async function handleSupervisorDecision(
       title: "Project ready for library review",
       message: `"${project.title}" is ready for metadata verification and catalog publishing.`,
       metadata: { status: toStatus },
+    });
+  }
+
+  return jsonResponse({ success: true, project: updated });
+}
+
+async function handleStudentResubmission(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  actor: Profile,
+  body: Record<string, unknown>,
+) {
+  if (actor.role !== "student") {
+    return jsonResponse({ error: "Only students can resubmit a revision" }, 403);
+  }
+
+  const projectId = requireString(body.project_id, "project_id");
+  const filePath = requireString(body.file_path, "file_path");
+  const fileName = requireString(body.file_name, "file_name");
+  const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
+  if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  if (project.student_id !== actor.id) {
+    return jsonResponse({ error: "You can only resubmit your own project" }, 403);
+  }
+  if (project.status !== "revision_requested") {
+    return jsonResponse({ error: `Project is not waiting for a revision. Current status: ${project.status}` }, 409);
+  }
+  if (!filePath.startsWith(`${actor.id}/`) || !/\.pdf$/i.test(fileName)) {
+    return jsonResponse({ error: "Revision files must be PDF files in the student's private folder" }, 400);
+  }
+
+  const title = optionalString(body.title) || project.title;
+  const abstract = optionalString(body.abstract) || project.abstract;
+  const degree = optionalString(body.degree) || project.degree;
+  if (!abstract || abstract.length < 50) {
+    return jsonResponse({ error: "A complete abstract is required before resubmission" }, 400);
+  }
+
+  const [updated] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*`,
+    {
+      method: "PATCH",
+      body: {
+        title,
+        abstract,
+        degree,
+        file_name: fileName,
+        file_path: filePath,
+        file_size_bytes: Number.isFinite(Number(body.file_size_bytes)) ? Number(body.file_size_bytes) : null,
+        mime_type: "application/pdf",
+        status: project.supervisor_id ? "supervisor_review" : "submitted",
+        revision_note: null,
+        updated_at: new Date().toISOString(),
+      },
+    },
+  );
+
+  if (project.submission_id) {
+    await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/submissions?id=eq.${encodeURIComponent(project.submission_id)}`,
+      {
+        method: "PATCH",
+        body: { file_name: fileName, file_path: filePath, status: "pending" },
+      },
+    );
+  }
+
+  const nextStatus = project.supervisor_id ? "supervisor_review" : "submitted";
+  await writeReviewAndAudit(supabaseUrl, serviceRoleKey, {
+    actorId: actor.id,
+    projectId,
+    action: "submitted",
+    comment: "Student resubmitted the revised thesis after supervisor feedback.",
+    fromStatus: project.status,
+    toStatus: nextStatus,
+    auditAction: "project_revision_resubmitted",
+  });
+
+  await notifyUsers(supabaseUrl, serviceRoleKey, {
+    recipientIds: compactIds([actor.id, project.supervisor_id]),
+    actorId: actor.id,
+    institutionId: project.institution_id || null,
+    projectId,
+    title: "Revision resubmitted",
+    message: `"${title}" has been resubmitted and is ready for supervisor review.`,
+    metadata: { status: nextStatus },
+  });
+
+  if (!project.supervisor_id) {
+    await notifyRole(supabaseUrl, serviceRoleKey, {
+      role: "admin",
+      actorId: actor.id,
+      institutionId: project.institution_id || null,
+      projectId,
+      title: "Supervisor assignment required",
+      message: `"${title}" was resubmitted but still needs a supervisor assignment.`,
+      metadata: { status: nextStatus },
     });
   }
 
@@ -579,6 +776,7 @@ type Profile = {
   role: "student" | "teacher" | "library" | "admin";
   full_name?: string;
   matric?: string;
+  institution_id?: string | null;
 };
 
 type Project = {

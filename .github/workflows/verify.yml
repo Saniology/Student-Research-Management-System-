@@ -38,12 +38,12 @@ jobs:
       - name: Show browser version
         run: google-chrome --version || chromium-browser --version || chromium --version
 
-      - name: Start static app
+      - name: Start React app
         run: |
-          python3 -m http.server 5500 --bind 127.0.0.1 > /tmp/spms-http.log 2>&1 &
+          npm run dev -- --host 127.0.0.1 --port 5500 > /tmp/spms-http.log 2>&1 &
           echo "$!" > /tmp/spms-http.pid
 
-      - name: Wait for static app
+      - name: Wait for React app
         run: |
           for attempt in {1..20}; do
             if curl -fsS http://127.0.0.1:5500/ > /dev/null; then

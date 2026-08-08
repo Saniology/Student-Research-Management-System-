@@ -4,6 +4,10 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "vite --host 0.0.0.0",
     "dns:cloudflare": "node scripts/provision-cloudflare-domain.js",
     "verify:config": "node scripts/verify-browser-config.js",
     "verify:deploy": "node scripts/verify-supabase-deployment.js",
@@ -25,6 +29,14 @@
     "verify:lifecycle": "node scripts/verify-lifecycle.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@playwright/test": "^1.62.1",
+    "@vitejs/plugin-react": "^6.0.5",
+    "vite": "^8.2.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.2",
+    "lucide-react": "^1.30.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   }
 }
