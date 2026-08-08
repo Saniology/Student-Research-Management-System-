@@ -14,10 +14,9 @@ files.
 
 - Git.
 - A modern browser.
-- Node.js 20 or newer, used for the project verification command.
+- Node.js 20 or newer, used to run the Vite app and project verification commands.
 - Google Chrome or Chromium, used for rendered desktop/mobile UI checks.
 - Playwright Chromium, used for end-to-end role workflow checks.
-- Python 3, used only to serve the static app locally.
 - `curl` and `unzip`, used by the project-local Deno install command.
 - Internet access, because the app talks to the hosted Supabase project, Paystack,
   and CDN libraries.
@@ -35,7 +34,8 @@ From a fresh machine:
 ```bash
 git clone <project-repository-url>
 cd Student-Research-Management-System-
-python3 -m http.server 5500 --bind 0.0.0.0
+npm ci
+npm run dev -- --host 0.0.0.0 --port 5500
 ```
 
 Open:
@@ -119,7 +119,7 @@ appear in Admin > Reports and can be downloaded by admins.
 From the project root:
 
 ```bash
-python3 -m http.server 5500 --bind 0.0.0.0
+npm run dev -- --host 0.0.0.0 --port 5500
 ```
 
 Open:
@@ -128,10 +128,10 @@ Open:
 http://127.0.0.1:5500/
 ```
 
-If another app is already using port `5500`, use another port:
+If another app is already using port `5500`, use another Vite port:
 
 ```bash
-python3 -m http.server 5501 --bind 0.0.0.0
+npm run dev -- --host 0.0.0.0 --port 5501
 ```
 
 Then open:
