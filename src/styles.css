@@ -88,6 +88,7 @@ main { min-height: calc(100vh - 76px); }
 .verification-result { max-width: 760px; margin-top: 1rem; padding: 1rem 1.2rem; color: var(--primary); background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; }
 .verification-result.is-error { color: #9f1239; background: #fff1f2; border-color: #fecdd3; }
 .verification-result pre { max-width: 100%; margin: .75rem 0 0; overflow: auto; white-space: pre-wrap; font: .72rem/1.5 ui-monospace, SFMono-Regular, monospace; }
+.qr-preview { display: grid; justify-items: center; gap: .5rem; margin-top: 1.2rem; padding: 1rem; border: 1px dashed #bfd5d5; border-radius: 9px; background: rgba(248,251,251,.8); }.qr-preview img { width: 180px; height: 180px; padding: .5rem; background: white; border-radius: 7px; }
 .repository-toolbar { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; margin-bottom: 1.5rem; }
 .search-box { display: flex; align-items: center; gap: .6rem; width: min(500px,100%); padding: .75rem .9rem; color: #718096; background: white; border: 1px solid var(--line); border-radius: 9px; }
 .search-box input { width: 100%; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: .82rem; }

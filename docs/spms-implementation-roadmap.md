@@ -93,7 +93,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Verifies Supabase environment, REST database reachability, and required private storage buckets.
 - Returns detailed checks only when `HEALTH_CHECK_SECRET` is absent or supplied through `x-health-secret`.
 
-## Frontend Upgrade Started
+## Frontend Upgrade
 
 - Student dashboard now collects title, abstract, degree, and PDF.
 - Student dashboard shows workflow status and only reveals receipt after publication/clearance.
@@ -146,5 +146,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 
 - Real provider-side email domain authentication and deliverability monitoring with institution DNS access.
 - Provider-specific production DNS credentials and hosting target values for each institution.
-- Full frontend migration from one large `index.html` into a maintainable React/Next.js app.
 - Full Playwright role automation against seeded Supabase test data; the deterministic preview suite is in place, while authenticated seeded runs still require a dedicated test project and credentials.
+- Production Supabase handover: apply the migrations in the owner account, deploy all Edge Functions, and configure the required server-side secrets.
+- A genuine end-to-end smoke test with a real Paystack test transaction, private PDF upload, supervisor review, library publication, QR verification, and paid repository download.
+- Production hosting, institution DNS, email provider credentials, monitoring endpoints, and rollback evidence for each tenant.

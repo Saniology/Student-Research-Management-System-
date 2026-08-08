@@ -44,3 +44,15 @@ export async function lookupVerification(type, payload) {
   if (!response.ok || data?.error) throw new Error(data?.error || 'Verification failed');
   return data;
 }
+
+export async function fetchQrSvg(payload, size = 220) {
+  if (!config.valid) throw new Error('Supabase is not configured.');
+  const response = await fetch(`${config.url}/functions/v1/verification-lookup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: config.anonKey },
+    body: JSON.stringify({ type: 'qr_svg', payload, size }),
+  });
+  if (!response.ok) throw new Error('QR code could not be generated.');
+  const svg = await response.text();
+  return URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+}

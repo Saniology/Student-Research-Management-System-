@@ -43,6 +43,16 @@ export async function loadProfile(userId) {
   return data;
 }
 
+export async function loadSystemConfig(institutionId) {
+  if (!supabase) return null;
+  const query = supabase.from('system_configs').select('*');
+  const { data, error } = institutionId
+    ? await query.eq('institution_id', institutionId).maybeSingle()
+    : await query.limit(1).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function signedPdfUrl(path, ttl = 300) {
   if (!supabase || !path) return '';
   const { data, error } = await supabase.storage.from('thesis-pdfs').createSignedUrl(path, ttl);
