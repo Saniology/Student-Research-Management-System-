@@ -1,5 +1,16 @@
 const DEFAULT_CLEARANCE_FEE_KOBO = 200_000;
 
+type SupervisorCandidate = {
+  id: string;
+  created_at?: string | null;
+};
+
+type SupervisorProject = {
+  supervisor_id?: string | null;
+};
+
+type ProfileRecord = Record<string, unknown>;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -153,6 +164,13 @@ Deno.serve(async (req) => {
     let createdProjectId: string | null = null;
 
     try {
+      const supervisorId = await resolveSupervisor(
+        supabaseUrl,
+        supabaseServiceKey,
+        user.id,
+        profile,
+      );
+      const workflowStatus = supervisorId ? "supervisor_review" : "submitted";
       const [project] = await supabaseRest(
         supabaseUrl,
         supabaseServiceKey,
@@ -162,7 +180,7 @@ Deno.serve(async (req) => {
           body: {
             institution_id: profile?.institution_id || null,
             student_id: user.id,
-            supervisor_id: profile?.supervisor_id || null,
+            supervisor_id: supervisorId,
             department_id: profile?.department_id || null,
             submission_id: submission.id,
             title: projectTitle,
@@ -172,7 +190,7 @@ Deno.serve(async (req) => {
             file_path,
             file_size_bytes: Number.isFinite(file_size_bytes) ? file_size_bytes : null,
             mime_type: "application/pdf",
-            status: "supervisor_review",
+            status: workflowStatus,
           },
         },
       );
@@ -222,7 +240,7 @@ Deno.serve(async (req) => {
             actor_id: user.id,
             action: "submitted",
             comment: "Project submitted after successful clearance fee payment.",
-            to_status: "supervisor_review",
+            to_status: workflowStatus,
           },
         },
       );
@@ -244,17 +262,31 @@ Deno.serve(async (req) => {
       );
 
       await notifyUsers(supabaseUrl, supabaseServiceKey, {
-        recipientIds: compactIds([user.id, project.supervisor_id]),
+        recipientIds: compactIds([user.id, supervisorId]),
         actorId: user.id,
         institutionId: project.institution_id || profile?.institution_id || null,
         projectId: project.id,
         title: "Project submitted",
-        message: `"${project.title}" has been submitted for supervisor review.`,
+        message: supervisorId
+          ? `"${project.title}" has been submitted for supervisor review.`
+          : `"${project.title}" was received and is waiting for a supervisor assignment.`,
         metadata: {
-          status: "supervisor_review",
+          status: workflowStatus,
           payment_reference: reference,
         },
       });
+
+      if (!supervisorId) {
+        await notifyRole(supabaseUrl, supabaseServiceKey, {
+          role: "admin",
+          institutionId: project.institution_id || profile?.institution_id || null,
+          actorId: user.id,
+          projectId: project.id,
+          title: "Supervisor assignment required",
+          message: `"${project.title}" needs a supervisor before review can begin.`,
+          metadata: { status: workflowStatus, department_id: profile?.department_id || null },
+        });
+      }
 
       return jsonResponse({ success: true, payment, submission, project });
     } catch (err) {
@@ -430,6 +462,119 @@ async function getStudentProfile(
       `/profiles?id=eq.${encodeURIComponent(userId)}&select=id,department,matric`,
     );
     return profile || null;
+  }
+}
+
+async function resolveSupervisor(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  studentId: string,
+  profile: ProfileRecord | null,
+) {
+  if (typeof profile?.supervisor_id === "string" && profile.supervisor_id) {
+    return profile.supervisor_id;
+  }
+
+  const filters = ["role=eq.teacher"];
+  if (typeof profile?.institution_id === "string" && profile.institution_id) {
+    filters.push(`institution_id=eq.${encodeURIComponent(profile.institution_id)}`);
+  }
+  if (typeof profile?.department_id === "string" && profile.department_id) {
+    filters.push(`department_id=eq.${encodeURIComponent(profile.department_id)}`);
+  } else if (typeof profile?.department === "string" && profile.department.trim()) {
+    filters.push(`department=eq.${encodeURIComponent(profile.department.trim())}`);
+  }
+
+  try {
+    let supervisors: SupervisorCandidate[] = await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/profiles?${filters.join("&")}&select=id,created_at`,
+    );
+
+    // A missing department mapping should not strand a paid submission. Fall
+    // back to institution-wide staff and let the least-loaded rule decide.
+    if (!supervisors.length && filters.length > 1) {
+      const institutionFilter = filters.find((filter) => filter.startsWith("institution_id="));
+      supervisors = await supabaseRest(
+        supabaseUrl,
+        serviceRoleKey,
+        `/profiles?role=eq.teacher${institutionFilter ? `&${institutionFilter}` : ""}&select=id,created_at`,
+      );
+    }
+
+    if (!supervisors.length) return null;
+
+    const supervisorIds = supervisors
+      .map((supervisor) => supervisor.id)
+      .filter((id): id is string => typeof id === "string");
+    const activeCounts = new Map<string, number>(supervisorIds.map((id) => [id, 0]));
+
+    try {
+      const activeProjects: SupervisorProject[] = await supabaseRest(
+        supabaseUrl,
+        serviceRoleKey,
+        `/projects?supervisor_id=in.(${supervisorIds.join(",")})&status=not.in.(cleared,rejected)&select=supervisor_id`,
+      );
+      activeProjects.forEach((project) => {
+        if (typeof project.supervisor_id === "string" && activeCounts.has(project.supervisor_id)) {
+          activeCounts.set(project.supervisor_id, (activeCounts.get(project.supervisor_id) || 0) + 1);
+        }
+      });
+    } catch (err) {
+      console.warn("Could not calculate supervisor workload; using creation order:", err);
+    }
+
+    supervisors.sort((left, right) => {
+      const workloadDifference =
+        (activeCounts.get(left.id) || 0) - (activeCounts.get(right.id) || 0);
+      if (workloadDifference !== 0) return workloadDifference;
+      return String(left.created_at || "").localeCompare(String(right.created_at || ""));
+    });
+
+    return supervisors[0]?.id || null;
+  } catch (err) {
+    console.warn(`Automatic supervisor assignment skipped for ${studentId}:`, err);
+    return null;
+  }
+}
+
+async function notifyRole(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  notification: {
+    role: string;
+    institutionId?: string | null;
+    actorId?: string | null;
+    projectId?: string | null;
+    title: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  },
+) {
+  try {
+    const filters = [`role=eq.${encodeURIComponent(notification.role)}`];
+    if (notification.institutionId) {
+      filters.push(`institution_id=eq.${encodeURIComponent(notification.institutionId)}`);
+    }
+    const recipients: Array<{ id?: string | null }> = await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/profiles?${filters.join("&")}&select=id`,
+    );
+    await notifyUsers(supabaseUrl, serviceRoleKey, {
+      recipientIds: recipients
+        .map((recipient) => recipient.id)
+        .filter((id): id is string => typeof id === "string"),
+      actorId: notification.actorId,
+      institutionId: notification.institutionId,
+      projectId: notification.projectId,
+      title: notification.title,
+      message: notification.message,
+      metadata: notification.metadata,
+    });
+  } catch (err) {
+    console.warn(`Could not notify ${notification.role} staff:`, err);
   }
 }
 

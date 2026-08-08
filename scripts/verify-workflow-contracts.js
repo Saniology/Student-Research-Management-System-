@@ -30,9 +30,9 @@ const edgeContracts = [
   {
     functionName: 'project-workflow',
     file: files.projectWorkflow,
-    frontendActions: ['supervisor_decision', 'library_publish', 'issue_receipt'],
-    handlerActions: ['supervisor_decision', 'library_publish', 'issue_receipt'],
-    requiredFields: ['project_id', 'decision', 'shelf_number', 'verification_code'],
+    frontendActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_publish', 'issue_receipt'],
+    handlerActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_publish', 'issue_receipt'],
+    requiredFields: ['project_id', 'decision', 'supervisor_id', 'file_path', 'file_name', 'shelf_number', 'verification_code'],
   },
   {
     functionName: 'repository-access',
@@ -175,7 +175,9 @@ function checkSqlEnumsAndStatusFlow() {
   });
 
   [
-    ['student submission starts supervisor_review', verifyPaystack, /status:\s*"supervisor_review"/],
+    ['student submission assigns a supervisor when available', verifyPaystack, /resolveSupervisor\(/],
+    ['student submission routes assigned projects to supervisor_review', verifyPaystack, /workflowStatus\s*=\s*supervisorId\s*\?\s*"supervisor_review"\s*:\s*"submitted"/],
+    ['unassigned submissions remain visible for admin assignment', verifyPaystack, /Supervisor assignment required/],
     ['supervisor approval moves to supervisor_approved', projectWorkflow, /toStatus\s*=\s*"supervisor_approved"/],
     ['revision requests move to revision_requested', projectWorkflow, /toStatus\s*=\s*"revision_requested"/],
     ['library publish moves to published', projectWorkflow, /status:\s*"published"/],

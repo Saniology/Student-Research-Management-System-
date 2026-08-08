@@ -16,6 +16,7 @@ files.
 - A modern browser.
 - Node.js 20 or newer, used for the project verification command.
 - Google Chrome or Chromium, used for rendered desktop/mobile UI checks.
+- Playwright Chromium, used for end-to-end role workflow checks.
 - Python 3, used only to serve the static app locally.
 - `curl` and `unzip`, used by the project-local Deno install command.
 - Internet access, because the app talks to the hosted Supabase project, Paystack,
@@ -42,6 +43,26 @@ Open:
 ```text
 http://127.0.0.1:5500/
 ```
+
+Install the Node test dependency and its browser once per checkout:
+
+```bash
+npm ci
+npx playwright install chromium
+```
+
+Run the deterministic role workflow suite:
+
+```bash
+npm run verify:playwright
+```
+
+The default suite uses local role-preview routes and does not require Supabase
+login. To run the optional seeded-account smoke tests against a test Supabase
+environment, set `SPMS_E2E_MODE=seeded`, `SPMS_E2E_URL`, and the four role email
+and password pairs (`SPMS_E2E_STUDENT_EMAIL`, `SPMS_E2E_STUDENT_PASSWORD`, and
+the corresponding `TEACHER`, `LIBRARY`, and `ADMIN` variables). Keep those
+values in a local environment file and never commit them.
 
 For normal frontend testing, that is enough after the owner has deployed the
 Supabase schema and Edge Functions.

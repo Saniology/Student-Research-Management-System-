@@ -23,6 +23,18 @@ const scenarios = [
     ],
   },
   {
+    name: 'student revision resubmission workflow',
+    role: 'student',
+    action: 'show_revision',
+    checks: [
+      'data-role-preview="student"',
+      'data-role-preview-action="show_revision"',
+      'Revision Required',
+      'Upload Revision &amp; Resubmit',
+      'without paying the clearance fee again.',
+    ],
+  },
+  {
     name: 'supervisor review modal',
     role: 'teacher',
     action: 'open_review',
@@ -56,6 +68,19 @@ const scenarios = [
       'id="admin-reports" class="admin-section active"',
       'Preview reports loaded for workflow export',
       'project-lifecycle-preview.csv',
+    ],
+  },
+  {
+    name: 'admin supervisor assignment queue',
+    role: 'admin',
+    action: 'open_assignments',
+    checks: [
+      'data-role-preview="admin"',
+      'data-role-preview-action="open_assignments"',
+      'id="admin-supervisors" class="admin-section active"',
+      'Unassigned Review Queue',
+      'Web-Based E-Voting System',
+      '>Assign<',
     ],
   },
 ];
@@ -135,6 +160,7 @@ function dumpScenarioDom(chrome, scenario) {
   const result = spawnSync(chrome, [
     '--headless',
     '--disable-gpu',
+    '--disable-dev-shm-usage',
     '--no-sandbox',
     `--user-data-dir=${profileDir}`,
     '--virtual-time-budget=5000',
@@ -183,7 +209,7 @@ async function main() {
 function finish() {
   console.log('');
   console.log(`Role interaction verification complete: ${failures.length} failure(s), ${warnings.length} warning(s).`);
-  if (failures.length) process.exit(1);
+  process.exit(failures.length ? 1 : 0);
 }
 
 main();

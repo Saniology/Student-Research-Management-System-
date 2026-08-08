@@ -101,6 +101,7 @@ function renderViewport(chrome, viewport) {
   const result = spawnSync(chrome, [
     '--headless',
     '--disable-gpu',
+    '--disable-dev-shm-usage',
     '--no-sandbox',
     `--user-data-dir=${profileDir}`,
     '--hide-scrollbars',
@@ -163,7 +164,7 @@ async function main() {
 function finish() {
   console.log('');
   console.log(`Rendered UI verification complete: ${failures.length} failure(s), ${warnings.length} warning(s).`);
-  if (failures.length) process.exit(1);
+  process.exit(failures.length ? 1 : 0);
 }
 
 main();

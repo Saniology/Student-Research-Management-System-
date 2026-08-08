@@ -49,7 +49,10 @@
         .card-hover:hover { transform: translateY(-2px); border-color: rgba(6, 95, 70, 0.25); box-shadow: 0 18px 34px -28px rgba(15, 23, 42, 0.45); }
         .view { display: none !important; }
         .active-view { display: block !important; }
-        #admin.active-view { display: flex !important; }
+        #admin.active-view {
+            display: flex !important;
+            width: 100%;
+        }
         .view, .admin-section { position: relative; }
         .glass-card, .surface-card {
             background: rgba(255, 255, 255, 0.78);
@@ -893,8 +896,8 @@
             </div>
             <div class="bg-primary rounded-xl p-6 flex flex-col md:flex-row items-center justify-between premium-shadow mb-10">
                 <div class="mb-4 md:mb-0 text-center md:text-left">
-                    <p class="text-sm font-bold text-white">2. Digital Repository Fee</p>
-                    <p class="text-xs text-emerald-100 font-light">Required for graduation clearance. Secured by Paystack.</p>
+                    <p id="payment-action-label" class="text-sm font-bold text-white">2. Digital Repository Fee</p>
+                    <p id="payment-action-copy" class="text-xs text-emerald-100 font-light">Required for graduation clearance. Secured by Paystack.</p>
                 </div>
                 <button id="pay-btn" onclick="processUpload()" class="bg-accent text-dark px-8 py-3 rounded-lg text-sm font-bold hover:bg-amber-400 transition w-full md:w-auto disabled:opacity-60 disabled:cursor-not-allowed">Pay ₦2,000 & Submit</button>
             </div>
@@ -912,6 +915,7 @@
                     <span id="project-status-badge" class="self-start md:self-center text-[10px] px-3 py-1 rounded font-bold uppercase bg-slate-100 text-slate-600">Draft</span>
                 </div>
                 <p id="project-status-note" class="text-sm text-slate-600 mt-4"></p>
+                <div id="revision-resubmit-hint" class="hidden mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><i class="fas fa-rotate mr-2"></i>Update the metadata or choose a new PDF, then use the resubmit button above. Your clearance payment is not charged again.</div>
             </div>
             <div id="verification-retry" class="hidden mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
                 <p class="text-sm text-amber-900 font-medium"><i class="fas fa-exclamation-triangle mr-1"></i> Payment received, but verification could not finish.</p>
@@ -1114,6 +1118,14 @@
                             </div>
                             <span class="text-xs text-primary font-bold bg-emerald-50 px-3 py-1 rounded-full">5 Students</span>
                         </div>
+                    </div>
+                    <div class="mt-8 bg-white rounded-xl premium-shadow border border-slate-200 overflow-hidden">
+                        <div class="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div><h3 class="text-lg font-display font-bold text-primary">Unassigned Review Queue</h3><p class="text-sm text-slate-500 mt-1">Assign orphaned submissions to an eligible supervisor so review can begin.</p></div>
+                            <span class="page-heading-stat text-xs font-bold text-slate-600"><i class="fas fa-user-clock"></i> Needs action</span>
+                        </div>
+                        <p id="supervisor-assignment-status" class="px-6 pt-4 text-sm text-slate-500"></p>
+                        <div id="supervisor-assignment-queue" class="p-6 space-y-4"></div>
                     </div>
                 </div>
 
@@ -1388,11 +1400,11 @@
 
     <!-- STUDENT MODAL -->
     <div id="student-modal" class="modal-overlay">
-        <div class="modal-shell rounded-2xl w-full max-w-2xl mx-4 overflow-hidden">
+        <div class="modal-shell rounded-2xl w-full max-w-4xl mx-4 overflow-hidden">
             <div class="modal-header p-5 sm:p-6 flex justify-between items-center"><div class="flex items-center gap-3"><span class="auth-modal-mark"><i class="fas fa-user-check"></i></span><span class="text-slate-950 font-display font-black text-lg">Student Profile</span></div><button onclick="closeModal()" class="auth-modal-close" aria-label="Close student profile dialog" title="Close"><i class="fas fa-times"></i></button></div>
-            <div class="auth-modal-body p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="auth-modal-body p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-5 gap-8">
                 <div class="md:col-span-1 flex flex-col items-center text-center"><img id="modal-img" src="" alt="Student profile photo" class="w-32 h-32 rounded-full border-4 border-accent object-cover mb-3 premium-shadow"><h3 id="modal-name" class="text-xl font-display font-bold text-primary"></h3><p id="modal-matric" class="text-sm text-slate-500 font-light"></p></div>
-                <div class="md:col-span-2 md:border-l border-slate-200 md:pl-8">
+                <div class="lg:col-span-2 lg:border-l border-slate-200 lg:pl-8">
                     <h4 class="text-xs font-bold text-slate-500 uppercase mb-1">Project Title</h4>
                     <p id="modal-topic" class="text-lg font-medium text-dark mb-4"></p>
                     <h4 class="text-xs font-bold text-slate-500 uppercase mb-1">Abstract</h4>
@@ -1402,6 +1414,14 @@
                         <button onclick="approveStudent()" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-700">Approve Project</button>
                         <button onclick="requestStudentRevision()" class="w-full bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-amber-600">Request Revision</button>
                     </div>
+                </div>
+                <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3 min-h-[300px]">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div><p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Secure PDF Preview</p><p id="modal-pdf-status" class="text-[11px] text-slate-500 mt-1">Preparing preview...</p></div>
+                        <button id="modal-pdf-open" onclick="openSupervisorPdfInNewTab()" class="hidden smart-action bg-white text-primary border border-slate-200 px-3 py-2 text-xs" title="Open PDF in a new tab"><i class="fas fa-up-right-from-square"></i><span>Open</span></button>
+                    </div>
+                    <div id="modal-pdf-loading" class="h-[260px] rounded-lg bg-slate-200/80 animate-pulse flex flex-col items-center justify-center gap-3"><span class="w-12 h-12 rounded-full bg-white/70"></span><span class="w-36 h-3 rounded bg-white/70"></span></div>
+                    <iframe id="modal-pdf-preview" class="hidden w-full h-[260px] rounded-lg border border-slate-200 bg-white" title="Secure thesis PDF preview"></iframe>
                 </div>
             </div>
         </div>
@@ -1448,6 +1468,8 @@
         let libraryQueueProjects = [];
         let publicCatalogItems = [];
         let selectedLibraryProject = null;
+        let adminUnassignedProjects = [];
+        let adminSupervisors = [];
         let academicHierarchy = { colleges: [], faculties: [], departments: [] };
         let userNotifications = [];
         let currentLibraryView = 'grid'; // 'grid' or 'list'
@@ -2644,6 +2666,7 @@
         }
 
         function renderStudentPreview() {
+            const revisionPreview = rolePreviewAction() === 'show_revision';
             document.getElementById('student-name').innerText = currentUserProfile.full_name;
             document.getElementById('student-matric').innerText = 'Matric: ' + currentUserProfile.matric;
             document.getElementById('student-dept').innerText = currentUserProfile.department;
@@ -2655,8 +2678,8 @@
             currentProject = {
                 title: 'Web-Based E-Voting System',
                 degree: 'BSc',
-                status: 'published',
-                revision_note: 'Published by the library and ready for final clearance receipt verification.',
+                status: revisionPreview ? 'revision_requested' : 'published',
+                revision_note: revisionPreview ? 'Please replace the PDF with the corrected version and resubmit.' : 'Published by the library and ready for final clearance receipt verification.',
             };
             markPaymentSuccess({
                 amount: getClearanceFeeKobo(),
@@ -2764,7 +2787,13 @@
             document.querySelectorAll('.admin-section').forEach(el => el.classList.remove('active'));
             const section = document.getElementById('admin-' + id);
             if (section) section.classList.add('active');
-            if (id === 'reports') {
+            if (id === 'supervisors') {
+                setText('supervisor-assignment-status', '1 submission needs assignment.');
+                const queue = document.getElementById('supervisor-assignment-queue');
+                if (queue) {
+                    queue.innerHTML = `<div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col xl:flex-row xl:items-center gap-4 ui-rise"><div class="flex-1 min-w-0"><p class="font-bold text-primary truncate">Web-Based E-Voting System</p><p class="text-xs text-slate-500 mt-1">Musa Abdullahi · KASU/SCI/20/123</p><p class="text-[11px] text-slate-400 mt-1">Computer Science · Needs supervisor</p></div><div class="flex flex-col sm:flex-row gap-2 xl:w-[460px]"><select aria-label="Supervisor for Web-Based E-Voting System" class="flex-1 p-3 glass-input rounded-lg text-sm"><option>Select supervisor</option><option>Dr. Sani Musa · Computer Science</option></select><button class="smart-action bg-primary text-white px-4 py-3 text-xs"><i class="fas fa-user-check"></i>Assign</button></div></div>`;
+                }
+            } else if (id === 'reports') {
                 setReportsStatus('Preview reports loaded for workflow export, scheduled delivery, and generated report checks.');
                 const output = document.getElementById('reports-output');
                 if (output) {
@@ -2790,6 +2819,8 @@
                 document.getElementById('lib-comment-input').value = 'Preview catalog note for automated library interaction coverage.';
             } else if (role === 'admin' && action === 'open_reports') {
                 showAdminPreviewSection('reports');
+            } else if (role === 'admin' && action === 'open_assignments') {
+                showAdminPreviewSection('supervisors');
             } else if (role === 'student' && action === 'show_receipt') {
                 document.getElementById('receipt-section')?.classList.remove('hidden');
             }
@@ -3139,8 +3170,96 @@
             if (id === 'payments') loadAdminPayments();
             if (id === 'reports') { loadReportsSummary(); loadReportAutomation(); }
             if (id === 'settings') loadAdminSettings();
+            if (id === 'supervisors') loadSupervisorAssignmentQueue();
             if (['students', 'supervisors', 'uploads'].includes(id)) {
                 window.setTimeout(() => hideAdminSectionSkeleton(id), 450);
+            }
+        }
+
+        async function loadSupervisorAssignmentQueue() {
+            const queue = document.getElementById('supervisor-assignment-queue');
+            const status = document.getElementById('supervisor-assignment-status');
+            if (!queue || currentUserRole !== 'admin') return;
+            queue.innerHTML = `<div class="space-y-4">${skeletonBarList(3)}</div>`;
+            if (status) status.innerText = 'Loading unassigned submissions...';
+
+            try {
+                const [projectsRes, supervisorsRes] = await Promise.all([
+                    supabaseClient
+                        .from('projects')
+                        .select('id, title, status, created_at, department_id, institution_id, profiles!projects_student_id_fkey(full_name, matric), departments(name)')
+                        .is('supervisor_id', null)
+                        .in('status', ['submitted', 'supervisor_review'])
+                        .order('created_at', { ascending: false }),
+                    supabaseClient
+                        .from('profiles')
+                        .select('id, full_name, department, department_id, institution_id')
+                        .eq('role', 'teacher')
+                        .order('full_name', { ascending: true })
+                ]);
+                if (projectsRes.error) throw projectsRes.error;
+                if (supervisorsRes.error) throw supervisorsRes.error;
+
+                adminUnassignedProjects = projectsRes.data || [];
+                adminSupervisors = supervisorsRes.data || [];
+                if (!adminUnassignedProjects.length) {
+                    queue.innerHTML = '<div class="rounded-lg border border-emerald-100 bg-emerald-50 p-5 text-sm text-emerald-800"><i class="fas fa-check-circle mr-2"></i>All current submissions have a supervisor assignment.</div>';
+                    if (status) status.innerText = '';
+                    return;
+                }
+
+                queue.innerHTML = adminUnassignedProjects.map(project => {
+                    const departmentId = project.department_id || '';
+                    const departmentName = project.departments?.name || 'Unassigned department';
+                    const options = adminSupervisors
+                        .slice()
+                        .sort((left, right) => {
+                            const leftMatch = departmentId && left.department_id === departmentId ? 0 : 1;
+                            const rightMatch = departmentId && right.department_id === departmentId ? 0 : 1;
+                            return leftMatch - rightMatch || String(left.full_name || '').localeCompare(String(right.full_name || ''));
+                        })
+                        .map(supervisor => `<option value="${escapeHtml(supervisor.id)}">${escapeHtml(supervisor.full_name || 'Supervisor')} · ${escapeHtml(supervisor.department || 'General')}</option>`)
+                        .join('');
+                    return `
+                        <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 flex flex-col xl:flex-row xl:items-center gap-4 ui-rise">
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-primary truncate">${escapeHtml(project.title || 'Untitled project')}</p>
+                                <p class="text-xs text-slate-500 mt-1">${escapeHtml(project.profiles?.full_name || 'Student')} · ${escapeHtml(project.profiles?.matric || 'No matric')}</p>
+                                <p class="text-[11px] text-slate-400 mt-1">${escapeHtml(departmentName)} · ${formatDateTime(project.created_at)}</p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 xl:w-[460px]">
+                                <select id="assignment-supervisor-${escapeHtml(project.id)}" aria-label="Supervisor for ${escapeHtml(project.title || 'project')}" class="flex-1 p-3 glass-input rounded-lg text-sm">
+                                    <option value="">Select supervisor</option>${options}
+                                </select>
+                                <button onclick="assignSupervisorProject('${escapeHtml(project.id)}')" class="smart-action bg-primary text-white px-4 py-3 text-xs whitespace-nowrap"><i class="fas fa-user-check"></i>Assign</button>
+                            </div>
+                        </div>`;
+                }).join('');
+                if (status) status.innerText = `${adminUnassignedProjects.length} submission${adminUnassignedProjects.length === 1 ? '' : 's'} need${adminUnassignedProjects.length === 1 ? 's' : ''} assignment.`;
+            } catch (error) {
+                queue.innerHTML = '<div class="rounded-lg border border-red-100 bg-red-50 p-5 text-sm text-red-700">Could not load the assignment queue. Apply the SPMS core schema and confirm admin access.</div>';
+                if (status) status.innerText = error.message || 'Assignment queue unavailable.';
+            }
+        }
+
+        async function assignSupervisorProject(projectId) {
+            const select = document.getElementById(`assignment-supervisor-${projectId}`);
+            const supervisorId = select?.value;
+            const status = document.getElementById('supervisor-assignment-status');
+            if (!supervisorId) {
+                if (status) status.innerText = 'Select a supervisor before assigning the project.';
+                return;
+            }
+            if (status) status.innerText = 'Assigning supervisor...';
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('project-workflow', {
+                    body: { action: 'assign_supervisor', project_id: projectId, supervisor_id: supervisorId }
+                });
+                if (error || data?.error) throw new Error(data?.error || error.message);
+                if (status) status.innerText = 'Supervisor assigned. Review queue refreshed.';
+                await loadSupervisorAssignmentQueue();
+            } catch (error) {
+                if (status) status.innerText = 'Assignment failed: ' + error.message;
             }
         }
 
@@ -4123,7 +4242,13 @@
 
         function refreshStudentPaymentCta() {
             const btn = document.getElementById('pay-btn');
-            if (btn && !currentPayment) btn.innerText = `Pay ${formatNaira(getClearanceFeeKobo())} & Submit`;
+            if (!btn) return;
+            if (currentProject?.status === 'revision_requested' && currentPayment) {
+                btn.innerText = 'Upload Revision & Resubmit';
+                btn.disabled = false;
+            } else if (!currentPayment) {
+                btn.innerText = `Pay ${formatNaira(getClearanceFeeKobo())} & Submit`;
+            }
         }
 
         function generatePaymentReference() {
@@ -4134,10 +4259,17 @@
         function markPaymentSuccess(payment) {
             currentPayment = payment;
             const btn = document.getElementById('pay-btn');
-            btn.innerText = 'Submission Successful!';
-            btn.disabled = true;
-            btn.classList.remove('bg-accent', 'hover:bg-amber-400');
-            btn.classList.add('bg-emerald-600', 'text-white');
+            const isRevision = currentProject?.status === 'revision_requested';
+            btn.innerText = isRevision ? 'Upload Revision & Resubmit' : 'Submission Successful!';
+            btn.disabled = !isRevision;
+            btn.classList.toggle('bg-accent', isRevision);
+            btn.classList.toggle('hover:bg-amber-400', isRevision);
+            btn.classList.toggle('bg-emerald-600', !isRevision);
+            btn.classList.add('text-white');
+            const actionLabel = document.getElementById('payment-action-label');
+            const actionCopy = document.getElementById('payment-action-copy');
+            if (actionLabel) actionLabel.innerText = isRevision ? 'Revision Required' : '2. Digital Repository Fee';
+            if (actionCopy) actionCopy.innerText = isRevision ? 'Resubmit your revised PDF without paying the clearance fee again.' : 'Required for graduation clearance. Secured by Paystack.';
 
             document.getElementById('payment-status').classList.remove('hidden');
             document.getElementById('payment-ref').innerText = 'Reference: ' + payment.paystack_reference;
@@ -4167,6 +4299,12 @@
             document.getElementById('project-status-note').innerText = currentProject.revision_note || workflowMessage(status);
 
             receipt.classList.toggle('hidden', !['published', 'cleared'].includes(status));
+            document.getElementById('revision-resubmit-hint')?.classList.toggle('hidden', status !== 'revision_requested');
+            const btn = document.getElementById('pay-btn');
+            if (btn && status === 'revision_requested' && currentPayment) {
+                btn.disabled = false;
+                btn.innerText = 'Upload Revision & Resubmit';
+            }
         }
 
         async function loadStudentDashboard() {
@@ -4321,6 +4459,10 @@
                 pendingVerification = null;
                 hideVerificationRetry();
                 currentProject = data.project || currentProject;
+                selectedFile = null;
+                const fileInput = document.getElementById('thesis-pdf-input');
+                if (fileInput) fileInput.value = '';
+                document.getElementById('file-name').innerText = 'No file selected';
                 markPaymentSuccess(data.payment);
                 alert('Payment verified! Your thesis has been submitted to your supervisor.');
             } catch (err) {
@@ -4357,6 +4499,63 @@
             }
         }
 
+        async function resubmitProject() {
+            if (!currentProject || currentProject.status !== 'revision_requested') {
+                alert('This project is not waiting for a revision.');
+                return;
+            }
+            if (!selectedFile) {
+                alert('Choose the revised thesis PDF first.');
+                return;
+            }
+
+            const projectTitle = document.getElementById('project-title-input').value.trim();
+            const projectAbstract = document.getElementById('project-abstract-input').value.trim();
+            const projectDegree = document.getElementById('project-degree-input').value;
+            if (!projectTitle || projectAbstract.length < 50) {
+                alert('Update the title and provide a complete abstract before resubmission.');
+                return;
+            }
+
+            const btn = document.getElementById('pay-btn');
+            btn.disabled = true;
+            btn.innerText = 'Uploading revision...';
+            try {
+                const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                const filePath = currentUser.id + '/' + Date.now() + '-revision-' + safeName;
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                    .from('thesis-pdfs')
+                    .upload(filePath, selectedFile, { contentType: 'application/pdf', upsert: false });
+                if (uploadError) throw uploadError;
+
+                const { data, error } = await supabaseClient.functions.invoke('project-workflow', {
+                    body: {
+                        action: 'student_resubmit',
+                        project_id: currentProject.id,
+                        file_path: uploadData.path,
+                        file_name: selectedFile.name,
+                        file_size_bytes: selectedFile.size,
+                        title: projectTitle,
+                        abstract: projectAbstract,
+                        degree: projectDegree
+                    }
+                });
+                if (error || data?.error) throw new Error(data?.error || error.message);
+
+                currentProject = data.project || { ...currentProject, title: projectTitle, abstract: projectAbstract, degree: projectDegree, status: 'supervisor_review', revision_note: null };
+                selectedFile = null;
+                const fileInput = document.getElementById('thesis-pdf-input');
+                if (fileInput) fileInput.value = '';
+                document.getElementById('file-name').innerText = 'No file selected';
+                markPaymentSuccess(currentPayment);
+                alert('Revision resubmitted. Your supervisor has been notified and no second payment was taken.');
+            } catch (error) {
+                btn.disabled = false;
+                btn.innerText = 'Upload Revision & Resubmit';
+                alert('Revision resubmission failed: ' + error.message);
+            }
+        }
+
         async function processUpload() {
             const projectTitle = document.getElementById('project-title-input').value.trim();
             const projectAbstract = document.getElementById('project-abstract-input').value.trim();
@@ -4374,6 +4573,10 @@
             }
             if (!currentUser || currentUserRole !== 'student') {
                 alert('Please log in as a student to submit.');
+                return;
+            }
+            if (currentProject?.status === 'revision_requested' && currentPayment) {
+                await resubmitProject();
                 return;
             }
             if (typeof PaystackPop === 'undefined') {
@@ -4541,7 +4744,7 @@
             try {
                 const { data, error } = await supabaseClient
                     .from('projects')
-                    .select('id, title, abstract, degree, status, revision_note, created_at, profiles!projects_student_id_fkey(full_name, matric, avatar_url)')
+                    .select('id, title, abstract, degree, status, revision_note, file_path, created_at, profiles!projects_student_id_fkey(full_name, matric, avatar_url)')
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
@@ -4553,6 +4756,7 @@
                     degree: p.degree || 'Research',
                     topic: p.title,
                     abstract: p.abstract || '',
+                    filePath: p.file_path || '',
                     status: p.status,
                     isReal: true
                 }));
@@ -4582,7 +4786,7 @@
         }
 
         let currentModalStudentId = null;
-        function viewStudent(id) {
+        async function viewStudent(id) {
             const s = supervisorProjects.find(st => String(st.id) === String(id));
             if (s) {
                 currentModalStudentId = id;
@@ -4593,10 +4797,54 @@
                 document.getElementById('modal-topic').innerText = s.topic;
                 document.getElementById('modal-abstract').innerText = s.abstract || 'No abstract supplied.';
                 document.getElementById('modal-review-comment').value = '';
+                prepareSupervisorPdfPreview(s);
                 document.getElementById('student-modal').classList.add('active');
             }
         }
         function closeModal() { document.getElementById('student-modal').classList.remove('active'); }
+        async function prepareSupervisorPdfPreview(project) {
+            const frame = document.getElementById('modal-pdf-preview');
+            const loading = document.getElementById('modal-pdf-loading');
+            const status = document.getElementById('modal-pdf-status');
+            const openButton = document.getElementById('modal-pdf-open');
+            if (!frame || !loading || !status || !openButton) return;
+
+            frame.classList.add('hidden');
+            loading.classList.remove('hidden');
+            openButton.classList.add('hidden');
+            openButton.dataset.url = '';
+            frame.src = 'about:blank';
+            status.innerText = 'Preparing secure preview...';
+
+            if (!project.isReal || !project.filePath) {
+                loading.classList.add('hidden');
+                status.innerText = 'Preview unavailable in demo mode.';
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient.storage
+                    .from('thesis-pdfs')
+                    .createSignedUrl(project.filePath, 300);
+                if (error) throw error;
+                const signedUrl = data?.signedUrl || data?.signedURL || data?.signed_url;
+                if (!signedUrl) throw new Error('Secure preview link was not returned.');
+                openButton.dataset.url = signedUrl;
+                openButton.classList.remove('hidden');
+                frame.src = signedUrl;
+                frame.classList.remove('hidden');
+                loading.classList.add('hidden');
+                status.innerText = 'Private link expires in 5 minutes.';
+            } catch (error) {
+                loading.classList.add('hidden');
+                status.innerText = 'Preview unavailable. Check storage access or open the project later.';
+                console.warn('Could not create supervisor PDF preview:', error.message);
+            }
+        }
+        function openSupervisorPdfInNewTab() {
+            const url = document.getElementById('modal-pdf-open')?.dataset.url;
+            if (url) openSignedDownload(url);
+        }
         async function approveStudent(id) {
             if(id) currentModalStudentId = id;
             const student = supervisorProjects.find(s => String(s.id) === String(currentModalStudentId));
@@ -4659,13 +4907,16 @@
         }
 
         showPageSkeleton('landing', 'initial');
-        loadTenantContext().then(() => {
-            if (applyRolePreview()) return null;
-            return restoreSession();
-        }).finally(() => {
+        if (isRolePreviewAllowed()) {
+            // Local previews are deterministic and do not need a network-backed tenant lookup.
+            applyRolePreview();
             updateNav();
-            loadPublicProjects();
-        });
+        } else {
+            loadTenantContext().then(() => restoreSession()).finally(() => {
+                updateNav();
+                loadPublicProjects();
+            });
+        }
     </script>
 </body>
 </html>

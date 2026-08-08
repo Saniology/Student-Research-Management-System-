@@ -14,7 +14,7 @@ concurrency:
 jobs:
   lifecycle:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,6 +23,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -59,6 +65,9 @@ jobs:
 
       - name: Verify role interactions
         run: npm run verify:interactions
+
+      - name: Verify Playwright role workflows
+        run: npm run verify:playwright
 
       - name: Verify database schema
         run: npm run verify:db

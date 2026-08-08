@@ -97,7 +97,8 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 
 - Student dashboard now collects title, abstract, degree, and PDF.
 - Student dashboard shows workflow status and only reveals receipt after publication/clearance.
-- Supervisor dashboard can load real assigned `projects` and call approval/revision actions.
+- Students can replace a revision-requested PDF and resubmit through `project-workflow` without paying the clearance fee again.
+- Supervisor dashboard can load real assigned `projects`, securely preview private thesis PDFs with short-lived signed links, and call approval/revision actions.
 - Library dashboard can load approved projects and publish them to the public catalog.
 - Public repository can read anonymized `public_catalog` records, with demo fallback.
 - Public repository download buttons now route through Paystack and the `repository-access` function for paid unlocks.
@@ -106,6 +107,8 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Admin settings can load and save tenant branding, clearance fee, download fee, PDF limit, and currency through `institutions` and `system_configs`.
 - Admin settings can configure institution/provider revenue share percentages, Paystack split codes, and subaccount codes.
 - Clearance and repository payments are initialized server-side before the browser resumes Paystack checkout.
+- Successful clearance verification automatically assigns a project to the least-loaded supervisor in the student's department/institution; projects without an eligible supervisor remain `submitted` and notify admins for assignment.
+- Admins can resolve the no-match path from Supervisor Management by assigning an eligible teacher through the protected `assign_supervisor` workflow action.
 - Library publishing and clearance receipts now render QR codes tied to the verification endpoint.
 - QR codes prefer server-rendered SVG assets from `verification-lookup`, with browser rendering as fallback.
 - Public repository includes a receipt verification form.
@@ -131,6 +134,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - `npm run verify:render` captures Chrome/Chromium desktop and mobile screenshots from the local app and validates that rendered pages are non-trivial PNGs.
 - `npm run verify:roles` renders local-only student, supervisor, library, and admin preview surfaces in Chrome/Chromium and checks role-specific DOM content plus screenshots.
 - `npm run verify:interactions` opens local-only workflow states for student receipt, supervisor review, library cataloging, and admin reports to catch broken modal/section interactions.
+- `npm run verify:playwright` runs browser-level role workflow checks for student receipt, supervisor review, library cataloging, and admin reports; seeded Supabase account checks are available through local environment variables.
 - `npm run verify:security` checks secret hygiene, RLS coverage, private storage, Edge Function CORS/auth patterns, and payment safety.
 - `npm run verify:ui` checks role dashboard surfaces, inline actions, duplicate ids, and admin UI regression guards.
 - `npm run verify:workflow` checks frontend/Edge Function action contracts, verification types, workflow statuses, transaction types, report types, and role checklist coverage.
@@ -143,4 +147,4 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Real provider-side email domain authentication and deliverability monitoring with institution DNS access.
 - Provider-specific production DNS credentials and hosting target values for each institution.
 - Full frontend migration from one large `index.html` into a maintainable React/Next.js app.
-- Full Playwright role automation against seeded Supabase test data.
+- Full Playwright role automation against seeded Supabase test data; the deterministic preview suite is in place, while authenticated seeded runs still require a dedicated test project and credentials.

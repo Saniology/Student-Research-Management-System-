@@ -88,6 +88,9 @@ function checkRequiredFiles() {
     'index.html',
     'js/config.js',
     'package.json',
+    'package-lock.json',
+    'playwright.config.js',
+    'tests/e2e/role-flows.spec.js',
     'SECURITY.md',
     'supabase/schema.sql',
     'supabase/payments.sql',
@@ -158,6 +161,8 @@ function checkProductCapabilities() {
   assertContains('supabase/functions/repository-access/index.ts', /initialize_download/, 'repository payments initialize server-side');
   assertContains('supabase/functions/repository-access/index.ts', /watermarkPdf/, 'repository downloads are watermarked');
   assertContains('supabase/functions/project-workflow/index.ts', /notifyUsers/, 'workflow notifications are emitted');
+  assertContains('supabase/functions/project-workflow/index.ts', /assign_supervisor/, 'admin supervisor assignment workflow exists');
+  assertContains('supabase/functions/project-workflow/index.ts', /student_resubmit/, 'student revision resubmission workflow exists');
   assertContains('supabase/functions/verification-lookup/index.ts', /clearance_receipts/, 'public receipt verification exists');
   assertContains('supabase/functions/verification-lookup/index.ts', /public_catalog/, 'public project verification exists');
   assertContains('supabase/functions/verification-lookup/index.ts', /qr_svg/, 'server-rendered QR SVG endpoint exists');
@@ -184,6 +189,11 @@ function checkProductCapabilities() {
   assertContains('index.html', /loadAdminAnalytics/, 'admin analytics charts load live data');
   assertContains('index.html', /analytics-workflow-chart/, 'admin workflow funnel chart exists');
   assertContains('index.html', /analytics-monthly-chart/, 'admin monthly revenue chart exists');
+  assertContains('index.html', /supervisor-assignment-queue/, 'admin unassigned supervisor queue exists');
+  assertContains('index.html', /assignSupervisorProject/, 'admin supervisor assignment control exists');
+  assertContains('index.html', /resubmitProject/, 'student revision resubmission control exists');
+  assertContains('index.html', /modal-pdf-preview/, 'supervisor PDF preview surface exists');
+  assertContains('index.html', /createSignedUrl\(project\.filePath/, 'supervisor PDF previews use signed storage links');
   assertContains('index.html', /loadTenantContext/, 'frontend resolves tenant context');
   assertContains('index.html', /allowed_domains/, 'frontend manages tenant domains');
   assertContains('index.html', /validateAppConfig/, 'frontend validates browser configuration');
@@ -223,6 +233,8 @@ function checkProductCapabilities() {
   assertContains('package.json', /"verify:render"/, 'rendered UI verification command exists');
   assertContains('package.json', /"verify:roles"/, 'role rendering verification command exists');
   assertContains('package.json', /"verify:interactions"/, 'role interaction verification command exists');
+  assertContains('package.json', /"verify:playwright"/, 'Playwright role verification command exists');
+  assertContains('package.json', /"@playwright\/test"/, 'Playwright test dependency exists');
   assertContains('package.json', /"verify:monitor"/, 'monitoring verification command exists');
   assertContains('package.json', /"verify:security"/, 'security verification command exists');
   assertContains('package.json', /"verify:ui"/, 'UI smoke verification command exists');
@@ -246,6 +258,7 @@ function checkProductCapabilities() {
   assertContains('.github/workflows/verify.yml', /npm run verify:render/, 'GitHub Actions runs rendered UI verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:roles/, 'GitHub Actions runs role rendering verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:interactions/, 'GitHub Actions runs role interaction verification');
+  assertContains('.github/workflows/verify.yml', /npm run verify:playwright/, 'GitHub Actions runs Playwright role verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:db/, 'GitHub Actions runs database schema verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:dr/, 'GitHub Actions runs disaster recovery verification');
   assertContains('.github/workflows/verify.yml', /npm run verify:governance/, 'GitHub Actions runs data governance verification');
@@ -472,7 +485,7 @@ function checkLocalServer() {
 function finish() {
   console.log('');
   console.log(`Verification complete: ${failures.length} failure(s), ${warnings.length} warning(s).`);
-  if (failures.length) process.exit(1);
+  process.exit(failures.length ? 1 : 0);
 }
 
 checkRequiredFiles();
