@@ -176,7 +176,8 @@ ALTER TABLE students_registry
   ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS supervisor_email TEXT,
   ADD COLUMN IF NOT EXISTS degree TEXT,
-  ADD COLUMN IF NOT EXISTS project_topic TEXT;
+  ADD COLUMN IF NOT EXISTS project_topic TEXT,
+  ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
 -- ---------------------------------------------------------------------------
 -- Project lifecycle
@@ -375,11 +376,11 @@ CREATE INDEX IF NOT EXISTS idx_payments_type ON payments(transaction_type);
 -- ---------------------------------------------------------------------------
 
 INSERT INTO institutions (slug, name, short_name, allowed_domains, primary_color, accent_color)
-VALUES ('kasu', 'Kaduna State University', 'KASU', ARRAY['kasu-spms.local'], '#065F46', '#F59E0B')
+VALUES ('kasu', 'Kaduna State University', 'KASU', ARRAY['kasu.edu.ng', 'kasu-spms.local'], '#065F46', '#F59E0B')
 ON CONFLICT (slug) DO UPDATE SET
   name = EXCLUDED.name,
   short_name = EXCLUDED.short_name,
-  allowed_domains = COALESCE(NULLIF(institutions.allowed_domains, '{}'), EXCLUDED.allowed_domains),
+  allowed_domains = ARRAY(SELECT DISTINCT domain FROM unnest(COALESCE(institutions.allowed_domains, '{}') || EXCLUDED.allowed_domains) AS domain),
   primary_color = EXCLUDED.primary_color,
   accent_color = EXCLUDED.accent_color,
   updated_at = NOW();
@@ -507,7 +508,7 @@ BEGIN
   WHERE slug = COALESCE(NEW.raw_user_meta_data->>'tenant_slug', 'kasu')
   LIMIT 1;
 
-  INSERT INTO public.profiles (id, email, role, full_name, matric, department, institution_id)
+  INSERT INTO public.profiles (id, email, role, full_name, matric, department, department_id, avatar_url, institution_id)
   VALUES (
     NEW.id,
     NEW.email,
@@ -515,6 +516,8 @@ BEGIN
     NEW.raw_user_meta_data->>'full_name',
     NEW.raw_user_meta_data->>'matric',
     NEW.raw_user_meta_data->>'department',
+    NULLIF(NEW.raw_user_meta_data->>'department_id', '')::UUID,
+    NEW.raw_user_meta_data->>'avatar_url',
     tenant_id
   )
   ON CONFLICT (id) DO UPDATE SET
@@ -523,6 +526,8 @@ BEGIN
     full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
     matric = COALESCE(EXCLUDED.matric, profiles.matric),
     department = COALESCE(EXCLUDED.department, profiles.department),
+    department_id = COALESCE(EXCLUDED.department_id, profiles.department_id),
+    avatar_url = COALESCE(EXCLUDED.avatar_url, profiles.avatar_url),
     institution_id = COALESCE(profiles.institution_id, EXCLUDED.institution_id),
     updated_at = NOW();
   RETURN NEW;
@@ -557,6 +562,7 @@ WHERE sr.matric = b.matric;
 -- ---------------------------------------------------------------------------
 
 ALTER TABLE institutions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE students_registry ENABLE ROW LEVEL SECURITY;
 ALTER TABLE system_configs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE colleges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faculties ENABLE ROW LEVEL SECURITY;
@@ -571,6 +577,11 @@ ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE report_schedules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE generated_reports ENABLE ROW LEVEL SECURITY;
+
+-- Student identity is resolved through the server-side SIS adapter. Do not
+-- expose the registry rows to anonymous or ordinary browser queries.
+DROP POLICY IF EXISTS "Anyone can lookup matric" ON students_registry;
+DROP POLICY IF EXISTS "Students read own registry record" ON students_registry;
 
 DROP POLICY IF EXISTS "Public read institutions" ON institutions;
 CREATE POLICY "Public read institutions"

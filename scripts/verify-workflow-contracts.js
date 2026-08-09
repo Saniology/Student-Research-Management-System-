@@ -16,6 +16,7 @@ const files = {
   verifyPaystack: 'supabase/functions/verify-paystack/index.ts',
   projectWorkflow: 'supabase/functions/project-workflow/index.ts',
   repositoryAccess: 'supabase/functions/repository-access/index.ts',
+  studentIdentity: 'supabase/functions/student-identity/index.ts',
   verificationLookup: 'supabase/functions/verification-lookup/index.ts',
   scheduledReports: 'supabase/functions/scheduled-reports/index.ts',
 };
@@ -41,6 +42,13 @@ const edgeContracts = [
     frontendActions: ['get_download_url', 'initialize_download', 'verify_download', 'initialize_guest_download', 'verify_guest_download'],
     handlerActions: ['get_download_url', 'initialize_download', 'verify_download', 'initialize_guest_download', 'verify_guest_download'],
     requiredFields: ['project_id', 'reference', 'signed_url', 'watermark_identity', 'email'],
+  },
+  {
+    functionName: 'student-identity',
+    file: files.studentIdentity,
+    frontendActions: [],
+    handlerActions: [],
+    requiredFields: ['matric', 'email', 'tenant_slug', 'full_name', 'department'],
   },
   {
     functionName: 'scheduled-reports',
@@ -185,6 +193,7 @@ function checkSqlEnumsAndStatusFlow() {
 
   [
     ['student submission assigns a supervisor when available', verifyPaystack, /resolveSupervisor\(/],
+    ['student submission prefers the official registry supervisor mapping', verifyPaystack, /supervisor_email[\s\S]+assignedEmail[\s\S]+role=eq\.teacher/],
     ['student submission routes assigned projects to supervisor_review', verifyPaystack, /workflowStatus\s*=\s*supervisorId\s*\?\s*"supervisor_review"\s*:\s*"submitted"/],
     ['unassigned submissions remain visible for admin assignment', verifyPaystack, /Supervisor assignment required/],
     ['supervisor approval moves to supervisor_approved', projectWorkflow, /toStatus\s*=\s*"supervisor_approved"/],

@@ -105,6 +105,7 @@ function checkRequiredFiles() {
     'supabase/functions/verify-paystack/index.ts',
     'supabase/functions/project-workflow/index.ts',
     'supabase/functions/repository-access/index.ts',
+    'supabase/functions/student-identity/index.ts',
     'supabase/functions/verification-lookup/index.ts',
     'supabase/functions/scheduled-reports/index.ts',
     'supabase/functions/health-check/index.ts',
@@ -335,6 +336,7 @@ function checkDeployConfig() {
     'verification-lookup',
     'scheduled-reports',
     'health-check',
+    'student-identity',
   ];
 
   const deployScript = read('supabase/deploy-verify-paystack.sh');

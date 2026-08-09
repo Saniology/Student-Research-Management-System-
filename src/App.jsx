@@ -5,7 +5,7 @@ import { Modal } from './components/Modal';
 import { PageSkeleton } from './components/Skeleton';
 import { StatusChip } from './components/StatusChip';
 import { config, fallbackTenant, invoke, loadProfile, loadSystemConfig, loadTenant, signedPdfUrl, supabase } from './lib/supabase';
-import { fetchQrSvg, issueReceipt, lookupVerification, retryPaymentVerification, runDueReports, runScheduledReport, workflowActions } from './lib/contracts';
+import { fetchQrSvg, issueReceipt, lookupVerification, retryPaymentVerification, runDueReports, runScheduledReport } from './lib/contracts';
 import { demoProjects, demoReviewProjects, demoStats } from './data/demo';
 import './styles.css';
 
@@ -17,6 +17,13 @@ const previewAction = previewParams.get('preview_action') || '';
 
 function formatNaira(kobo = 0) { return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(kobo) / 100); }
 function displayDate(value) { return value ? new Date(value).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+const DEFAULT_MAX_PDF_BYTES = 100 * 1024 * 1024;
+function validateThesisFile(file, maxBytes = DEFAULT_MAX_PDF_BYTES) {
+  if (!file) return 'Choose the thesis PDF before continuing.';
+  if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) return 'Only PDF files are accepted.';
+  if (file.size > maxBytes) return `The PDF must be smaller than ${Math.round(maxBytes / (1024 * 1024))} MB.`;
+  return '';
+}
 
 export default function App() {
   const [tenant, setTenant] = useState(fallbackTenant);
@@ -26,7 +33,7 @@ export default function App() {
   const [booting, setBooting] = useState(true);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
-  const [guestDownloadProject, setGuestDownloadProject] = useState(null);
+  const [pendingDownloadProject, setPendingDownloadProject] = useState(null);
   const [toast, setToast] = useState('');
   const [notifications, setNotifications] = useState([]);
 
@@ -75,8 +82,8 @@ export default function App() {
   const openLogin = () => { setAuthMode('login'); setAuthOpen(true); };
   const logout = async () => { if (supabase) await supabase.auth.signOut(); setSession(null); setProfile(null); setView('landing'); notify('You have been signed out.'); };
   const enterWorkspace = nextRole => { setView(nextRole); setAuthOpen(false); };
-  const handleDownload = async project => {
-    if (!session) { setGuestDownloadProject(project); return; }
+  const continueRepositoryDownload = useCallback(async project => {
+    if (!session) return;
     if (previewRole || project?.id?.startsWith('demo-')) { notify('Preview download is protected by the repository payment gate.'); return; }
     try {
       const access = await invoke('repository-access', { action: 'get_download_url', project_id: project.id });
@@ -85,7 +92,23 @@ export default function App() {
       if (!window.PaystackPop) throw new Error('Paystack failed to load. Refresh and try again.');
       window.PaystackPop.resumeTransaction(payment.access_code, { onSuccess: async response => { const reference = response?.reference || response?.trxref || payment.reference; const result = await invoke('repository-access', { action: 'verify_download', project_id: project.id, reference }); if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener'); notify('Watermarked download unlocked for five minutes.'); }, onCancel: () => notify('Download payment was cancelled.'), onError: error => notify(error?.message || 'Paystack could not open.') });
     } catch (error) { notify(error.message); }
+  }, [notify, session]);
+  const handleDownload = project => {
+    if (!session) {
+      setPendingDownloadProject(project);
+      setAuthMode('signup');
+      setAuthOpen(true);
+      notify('Create an account with your matric number and school email to download this thesis.');
+      return;
+    }
+    continueRepositoryDownload(project);
   };
+  useEffect(() => {
+    if (!session || !profile || !pendingDownloadProject || previewRole) return;
+    const project = pendingDownloadProject;
+    setPendingDownloadProject(null);
+    continueRepositoryDownload(project);
+  }, [continueRepositoryDownload, pendingDownloadProject, profile, session]);
 
   if (booting) return <><AppShell tenant={tenant} onHome={goHome} onLogin={openLogin}><PageSkeleton role="landing" /></AppShell></>;
   return <AppShell tenant={tenant} role={role} onHome={goHome} onLogin={openLogin} onLogout={logout} notificationCount={notifications.length} onNotifications={() => notify(notifications.length ? `${notifications.length} unread notification${notifications.length === 1 ? '' : 's'}.` : 'You are all caught up.') }>
@@ -95,7 +118,6 @@ export default function App() {
     {view === 'library' && <LibraryWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'admin' && <AdminWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     <AuthModal tenant={tenant} open={authOpen} mode={authMode} onClose={() => setAuthOpen(false)} onModeChange={setAuthMode} onSuccess={(nextSession, nextProfile) => { setSession(nextSession); setProfile(nextProfile); enterWorkspace(nextProfile.role); }} onToast={notify} />
-    <GuestDownloadModal project={guestDownloadProject} onClose={() => setGuestDownloadProject(null)} onToast={notify} />
     {toast && <div className="toast" role="status">{toast}</div>}
   </AppShell>;
 }
@@ -159,7 +181,7 @@ function OperationsBoard() { return <div className="operations-board"><div class
 function ProjectCard({ project, onAbstract, onDownload }) { return <article className="project-card"><div className="project-meta"><span className="tag">{project.degree || 'Research'}</span><span>{project.dept || 'Institution'}</span></div><h3>{project.title}</h3><p>{project.abstract}</p><div className="card-actions"><button className="button button-ghost button-small" onClick={onAbstract}>View abstract</button><button className="button button-primary button-small" onClick={() => onDownload(project)}><Download size={14} />Download</button></div></article>; }
 
 function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToast }) {
-  const [form, setForm] = useState({ email: '', password: '', full_name: '', matric: '', department: '' });
+  const [form, setForm] = useState({ email: '', password: '', matric: '' });
   const [busy, setBusy] = useState(false);
   const submit = async event => {
     event.preventDefault();
@@ -167,7 +189,15 @@ function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToa
     setBusy(true);
     try {
       if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.full_name, matric: form.matric, department: form.department, role: 'student', tenant_slug: tenant?.slug || 'kasu' } } });
+        const email = form.email.trim().toLowerCase();
+        const matric = form.matric.trim().toUpperCase();
+        const domain = email.split('@')[1] || '';
+        const allowedDomains = Array.isArray(tenant?.allowed_domains) ? tenant.allowed_domains : [];
+        const schoolDomains = allowedDomains.filter(item => item && !item.includes('.local'));
+        if (schoolDomains.length && !schoolDomains.some(item => domain === item.toLowerCase())) throw new Error(`Use your school email (${schoolDomains.join(' or ')}).`);
+        const identity = await invoke('student-identity', { matric, email, tenant_slug: tenant?.slug || 'kasu' });
+        const registry = identity.student;
+        const { data, error } = await supabase.auth.signUp({ email, password: form.password, options: { data: { full_name: registry.full_name, matric: registry.matric, department: registry.department, department_id: registry.department_id, supervisor_email: registry.supervisor_email, degree: registry.degree, avatar_url: registry.avatar_url, role: 'student', tenant_slug: tenant?.slug || 'kasu' } } });
         if (error) throw error;
         if (!data.session) { onToast('Account created. Check your email to confirm access.'); onClose(); return; }
         onSuccess(data.session, await loadProfile(data.user.id));
@@ -182,46 +212,13 @@ function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToa
   return <Modal open={open} onClose={onClose} eyebrow="Secure access" title={isLogin ? 'Login to Portal' : 'Create Account'} variant="auth">
     <form className="auth-form" onSubmit={submit}>
       <p className="auth-description">{isLogin ? 'Use your institutional account to continue to your role-based research workspace.' : 'Enter your details to verify enrollment, then create your secure student account.'}</p>
-      {!isLogin && <>
-        <div className="field"><label htmlFor="auth-name">Full name</label><input id="auth-name" required value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} placeholder="Your full name" /></div>
-        <div className="field"><label htmlFor="auth-matric">Matric number</label><input id="auth-matric" required value={form.matric} onChange={e => setForm({ ...form, matric: e.target.value })} placeholder="KASU/SCI/20/123" /></div>
-        <div className="field"><label htmlFor="auth-dept">Department</label><input id="auth-dept" required value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} placeholder="Your department" /></div>
-      </>}
+      {!isLogin && <div className="field"><label htmlFor="auth-matric">Matric number</label><input id="auth-matric" required value={form.matric} onChange={e => setForm({ ...form, matric: e.target.value })} placeholder="KASU/SCI/20/123" /></div>}
       <div className="field"><label htmlFor="auth-email">Email address</label><input id="auth-email" type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="student@kasu.edu.ng" /></div>
       <div className="field"><label htmlFor="auth-password">Password</label><input id="auth-password" type="password" minLength="8" required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={isLogin ? 'Enter your password' : 'Minimum 8 characters'} /></div>
       <button className="button button-primary auth-submit" disabled={busy}><ArrowRight size={16} />{busy ? 'Working...' : isLogin ? 'Sign In' : 'Create Account'}</button>
     </form>
     <div className="auth-switch">{isLogin ? 'New to the portal?' : 'Already registered?'} <button type="button" onClick={() => onModeChange(isLogin ? 'signup' : 'login')}>{isLogin ? 'Create an account' : 'Sign in'}</button></div>
   </Modal>;
-}
-
-function GuestDownloadModal({ project, onClose, onToast }) {
-  const [email, setEmail] = useState('');
-  const [busy, setBusy] = useState(false);
-  const submit = async event => {
-    event.preventDefault();
-    if (!project) return;
-    setBusy(true);
-    try {
-      const init = await invoke('repository-access', { action: workflowActions.repositoryGuestInitialize, project_id: project.id, email });
-      if (!window.PaystackPop) throw new Error('Paystack failed to load. Refresh and try again.');
-      window.PaystackPop.resumeTransaction(init.access_code, {
-        onSuccess: async response => {
-          try {
-            const reference = response?.reference || response?.trxref || init.reference;
-            const result = await invoke('repository-access', { action: workflowActions.repositoryGuestVerify, project_id: project.id, reference, email });
-            if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener');
-            onToast('Watermarked download unlocked for five minutes.');
-            onClose();
-          } catch (error) { onToast(error.message); }
-          finally { setBusy(false); }
-        },
-        onCancel: () => { setBusy(false); onToast('Download payment was cancelled.'); },
-        onError: error => { setBusy(false); onToast(error?.message || 'Paystack could not open.'); },
-      });
-    } catch (error) { setBusy(false); onToast(error.message); }
-  };
-  return <Modal open={Boolean(project)} onClose={onClose} eyebrow="Public repository" title="Download full thesis" variant="auth"><form className="auth-form" onSubmit={submit}><p className="auth-description">Enter your email to receive a private, watermarked copy of <strong>{project?.title}</strong> after payment.</p><div className="field"><label htmlFor="guest-download-email">Email address</label><input id="guest-download-email" type="email" required value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" /></div><button className="button button-primary auth-submit" disabled={busy}><Download size={16} />{busy ? 'Opening checkout...' : 'Pay & download'}</button></form></Modal>;
 }
 
 function Workspace({ role, title, subtitle, children, sidebar = [] }) { return <div className="workspace-shell"><aside className="sidebar"><div className="sidebar-head"><span className="sidebar-mark"><ShieldCheck size={18} /></span><div><strong>{role === 'teacher' ? 'Supervisor' : role[0].toUpperCase() + role.slice(1)} panel</strong><small>Operations center</small></div></div><nav className="sidebar-nav">{sidebar.map(([Icon,label,active,onClick]) => <button className={active ? 'active' : ''} key={label} onClick={onClick}><Icon size={16} />{label}</button>)}</nav></aside><section className="workspace-main blueprint"><div className="workspace-head"><div><p className="eyebrow">{role === 'teacher' ? 'Review workspace' : 'Operations workspace'}</p><h1>{title}</h1><p>{subtitle}</p></div></div>{children}</section></div>; }
@@ -237,19 +234,21 @@ function StudentWorkspace({ profile, session, preview, onToast }) {
   const [receipt, setReceipt] = useState(null);
   const [receiptQrUrl, setReceiptQrUrl] = useState('');
   const [clearanceFee, setClearanceFee] = useState(200000);
+  const [maxPdfBytes, setMaxPdfBytes] = useState(DEFAULT_MAX_PDF_BYTES);
   useEffect(() => {
     if (preview || !session || !supabase) return undefined;
     Promise.all([
       supabase.from('projects').select('*').eq('student_id', session.user.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
       supabase.from('payments').select('*').eq('student_id', session.user.id).eq('status', 'success').order('created_at', { ascending: false }).limit(1).maybeSingle(),
       loadSystemConfig(profile?.institution_id),
-    ]).then(([projectResult, paymentResult, configResult]) => { setProject(projectResult.data || null); setPayment(paymentResult.data || null); setClearanceFee(configResult?.clearance_fee_kobo || 200000); if (projectResult.data) setForm({ title: projectResult.data.title || '', degree: projectResult.data.degree || 'BSc', abstract: projectResult.data.abstract || '' }); }).catch(error => onToast(error.message || 'Student workspace could not be loaded.')).finally(() => setLoading(false));
+    ]).then(([projectResult, paymentResult, configResult]) => { setProject(projectResult.data || null); setPayment(paymentResult.data || null); setClearanceFee(configResult?.clearance_fee_kobo || 200000); setMaxPdfBytes(Number(configResult?.max_pdf_size_bytes) || DEFAULT_MAX_PDF_BYTES); if (projectResult.data) setForm({ title: projectResult.data.title || '', degree: projectResult.data.degree || 'BSc', abstract: projectResult.data.abstract || '' }); }).catch(error => onToast(error.message || 'Student workspace could not be loaded.')).finally(() => setLoading(false));
     return undefined;
   }, [onToast, preview, session, profile]);
   useEffect(() => { let active = true; let objectUrl = ''; if (!receipt?.qr_payload) { setReceiptQrUrl(''); return undefined; } fetchQrSvg(receipt.qr_payload).then(url => { objectUrl = url; if (active) setReceiptQrUrl(url); }).catch(() => { if (active) setReceiptQrUrl(''); }); return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); }; }, [receipt?.qr_payload]);
   const submit = async event => {
     event.preventDefault();
-    if (!file) { onToast('Choose the thesis PDF before continuing.'); return; }
+    const fileError = validateThesisFile(file, maxPdfBytes);
+    if (fileError) { onToast(fileError); return; }
     if (form.abstract.trim().length < 50) { onToast('Provide an abstract of at least 50 characters.'); return; }
     if (!session || preview) { onToast('Preview mode shows the complete workflow without creating a transaction.'); return; }
     try {
@@ -257,12 +256,12 @@ function StudentWorkspace({ profile, session, preview, onToast }) {
         const path = `${session.user.id}/${Date.now()}-revision-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
         const upload = await supabase.storage.from('thesis-pdfs').upload(path, file, { contentType: 'application/pdf', upsert: false });
         if (upload.error) throw upload.error;
-        const data = await invoke('project-workflow', { action: 'student_resubmit', project_id: project.id, file_path: upload.data.path, file_name: file.name, file_size_bytes: file.size, title: form.title, abstract: form.abstract, degree: form.degree });
+        const data = await invoke('project-workflow', { action: 'student_resubmit', project_id: project.id, file_path: upload.data.path, file_name: file.name, file_size_bytes: file.size, mime_type: file.type || 'application/pdf', title: form.title, abstract: form.abstract, degree: form.degree });
         setProject(data.project); setFile(null); onToast('Revision resubmitted. No second payment was taken.'); return;
       }
       const init = await invoke('verify-paystack', { action: 'initialize_clearance' });
       if (!window.PaystackPop) throw new Error('Paystack failed to load. Refresh and try again.');
-      window.PaystackPop.resumeTransaction(init.access_code, { onSuccess: async response => { const reference = response?.reference || response?.trxref || init.reference; const path = `${session.user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`; const upload = await supabase.storage.from('thesis-pdfs').upload(path, file, { contentType: 'application/pdf', upsert: false }); if (upload.error) throw upload.error; const data = await retryPaymentVerification(reference, { file_name: file.name, file_path: upload.data.path, title: form.title, abstract: form.abstract, degree: form.degree, file_size_bytes: file.size }); setPayment(data.payment); setProject(data.project); setFile(null); onToast('Payment verified and thesis submitted for review.'); }, onCancel: () => onToast('Payment was cancelled.'), onError: error => onToast(error?.message || 'Paystack could not open.') });
+      window.PaystackPop.resumeTransaction(init.access_code, { onSuccess: async response => { const reference = response?.reference || response?.trxref || init.reference; const path = `${session.user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`; const upload = await supabase.storage.from('thesis-pdfs').upload(path, file, { contentType: 'application/pdf', upsert: false }); if (upload.error) throw upload.error; const data = await retryPaymentVerification(reference, { file_name: file.name, file_path: upload.data.path, title: form.title, abstract: form.abstract, degree: form.degree, file_size_bytes: file.size, mime_type: file.type || 'application/pdf' }); setPayment(data.payment); setProject(data.project); setFile(null); onToast('Payment verified and thesis submitted for review.'); }, onCancel: () => onToast('Payment was cancelled.'), onError: error => onToast(error?.message || 'Paystack could not open.') });
     } catch (error) { onToast(error.message); }
   };
   const generateReceipt = async () => {
@@ -272,7 +271,7 @@ function StudentWorkspace({ profile, session, preview, onToast }) {
     catch (error) { onToast(error.message); }
   };
   if (loading) return <PageSkeleton role="student" />;
-  return <Workspace role="student" title="Your clearance workspace" subtitle="Submit once, follow every review stage, and keep your official receipt close." sidebar={[[GraduationCap,'My workspace',true],[FileText,'Submission'],[CircleDollarSign,'Payments'],[ShieldCheck,'Receipt']]}><MetricCards items={[["Workflow status", project ? project.status.replaceAll('_',' ') : 'Not started', FileCheck2],["Clearance fee", formatNaira(clearanceFee), CircleDollarSign],["Submission", project ? 'Received' : 'Awaiting upload', FileText],["Receipt", project?.status === 'cleared' ? 'Ready' : 'After clearance', Archive]]} /><div className="workspace-grid"><section className="surface span-two"><div className="surface-head"><div><h2>Submission details</h2><p>Capture the metadata your supervisor and library will verify.</p></div>{project && <StatusChip status={project.status} />}</div>{project?.status === 'revision_requested' && <div className="revision-banner"><strong>Revision Required</strong><span>Upload the corrected PDF and resubmit without paying the clearance fee again.</span></div>}<form className="form-grid" onSubmit={submit}><div className="field full"><label htmlFor="project-title-input">Project title</label><input id="project-title-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div><div className="field"><label htmlFor="project-degree-input">Degree</label><select id="project-degree-input" value={form.degree} onChange={e => setForm({ ...form, degree: e.target.value })}><option>BSc</option><option>PGD</option><option>MSc</option><option>PhD</option></select></div><div className="field"><label htmlFor="thesis-pdf-input">Thesis PDF</label><input id="thesis-pdf-input" type="file" accept="application/pdf,.pdf" onChange={e => setFile(e.target.files?.[0] || null)} /></div><div className="field full"><label htmlFor="project-abstract-input">Abstract</label><textarea id="project-abstract-input" value={form.abstract} onChange={e => setForm({ ...form, abstract: e.target.value })} /><span className="helper">Minimum 50 characters. This abstract becomes part of the public catalog after library approval.</span></div><div className="modal-actions field full"><button className="button button-primary" id="pay-btn" disabled={Boolean(project && ['published','cleared'].includes(project.status))}>{project?.status === 'revision_requested' && payment ? <><RefreshCw size={15} />Upload Revision &amp; Resubmit</> : payment ? <><Check size={15} />Submission successful</> : <><CircleDollarSign size={15} />Pay &amp; submit thesis</>}</button></div></form></section><section className="surface"><div className="surface-head"><div><h2>Current status</h2><p>Live workflow checkpoints.</p></div><LockKeyhole size={17} color="#065f46" /></div>{project ? <div className="status-panel"><h3>{project.title}</h3><StatusChip status={project.status} /><div className="progress-track"><div className="progress-fill" style={{ width: `${['submitted','supervisor_review','revision_requested'].includes(project.status) ? 34 : project.status === 'supervisor_approved' ? 62 : project.status === 'library_review' ? 80 : 100}%` }} /></div>{project.revision_note && <p className="helper"><strong>Supervisor note:</strong> {project.revision_note}</p>}</div> : <EmptyState icon={FileText} title="No submission yet" copy="Complete the form to start your clearance journey." />}</section><section className="surface"><div className="surface-head"><div><h2>Payment evidence</h2><p>Every successful payment is tied to your account.</p></div><CircleDollarSign size={17} color="#065f46" /></div>{payment ? <div className="receipt" id="receipt-section"><h3>{previewAction === 'show_receipt' || project?.status === 'cleared' ? 'Digital Clearance Receipt' : 'Payment captured'}</h3><dl><dt>Reference</dt><dd>{payment.paystack_reference}</dd><dt>Amount</dt><dd>{formatNaira(payment.amount)}</dd><dt>Date</dt><dd>{displayDate(payment.paid_at)}</dd></dl>{receiptQrUrl && <div className="qr-preview"><img src={receiptQrUrl} alt="Clearance receipt verification QR code" /><span className="helper">Scan to verify this clearance receipt.</span></div>}{(previewAction === 'show_receipt' || project?.status === 'cleared') && <button className="button button-primary" style={{ marginTop: '1rem' }} onClick={generateReceipt}>{receipt ? 'Receipt issued' : 'Issue digital receipt'}</button>}</div> : <EmptyState icon={CircleDollarSign} title="No payment yet" copy="The fee is initialized securely on the server when you submit." />}</section></div></Workspace>;
+  return <Workspace role="student" title="Your clearance workspace" subtitle="Submit once, follow every review stage, and keep your official receipt close." sidebar={[[GraduationCap,'My workspace',true],[FileText,'Submission'],[CircleDollarSign,'Payments'],[ShieldCheck,'Receipt']]}><MetricCards items={[["Workflow status", project ? project.status.replaceAll('_',' ') : 'Not started', FileCheck2],["Clearance fee", formatNaira(clearanceFee), CircleDollarSign],["Submission", project ? 'Received' : 'Awaiting upload', FileText],["Receipt", project?.status === 'cleared' ? 'Ready' : 'After clearance', Archive]]} /><div className="workspace-grid"><section className="surface span-two"><div className="surface-head"><div><h2>Submission details</h2><p>Capture the metadata your supervisor and library will verify.</p></div>{project && <StatusChip status={project.status} />}</div>{project?.status === 'revision_requested' && <div className="revision-banner"><strong>Revision Required</strong><span>Upload the corrected PDF and resubmit without paying the clearance fee again.</span></div>}<form className="form-grid" onSubmit={submit}><div className="field full"><label htmlFor="project-title-input">Project title</label><input id="project-title-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div><div className="field"><label htmlFor="project-degree-input">Degree</label><select id="project-degree-input" value={form.degree} onChange={e => setForm({ ...form, degree: e.target.value })}><option>BSc</option><option>PGD</option><option>MSc</option><option>PhD</option></select></div><div className="field"><label htmlFor="thesis-pdf-input">Thesis PDF</label><input id="thesis-pdf-input" type="file" accept="application/pdf,.pdf" onChange={e => { const selected = e.target.files?.[0] || null; setFile(selected); const error = validateThesisFile(selected, maxPdfBytes); if (error) onToast(error); }} /><span className="helper">PDF only. Maximum {Math.round(maxPdfBytes / (1024 * 1024))} MB.</span></div><div className="field full"><label htmlFor="project-abstract-input">Abstract</label><textarea id="project-abstract-input" value={form.abstract} onChange={e => setForm({ ...form, abstract: e.target.value })} /><span className="helper">Minimum 50 characters. This abstract becomes part of the public catalog after library approval.</span></div><div className="modal-actions field full"><button className="button button-primary" id="pay-btn" disabled={Boolean(project && ['published','cleared'].includes(project.status))}>{project?.status === 'revision_requested' && payment ? <><RefreshCw size={15} />Upload Revision &amp; Resubmit</> : payment ? <><Check size={15} />Submission successful</> : <><CircleDollarSign size={15} />Pay &amp; submit thesis</>}</button></div></form></section><section className="surface"><div className="surface-head"><div><h2>Current status</h2><p>Live workflow checkpoints.</p></div><LockKeyhole size={17} color="#065f46" /></div>{project ? <div className="status-panel"><h3>{project.title}</h3><StatusChip status={project.status} /><div className="progress-track"><div className="progress-fill" style={{ width: `${['submitted','supervisor_review','revision_requested'].includes(project.status) ? 34 : project.status === 'supervisor_approved' ? 62 : project.status === 'library_review' ? 80 : 100}%` }} /></div>{project.revision_note && <p className="helper"><strong>Supervisor note:</strong> {project.revision_note}</p>}</div> : <EmptyState icon={FileText} title="No submission yet" copy="Complete the form to start your clearance journey." />}</section><section className="surface"><div className="surface-head"><div><h2>Payment evidence</h2><p>Every successful payment is tied to your account.</p></div><CircleDollarSign size={17} color="#065f46" /></div>{payment ? <div className="receipt" id="receipt-section"><h3>{previewAction === 'show_receipt' || project?.status === 'cleared' ? 'Digital Clearance Receipt' : 'Payment captured'}</h3><dl><dt>Reference</dt><dd>{payment.paystack_reference}</dd><dt>Amount</dt><dd>{formatNaira(payment.amount)}</dd><dt>Date</dt><dd>{displayDate(payment.paid_at)}</dd></dl>{receiptQrUrl && <div className="qr-preview"><img src={receiptQrUrl} alt="Clearance receipt verification QR code" /><span className="helper">Scan to verify this clearance receipt.</span></div>}{(previewAction === 'show_receipt' || project?.status === 'cleared') && <button className="button button-primary" style={{ marginTop: '1rem' }} onClick={generateReceipt}>{receipt ? 'Receipt issued' : 'Issue digital receipt'}</button>}</div> : <EmptyState icon={CircleDollarSign} title="No payment yet" copy="The fee is initialized securely on the server when you submit." />}</section></div></Workspace>;
 }
 
 function TeacherWorkspace({ profile, session, preview, onToast }) {
@@ -319,6 +318,8 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
   const [projects, setProjects] = useState([]);
   const [payments, setPayments] = useState([]);
   const [guestOrders, setGuestOrders] = useState([]);
+  const [receipts, setReceipts] = useState([]);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [colleges, setColleges] = useState([]);
@@ -344,23 +345,26 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
     const reportQuery = profile?.institution_id ? supabase.from('generated_reports').select('*').eq('institution_id', profile.institution_id).order('generated_at', { ascending: false }).limit(20) : supabase.from('generated_reports').select('*').order('generated_at', { ascending: false }).limit(20);
     const studentsQuery = supabase.from('profiles').select('id,full_name,email,matric,department,department_id,created_at').eq('role', 'student').order('created_at', { ascending: false }).limit(100);
     const projectQuery = supabase.from('projects').select('id,title,status,degree,created_at,updated_at,profiles!projects_student_id_fkey(full_name,matric),departments(name)').order('created_at', { ascending: false }).limit(100);
+    const receiptQuery = supabase.from('clearance_receipts').select('id,project_id,student_id,verification_code,qr_payload,issued_at,projects(title),profiles!clearance_receipts_student_id_fkey(full_name,matric)').order('issued_at', { ascending: false }).limit(100);
     const departmentQuery = supabase.from('departments').select('id,name,code,faculty_id,faculties(name)').order('name');
     const facultyQuery = supabase.from('faculties').select('id,name,college_id,colleges(name)').order('name');
     const collegeQuery = supabase.from('colleges').select('id,name').order('name');
     if (profile?.institution_id) {
       studentsQuery.eq('institution_id', profile.institution_id);
       projectQuery.eq('institution_id', profile.institution_id);
+      receiptQuery.eq('projects.institution_id', profile.institution_id);
       departmentQuery.eq('institution_id', profile.institution_id);
       facultyQuery.eq('institution_id', profile.institution_id);
       collegeQuery.eq('institution_id', profile.institution_id);
     }
     try {
-      const [overviewResult, studentsResult, projectResult, paymentResult, guestOrderResult, departmentResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult] = await Promise.all([
+      const [overviewResult, studentsResult, projectResult, paymentResult, guestOrderResult, receiptResult, departmentResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult] = await Promise.all([
         supabase.from('admin_overview').select('*').maybeSingle(),
         studentsQuery,
         projectQuery,
-        supabase.from('payments').select('id,amount,currency,status,transaction_type,paystack_reference,created_at,paid_at,payer_id').order('created_at', { ascending: false }).limit(100),
+        supabase.from('payments').select('id,project_id,amount,currency,status,transaction_type,paystack_reference,created_at,paid_at,payer_id').order('created_at', { ascending: false }).limit(100),
         supabase.from('guest_download_orders').select('id,amount,currency,status,paystack_reference,created_at,unlocked_at,email,project_id,metadata').order('created_at', { ascending: false }).limit(100),
+        receiptQuery,
         departmentQuery,
         facultyQuery,
         collegeQuery,
@@ -378,6 +382,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
       setProjects(projectResult.data || []);
       setPayments(paymentResult.data || []);
       setGuestOrders(guestOrderResult.data || []);
+      setReceipts(receiptResult.data || []);
       setDepartments(departmentResult.data || []);
       setFaculties(facultyResult.data || []);
       setColleges(collegeResult.data || []);
@@ -444,6 +449,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
   };
 
   const runDue = async () => { try { const result = await runDueReports(); onToast(`${result.generated?.length || 0} scheduled report${result.generated?.length === 1 ? '' : 's'} processed.`); await loadAdminData(); } catch (error) { onToast(error.message); } };
+  const downloadReceiptEvidence = receipt => { const blob = new Blob([JSON.stringify(receipt, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${receipt.verification_code || 'spms-receipt'}.json`; link.click(); URL.revokeObjectURL(url); };
   const successfulPayments = payments.filter(item => item.status === 'success');
   const successfulGuestOrders = guestOrders.filter(item => item.status === 'success');
   const workflowValues = ['submitted', 'supervisor_review', 'revision_requested', 'supervisor_approved', 'library_review', 'published', 'cleared'].map(status => [status.replaceAll('_', ' '), projects.filter(item => item.status === status).length]);
@@ -460,7 +466,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
     {section === 'supervisors' && <AdminSupervisorQueue profile={profile} onToast={onToast} />}
     {section === 'departments' && <HierarchyManager colleges={colleges} faculties={faculties} departments={departments} newCollege={newCollege} setNewCollege={setNewCollege} newFaculty={newFaculty} setNewFaculty={setNewFaculty} newDepartment={newDepartment} setNewDepartment={setNewDepartment} addHierarchy={addHierarchy} />}
     {section === 'uploads' && <section className="surface"><SectionHeader eyebrow="Project register" title="All thesis uploads" copy="Monitor status, student ownership, academic level, and submission timestamps." /><DataTable columns={['Project', 'Student', 'Degree', 'Status', 'Submitted']} rows={projects.map(item => [item.title, item.profiles?.full_name || 'Student', item.degree || '—', <StatusChip status={item.status} key={`${item.id}-status`} />, displayDate(item.created_at)])} empty="No project uploads found." /></section>}
-    {section === 'payments' && <section className="surface"><SectionHeader eyebrow="Finance evidence" title="Payment ledger" copy="Clearance payments and guest repository downloads with references for reconciliation." /><DataTable columns={['Reference', 'Type', 'Amount', 'Status', 'Created']} rows={[...payments.map(item => [item.paystack_reference || '—', item.transaction_type?.replaceAll('_', ' ') || '—', formatNaira(item.amount), item.status || '—', displayDate(item.created_at)]), ...guestOrders.map(item => [item.paystack_reference || '—', 'repository guest download', formatNaira(item.amount), item.status || '—', displayDate(item.created_at)])]} empty="No payment records found." /></section>}
+    {section === 'payments' && <section className="surface"><SectionHeader eyebrow="Finance evidence" title="Payment ledger" copy="Clearance payments and registered repository downloads with references for reconciliation." /><DataTable columns={['Reference', 'Type', 'Amount', 'Status', 'Created', 'Receipt']} rows={[...payments.map(item => { const receipt = receipts.find(record => record.project_id === item.project_id); return [item.paystack_reference || '—', item.transaction_type?.replaceAll('_', ' ') || '—', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), receipt ? <button className="button button-ghost button-small" onClick={() => setSelectedReceipt(receipt)}>View</button> : '—']; }), ...guestOrders.map(item => [item.paystack_reference || '—', 'legacy guest download', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), '—'])]} empty="No payment records found." /><Modal open={Boolean(selectedReceipt)} onClose={() => setSelectedReceipt(null)} eyebrow="Clearance evidence" title={selectedReceipt?.verification_code || 'Receipt'}><div className="receipt"><h3>{selectedReceipt?.projects?.title || 'Clearance receipt'}</h3><dl><dt>Student</dt><dd>{selectedReceipt?.profiles?.full_name || '—'}</dd><dt>Matric</dt><dd>{selectedReceipt?.profiles?.matric || '—'}</dd><dt>Issued</dt><dd>{displayDate(selectedReceipt?.issued_at)}</dd><dt>Verification code</dt><dd>{selectedReceipt?.verification_code || '—'}</dd></dl></div><div className="modal-actions"><button className="button button-ghost" onClick={() => setSelectedReceipt(null)}>Close</button>{selectedReceipt && <button className="button button-primary" onClick={() => downloadReceiptEvidence(selectedReceipt)}><Download size={15} />Download evidence</button>}</div></Modal></section>}
     {section === 'reports' && <AdminReports schedules={schedules} generatedReports={generatedReports} schedule={schedule} setSchedule={setSchedule} createSchedule={createSchedule} generateReport={generateReport} runDue={runDue} />}
     {section === 'settings' && <AdminSettings institution={institution} settings={settings} onInstitutionChange={updateInstitution} onSettingsChange={updateSettings} onSave={saveSettings} saving={saving} />}
   </Workspace>;

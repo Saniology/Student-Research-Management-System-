@@ -30,7 +30,10 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const action = body.action;
     const guestAction = action === "initialize_guest_download" || action === "verify_guest_download";
-    if (!guestAction && !authHeader) {
+    if (guestAction) {
+      return jsonResponse({ error: "Repository downloads require an account with a matric number and institutional email" }, 401);
+    }
+    if (!authHeader) {
       return jsonResponse({ error: "Missing authorization header" }, 401);
     }
 
@@ -47,24 +50,6 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Supabase function environment is not configured" }, 500);
     }
 
-    if (guestAction) {
-      if (action === "initialize_guest_download") {
-        return await initializeGuestDownloadPayment(
-          supabaseUrl,
-          supabaseServiceKey,
-          paystackSecret,
-          body,
-        );
-      }
-      return await verifyGuestDownloadPayment(
-        supabaseUrl,
-        supabaseServiceKey,
-        paystackSecret,
-        body,
-      );
-    }
-
-    if (!authHeader) return jsonResponse({ error: "Missing authorization header" }, 401);
     const user = await getAuthenticatedUser(supabaseUrl, supabaseAnonKey, authHeader);
     if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
 

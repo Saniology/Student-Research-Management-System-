@@ -109,10 +109,9 @@ CREATE POLICY "Users update own profile"
   USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
 
+-- Student identity is resolved by the server-side student-identity function.
+-- Do not expose registry rows to anonymous browser queries.
 DROP POLICY IF EXISTS "Anyone can lookup matric" ON students_registry;
-CREATE POLICY "Anyone can lookup matric"
-  ON students_registry FOR SELECT
-  USING (true);
 
 -- ---------------------------------------------------------------------------
 -- Demo user seeder (idempotent — safe to re-run)

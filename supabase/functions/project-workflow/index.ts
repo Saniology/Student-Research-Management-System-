@@ -5,6 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
 };
+const DEFAULT_MAX_PDF_SIZE_BYTES = 104857600;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -268,8 +269,14 @@ async function handleStudentResubmission(
   if (project.status !== "revision_requested") {
     return jsonResponse({ error: `Project is not waiting for a revision. Current status: ${project.status}` }, 409);
   }
-  if (!filePath.startsWith(`${actor.id}/`) || !/\.pdf$/i.test(fileName)) {
+  const mimeType = optionalString(body.mime_type);
+  const fileSizeBytes = Number(body.file_size_bytes);
+  if (!filePath.startsWith(`${actor.id}/`) || !/\.pdf$/i.test(fileName) || (mimeType && mimeType !== "application/pdf")) {
     return jsonResponse({ error: "Revision files must be PDF files in the student's private folder" }, 400);
+  }
+  const maxPdfSizeBytes = await getMaxPdfSize(supabaseUrl, serviceRoleKey, actor.institution_id);
+  if (!Number.isFinite(fileSizeBytes) || fileSizeBytes <= 0 || fileSizeBytes > maxPdfSizeBytes) {
+    return jsonResponse({ error: `The PDF must be between 1 byte and ${Math.round(maxPdfSizeBytes / (1024 * 1024))} MB` }, 400);
   }
 
   const title = optionalString(body.title) || project.title;
@@ -291,7 +298,7 @@ async function handleStudentResubmission(
         degree,
         file_name: fileName,
         file_path: filePath,
-        file_size_bytes: Number.isFinite(Number(body.file_size_bytes)) ? Number(body.file_size_bytes) : null,
+        file_size_bytes: fileSizeBytes,
         mime_type: "application/pdf",
         status: project.supervisor_id ? "supervisor_review" : "submitted",
         revision_note: null,
@@ -346,6 +353,17 @@ async function handleStudentResubmission(
   }
 
   return jsonResponse({ success: true, project: updated });
+}
+
+async function getMaxPdfSize(supabaseUrl: string, serviceRoleKey: string, institutionId?: string | null) {
+  if (!institutionId) return DEFAULT_MAX_PDF_SIZE_BYTES;
+  const configs = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/system_configs?institution_id=eq.${encodeURIComponent(institutionId)}&select=max_pdf_size_bytes`,
+  );
+  const configured = Number(configs[0]?.max_pdf_size_bytes);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_MAX_PDF_SIZE_BYTES;
 }
 
 async function handleLibraryPublish(

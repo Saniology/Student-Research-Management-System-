@@ -97,7 +97,7 @@ main { min-height: calc(100vh - 76px); }
 .project-card:hover { transform: translateY(-3px); box-shadow: 0 22px 42px -30px rgba(6,95,70,.45); }
 .project-meta { display: flex; justify-content: space-between; gap: .75rem; color: #8092a7; font-size: .65rem; font-weight: 800; text-transform: uppercase; }
 .project-card h3 { margin: 0; color: var(--primary); font: 700 1.15rem/1.25 Fraunces, serif; }
-.project-card p { flex: 1; margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.55; }
+.project-card p { display: -webkit-box; flex: 1; margin: 0; overflow: hidden; color: var(--muted); font-size: .78rem; line-height: 1.55; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .card-actions { display: flex; gap: .5rem; }
 .workspace-shell { display: grid; grid-template-columns: 235px minmax(0,1fr); min-height: calc(100vh - 76px); }
 .sidebar { padding: 1.25rem .8rem; color: #d9f2e8; background: #0b1b2b; }

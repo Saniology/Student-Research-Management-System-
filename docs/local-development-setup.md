@@ -85,6 +85,7 @@ npx supabase secrets set HEALTH_CHECK_SECRET=long_random_value
 npx supabase secrets set RESEND_API_KEY=re_xxxxx REPORT_FROM_EMAIL=reports@example.edu
 npx supabase secrets set REPORT_DELIVERY_EMAILS=registry@example.edu,finance@example.edu
 npx supabase secrets set REPORT_LINK_TTL_SECONDS=604800
+npx supabase secrets set SIS_API_URL=https://sis.example.edu SIS_API_TOKEN=replace_with_owner_secret
 bash supabase/deploy-verify-paystack.sh
 ```
 
@@ -113,6 +114,11 @@ the dashboard without that secret.
 `REPORT_LINK_TTL_SECONDS` are optional. Use them only when scheduled report files
 should be delivered by email. Without those secrets, generated reports still
 appear in Admin > Reports and can be downloaded by admins.
+
+`SIS_API_URL` and `SIS_API_TOKEN` are optional owner-only values for the
+institution's student-information-system adapter. When they are absent, the
+KASU pilot uses the private `students_registry` table through the
+`student-identity` Edge Function.
 
 ## Run The App Locally
 

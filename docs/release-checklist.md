@@ -45,6 +45,8 @@ Use this checklist before a production handover or institutional demo.
 ## Edge Functions
 
 - Set required secret: `PAYSTACK_SECRET_KEY`.
+- Set `SIS_API_URL` and `SIS_API_TOKEN` when the institution has a live SIS
+  endpoint; otherwise confirm the private pilot registry is populated.
 - Set optional operational secrets as needed:
   `REPORT_CRON_SECRET`, `HEALTH_CHECK_SECRET`, `RESEND_API_KEY`, `REPORT_FROM_EMAIL`,
   `REPORT_DELIVERY_EMAILS`, `REPORT_LINK_TTL_SECONDS`.
@@ -79,8 +81,9 @@ Use this checklist before a production handover or institutional demo.
 - Test a clearance payment in Paystack test mode.
 - Test retry verification using the saved reference.
 - Test a paid repository download and confirm the returned PDF is watermarked.
-- Test a guest paid repository download with an email address and confirm the
-  order appears in Admin > Payments and financial reports.
+- Create a registered student account with matric and school email, test a paid
+  repository download, and confirm the permanent account unlock, matric
+  watermark, Admin > Payments entry, and financial report inclusion.
 - Confirm payment records include transaction type, Paystack reference, status,
   and institution/provider split fields.
 

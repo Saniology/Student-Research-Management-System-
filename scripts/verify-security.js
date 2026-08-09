@@ -10,6 +10,7 @@ const edgeFunctions = [
   'verify-paystack',
   'project-workflow',
   'repository-access',
+  'student-identity',
   'verification-lookup',
   'scheduled-reports',
   'health-check',
@@ -141,6 +142,7 @@ function checkRls() {
   assert(/Admins read guest download orders[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'guest download records are tenant scoped');
   const repositoryAccess = read('supabase/functions/repository-access/index.ts');
   assert(/initialize_guest_download|verify_guest_download/.test(repositoryAccess), 'guest repository actions are handled server-side');
+  assert(/Repository downloads require an account with a matric number and institutional email/.test(repositoryAccess), 'unauthenticated repository downloads are rejected');
   assert(/requireEmail\(body\.email\)/.test(repositoryAccess), 'guest download requires a validated email address');
   assert(/transaction\.customer\.email\.toLowerCase\(\) !== email/.test(repositoryAccess), 'guest payment email is matched before issuing access');
   assert(/guest_download_orders\?select=\*/.test(repositoryAccess), 'successful guest download payments are persisted');

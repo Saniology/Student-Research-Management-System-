@@ -154,7 +154,11 @@ function checkConstraints(sql) {
 function checkRls(sql) {
   rlsTables.forEach((table) => {
     assert(new RegExp(`ALTER TABLE\\s+${table}\\s+ENABLE ROW LEVEL SECURITY`, 'i').test(sql), `RLS enabled on ${table}`);
-    assert(new RegExp(`CREATE POLICY\\s+"[^"]+"\\s+ON\\s+${table}\\b`, 'i').test(sql), `${table} has at least one RLS policy`);
+    if (table === 'students_registry') {
+      assert(/DROP POLICY IF EXISTS "Anyone can lookup matric" ON students_registry/i.test(sql), 'student registry public policy is revoked');
+    } else {
+      assert(new RegExp(`CREATE POLICY\\s+"[^"]+"\\s+ON\\s+${table}\\b`, 'i').test(sql), `${table} has at least one RLS policy`);
+    }
   });
   assert(/DROP POLICY IF EXISTS "Students insert own payments" ON payments/i.test(sql), 'client payment insert policy is revoked');
   assert(/DROP POLICY IF EXISTS "Students insert own submissions" ON submissions/i.test(sql), 'client submission insert policy is revoked');

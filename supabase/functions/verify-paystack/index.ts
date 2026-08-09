@@ -70,6 +70,7 @@ Deno.serve(async (req) => {
       abstract,
       degree,
       file_size_bytes,
+      mime_type,
     } = body;
     if (!reference || !file_name) {
       return jsonResponse({ error: "Missing payment reference or file name" }, 400);
@@ -99,6 +100,14 @@ Deno.serve(async (req) => {
       supabaseServiceKey,
       profile?.institution_id,
     );
+
+    const fileSizeBytes = Number(file_size_bytes);
+    if (!/\.pdf$/i.test(String(file_name)) || (mime_type && mime_type !== "application/pdf")) {
+      return jsonResponse({ error: "Only PDF files are accepted" }, 400);
+    }
+    if (!Number.isFinite(fileSizeBytes) || fileSizeBytes <= 0 || fileSizeBytes > paymentConfig.max_pdf_size_bytes) {
+      return jsonResponse({ error: `The PDF must be between 1 byte and ${Math.round(paymentConfig.max_pdf_size_bytes / (1024 * 1024))} MB` }, 400);
+    }
 
     const paystackRes = await fetch(
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
@@ -188,7 +197,7 @@ Deno.serve(async (req) => {
             degree: typeof degree === "string" && degree.trim() ? degree.trim() : null,
             file_name,
             file_path,
-            file_size_bytes: Number.isFinite(file_size_bytes) ? file_size_bytes : null,
+            file_size_bytes: fileSizeBytes,
             mime_type: "application/pdf",
             status: workflowStatus,
           },
@@ -475,6 +484,32 @@ async function resolveSupervisor(
     return profile.supervisor_id;
   }
 
+  // Prefer the supervisor assigned by the SIS/registry. Workload balancing is
+  // only a fallback for legacy records that do not carry an official mapping.
+  if (typeof profile?.matric === "string" && profile.matric.trim()) {
+    try {
+      const registry = await supabaseRest(
+        supabaseUrl,
+        serviceRoleKey,
+        `/students_registry?matric=eq.${encodeURIComponent(profile.matric.trim())}&select=supervisor_email`,
+      );
+      const assignedEmail = String(registry[0]?.supervisor_email || "").trim().toLowerCase();
+      if (assignedEmail) {
+        const institutionFilter = typeof profile?.institution_id === "string" && profile.institution_id
+          ? `&institution_id=eq.${encodeURIComponent(profile.institution_id)}`
+          : "";
+        const assigned = await supabaseRest(
+          supabaseUrl,
+          serviceRoleKey,
+          `/profiles?role=eq.teacher&email=eq.${encodeURIComponent(assignedEmail)}${institutionFilter}&select=id`,
+        );
+        if (assigned[0]?.id) return assigned[0].id;
+      }
+    } catch (err) {
+      console.warn(`Official supervisor lookup skipped for ${studentId}:`, err);
+    }
+  }
+
   const filters = ["role=eq.teacher"];
   if (typeof profile?.institution_id === "string" && profile.institution_id) {
     filters.push(`institution_id=eq.${encodeURIComponent(profile.institution_id)}`);
@@ -588,7 +623,7 @@ async function getPaymentConfig(
       const configs = await supabaseRest(
         supabaseUrl,
         serviceRoleKey,
-        `/system_configs?institution_id=eq.${encodeURIComponent(institutionId)}&select=clearance_fee_kobo,currency,institution_share_percent,provider_share_percent,paystack_split_code,paystack_institution_subaccount,paystack_provider_subaccount`,
+        `/system_configs?institution_id=eq.${encodeURIComponent(institutionId)}&select=clearance_fee_kobo,max_pdf_size_bytes,allowed_mime_types,currency,institution_share_percent,provider_share_percent,paystack_split_code,paystack_institution_subaccount,paystack_provider_subaccount`,
       );
       if (configs[0]) return normalizePaymentConfig(configs[0]);
     } catch (err) {
@@ -605,6 +640,8 @@ function normalizePaymentConfig(config: Record<string, unknown>) {
 
   return {
     clearance_fee_kobo: Number(config.clearance_fee_kobo ?? DEFAULT_CLEARANCE_FEE_KOBO),
+    max_pdf_size_bytes: Number(config.max_pdf_size_bytes ?? 104857600),
+    allowed_mime_types: Array.isArray(config.allowed_mime_types) && config.allowed_mime_types.length ? config.allowed_mime_types : ["application/pdf"],
     currency: String(config.currency || "NGN"),
     institution_share_percent: Number.isFinite(institutionSharePercent) ? institutionSharePercent : 50,
     provider_share_percent: Number.isFinite(providerSharePercent) ? providerSharePercent : 50,

@@ -70,13 +70,25 @@ if [[ -n "${REPORT_LINK_TTL_SECONDS:-}" ]]; then
   "${SUPABASE_CMD[@]}" secrets set "REPORT_LINK_TTL_SECONDS=${REPORT_LINK_TTL_SECONDS}"
 fi
 
+if [[ -n "${SIS_API_URL:-}" ]]; then
+  echo "Setting student-information-system adapter endpoint..."
+  if [[ -n "${SIS_API_TOKEN:-}" ]]; then
+    "${SUPABASE_CMD[@]}" secrets set "SIS_API_URL=${SIS_API_URL}" "SIS_API_TOKEN=${SIS_API_TOKEN}"
+  else
+    "${SUPABASE_CMD[@]}" secrets set "SIS_API_URL=${SIS_API_URL}"
+  fi
+else
+  echo "SIS_API_URL not set; student-identity will use the private pilot registry."
+fi
+
 echo "Deploying SPMS edge functions..."
-"${SUPABASE_CMD[@]}" functions deploy verify-paystack project-workflow repository-access verification-lookup scheduled-reports health-check --no-verify-jwt --use-api
+"${SUPABASE_CMD[@]}" functions deploy verify-paystack project-workflow repository-access student-identity verification-lookup scheduled-reports health-check --no-verify-jwt --use-api
 
 echo "Done. Test with:"
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verify-paystack\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/project-workflow\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/repository-access\""
+echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/student-identity\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verification-lookup\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/scheduled-reports\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/health-check\""

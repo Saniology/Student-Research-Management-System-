@@ -13,6 +13,7 @@ const requiredFunctions = [
   'verify-paystack',
   'project-workflow',
   'repository-access',
+  'student-identity',
   'verification-lookup',
   'scheduled-reports',
   'health-check',

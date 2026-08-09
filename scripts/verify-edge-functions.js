@@ -33,6 +33,14 @@ const contracts = [
     pins: ['pdf-lib@1.17.1'],
   },
   {
+    name: 'student-identity',
+    methods: ['POST', 'OPTIONS'],
+    actions: ['students/lookup', 'students_registry', 'SIS_API_URL'],
+    errors: ['Method not allowed', 'That matric number is not in the student registry'],
+    env: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'],
+    auth: false,
+  },
+  {
     name: 'verification-lookup',
     methods: ['POST', 'OPTIONS'],
     actions: ['qr_svg', 'receipt', 'project'],
