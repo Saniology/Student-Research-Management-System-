@@ -26,6 +26,7 @@ export default function App() {
   const [booting, setBooting] = useState(true);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
+  const [guestDownloadProject, setGuestDownloadProject] = useState(null);
   const [toast, setToast] = useState('');
   const [notifications, setNotifications] = useState([]);
 
@@ -75,7 +76,7 @@ export default function App() {
   const logout = async () => { if (supabase) await supabase.auth.signOut(); setSession(null); setProfile(null); setView('landing'); notify('You have been signed out.'); };
   const enterWorkspace = nextRole => { setView(nextRole); setAuthOpen(false); };
   const handleDownload = async project => {
-    if (!session) { openLogin(); return; }
+    if (!session) { setGuestDownloadProject(project); return; }
     if (previewRole || project?.id?.startsWith('demo-')) { notify('Preview download is protected by the repository payment gate.'); return; }
     try {
       const access = await invoke('repository-access', { action: 'get_download_url', project_id: project.id });
@@ -93,7 +94,8 @@ export default function App() {
     {view === 'teacher' && <TeacherWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'library' && <LibraryWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'admin' && <AdminWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
-    <AuthModal open={authOpen} mode={authMode} onClose={() => setAuthOpen(false)} onModeChange={setAuthMode} onSuccess={(nextSession, nextProfile) => { setSession(nextSession); setProfile(nextProfile); enterWorkspace(nextProfile.role); }} onToast={notify} />
+    <AuthModal tenant={tenant} open={authOpen} mode={authMode} onClose={() => setAuthOpen(false)} onModeChange={setAuthMode} onSuccess={(nextSession, nextProfile) => { setSession(nextSession); setProfile(nextProfile); enterWorkspace(nextProfile.role); }} onToast={notify} />
+    <GuestDownloadModal project={guestDownloadProject} onClose={() => setGuestDownloadProject(null)} onToast={notify} />
     {toast && <div className="toast" role="status">{toast}</div>}
   </AppShell>;
 }
@@ -156,7 +158,7 @@ function LogInIcon() { return <ArrowRight size={16} />; }
 function OperationsBoard() { return <div className="operations-board"><div className="board-head"><div><p className="eyebrow">Operations board</p><h2>Clearance Pipeline</h2></div><span className="status-chip status-published"><span className="status-dot" />Ready</span></div>{[[FileText,'Student submission','Metadata, PDF, and fee captured together.','PDF'],[UserCheck,'Supervisor review','Approvals, revisions, and comments stay auditable.','RLS'],[BookOpen,'Library publishing','Public metadata, shelf details, and QR verification.','QR'],[CircleDollarSign,'Finance evidence','Paystack references support reconciliation.','AUDIT']].map(([Icon,title,copy,tag]) => <div className="pipeline-row" key={title}><span className="pipeline-icon"><Icon size={16} /></span><div><p>{title}</p><p>{copy}</p></div><span className="tag">{tag}</span></div>)}</div>; }
 function ProjectCard({ project, onAbstract, onDownload }) { return <article className="project-card"><div className="project-meta"><span className="tag">{project.degree || 'Research'}</span><span>{project.dept || 'Institution'}</span></div><h3>{project.title}</h3><p>{project.abstract}</p><div className="card-actions"><button className="button button-ghost button-small" onClick={onAbstract}>View abstract</button><button className="button button-primary button-small" onClick={() => onDownload(project)}><Download size={14} />Download</button></div></article>; }
 
-function AuthModal({ open, mode, onClose, onModeChange, onSuccess, onToast }) {
+function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToast }) {
   const [form, setForm] = useState({ email: '', password: '', full_name: '', matric: '', department: '' });
   const [busy, setBusy] = useState(false);
   const submit = async event => {
@@ -165,7 +167,7 @@ function AuthModal({ open, mode, onClose, onModeChange, onSuccess, onToast }) {
     setBusy(true);
     try {
       if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.full_name, matric: form.matric, department: form.department, role: 'student' } } });
+        const { data, error } = await supabase.auth.signUp({ email: form.email, password: form.password, options: { data: { full_name: form.full_name, matric: form.matric, department: form.department, role: 'student', tenant_slug: tenant?.slug || 'kasu' } } });
         if (error) throw error;
         if (!data.session) { onToast('Account created. Check your email to confirm access.'); onClose(); return; }
         onSuccess(data.session, await loadProfile(data.user.id));
@@ -191,6 +193,35 @@ function AuthModal({ open, mode, onClose, onModeChange, onSuccess, onToast }) {
     </form>
     <div className="auth-switch">{isLogin ? 'New to the portal?' : 'Already registered?'} <button type="button" onClick={() => onModeChange(isLogin ? 'signup' : 'login')}>{isLogin ? 'Create an account' : 'Sign in'}</button></div>
   </Modal>;
+}
+
+function GuestDownloadModal({ project, onClose, onToast }) {
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const submit = async event => {
+    event.preventDefault();
+    if (!project) return;
+    setBusy(true);
+    try {
+      const init = await invoke('repository-access', { action: workflowActions.repositoryGuestInitialize, project_id: project.id, email });
+      if (!window.PaystackPop) throw new Error('Paystack failed to load. Refresh and try again.');
+      window.PaystackPop.resumeTransaction(init.access_code, {
+        onSuccess: async response => {
+          try {
+            const reference = response?.reference || response?.trxref || init.reference;
+            const result = await invoke('repository-access', { action: workflowActions.repositoryGuestVerify, project_id: project.id, reference, email });
+            if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener');
+            onToast('Watermarked download unlocked for five minutes.');
+            onClose();
+          } catch (error) { onToast(error.message); }
+          finally { setBusy(false); }
+        },
+        onCancel: () => { setBusy(false); onToast('Download payment was cancelled.'); },
+        onError: error => { setBusy(false); onToast(error?.message || 'Paystack could not open.'); },
+      });
+    } catch (error) { setBusy(false); onToast(error.message); }
+  };
+  return <Modal open={Boolean(project)} onClose={onClose} eyebrow="Public repository" title="Download full thesis" variant="auth"><form className="auth-form" onSubmit={submit}><p className="auth-description">Enter your email to receive a private, watermarked copy of <strong>{project?.title}</strong> after payment.</p><div className="field"><label htmlFor="guest-download-email">Email address</label><input id="guest-download-email" type="email" required value={email} onChange={event => setEmail(event.target.value)} placeholder="you@example.com" /></div><button className="button button-primary auth-submit" disabled={busy}><Download size={16} />{busy ? 'Opening checkout...' : 'Pay & download'}</button></form></Modal>;
 }
 
 function Workspace({ role, title, subtitle, children, sidebar = [] }) { return <div className="workspace-shell"><aside className="sidebar"><div className="sidebar-head"><span className="sidebar-mark"><ShieldCheck size={18} /></span><div><strong>{role === 'teacher' ? 'Supervisor' : role[0].toUpperCase() + role.slice(1)} panel</strong><small>Operations center</small></div></div><nav className="sidebar-nav">{sidebar.map(([Icon,label,active,onClick]) => <button className={active ? 'active' : ''} key={label} onClick={onClick}><Icon size={16} />{label}</button>)}</nav></aside><section className="workspace-main blueprint"><div className="workspace-head"><div><p className="eyebrow">{role === 'teacher' ? 'Review workspace' : 'Operations workspace'}</p><h1>{title}</h1><p>{subtitle}</p></div></div>{children}</section></div>; }
@@ -287,6 +318,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
   const [students, setStudents] = useState([]);
   const [projects, setProjects] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [guestOrders, setGuestOrders] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [colleges, setColleges] = useState([]);
@@ -323,11 +355,12 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
       collegeQuery.eq('institution_id', profile.institution_id);
     }
     try {
-      const [overviewResult, studentsResult, projectResult, paymentResult, departmentResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult] = await Promise.all([
+      const [overviewResult, studentsResult, projectResult, paymentResult, guestOrderResult, departmentResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult] = await Promise.all([
         supabase.from('admin_overview').select('*').maybeSingle(),
         studentsQuery,
         projectQuery,
         supabase.from('payments').select('id,amount,currency,status,transaction_type,paystack_reference,created_at,paid_at,payer_id').order('created_at', { ascending: false }).limit(100),
+        supabase.from('guest_download_orders').select('id,amount,currency,status,paystack_reference,created_at,unlocked_at,email,project_id,metadata').order('created_at', { ascending: false }).limit(100),
         departmentQuery,
         facultyQuery,
         collegeQuery,
@@ -344,6 +377,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
       setStudents(studentsResult.data || []);
       setProjects(projectResult.data || []);
       setPayments(paymentResult.data || []);
+      setGuestOrders(guestOrderResult.data || []);
       setDepartments(departmentResult.data || []);
       setFaculties(facultyResult.data || []);
       setColleges(collegeResult.data || []);
@@ -411,21 +445,22 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
 
   const runDue = async () => { try { const result = await runDueReports(); onToast(`${result.generated?.length || 0} scheduled report${result.generated?.length === 1 ? '' : 's'} processed.`); await loadAdminData(); } catch (error) { onToast(error.message); } };
   const successfulPayments = payments.filter(item => item.status === 'success');
+  const successfulGuestOrders = guestOrders.filter(item => item.status === 'success');
   const workflowValues = ['submitted', 'supervisor_review', 'revision_requested', 'supervisor_approved', 'library_review', 'published', 'cleared'].map(status => [status.replaceAll('_', ' '), projects.filter(item => item.status === status).length]);
-  const revenue = successfulPayments.reduce((total, item) => total + Number(item.amount || 0), 0);
+  const revenue = [...successfulPayments, ...successfulGuestOrders].reduce((total, item) => total + Number(item.amount || 0), 0);
   const institutionShare = Number(settings?.institution_share_percent || 50);
   const nav = [[Archive, 'Dashboard', 'dashboard'], [Users, 'Students', 'students'], [UserCheck, 'Supervisors', 'supervisors'], [Library, 'Departments', 'departments'], [FileText, 'Uploads', 'uploads'], [CircleDollarSign, 'Payments', 'payments'], [FileCheck2, 'Reports', 'reports'], [Settings2, 'Settings', 'settings']];
-  const metrics = [["Total students", overview?.total_students ?? students.length, Users], ["Total revenue", formatNaira(overview?.total_revenue_kobo ?? revenue), CircleDollarSign], ["Total uploads", overview?.total_projects ?? projects.length, FileText], ["Pending approvals", (overview?.pending_supervisor_review || 0) + (overview?.pending_library_review || 0), FileCheck2]];
+  const metrics = [["Total students", overview?.total_students ?? students.length, Users], ["Total revenue", formatNaira(revenue), CircleDollarSign], ["Total uploads", overview?.total_projects ?? projects.length, FileText], ["Pending approvals", (overview?.pending_supervisor_review || 0) + (overview?.pending_library_review || 0), FileCheck2]];
 
   if (loading) return <PageSkeleton role="admin" />;
   return <Workspace role="admin" title="Analytics hub" subtitle="Live operations for academic clearance, finance, and institutional governance." sidebar={nav.map(([Icon, label, id]) => [Icon, label, section === id, () => setSection(id)])}>
     <MetricCards items={metrics} />
-    {section === 'dashboard' && <div className="workspace-grid"><AnalyticsCard title="Workflow funnel" copy="Current project counts across every clearance stage." values={workflowValues} /><AnalyticsCard title="Revenue split" copy="Successful Paystack transactions reconciled by configured share." values={[["Institution share", institutionShare], ["SPMS provider share", 100 - institutionShare], ["Successful transactions", successfulPayments.length]]} accent /><AnalyticsCard title="Monthly revenue" copy="Latest recorded payment volume." values={[["This month", successfulPayments.filter(item => item.created_at && new Date(item.created_at).getMonth() === new Date().getMonth()).reduce((total, item) => total + Number(item.amount || 0), 0) / 100], ["All time", revenue / 100]]} accent /><AnalyticsCard title="Publication progress" copy="Approved catalog records and cleared receipts." values={[["Published", overview?.published_projects || projects.filter(item => item.status === 'published').length], ["Cleared", projects.filter(item => item.status === 'cleared').length]]} /></div>}
+    {section === 'dashboard' && <div className="workspace-grid"><AnalyticsCard title="Workflow funnel" copy="Current project counts across every clearance stage." values={workflowValues} /><AnalyticsCard title="Revenue split" copy="Successful Paystack transactions reconciled by configured share." values={[["Institution share", institutionShare], ["SPMS provider share", 100 - institutionShare], ["Successful transactions", successfulPayments.length + successfulGuestOrders.length]]} accent /><AnalyticsCard title="Monthly revenue" copy="Latest recorded payment volume." values={[["This month", [...successfulPayments, ...successfulGuestOrders].filter(item => item.created_at && new Date(item.created_at).getMonth() === new Date().getMonth()).reduce((total, item) => total + Number(item.amount || 0), 0) / 100], ["All time", revenue / 100]]} accent /><AnalyticsCard title="Publication progress" copy="Approved catalog records and cleared receipts." values={[["Published", overview?.published_projects || projects.filter(item => item.status === 'published').length], ["Cleared", projects.filter(item => item.status === 'cleared').length]]} /></div>}
     {section === 'students' && <section className="surface"><SectionHeader eyebrow="Student directory" title="Registered students" copy="Searchable student records connected to project ownership and department mapping." /><DataTable columns={['Name', 'Matric', 'Email', 'Department', 'Joined']} rows={students.map(item => [item.full_name || 'Unnamed student', item.matric || '—', item.email || '—', item.department || 'Unassigned', displayDate(item.created_at)])} empty="No student profiles found." /></section>}
     {section === 'supervisors' && <AdminSupervisorQueue profile={profile} onToast={onToast} />}
     {section === 'departments' && <HierarchyManager colleges={colleges} faculties={faculties} departments={departments} newCollege={newCollege} setNewCollege={setNewCollege} newFaculty={newFaculty} setNewFaculty={setNewFaculty} newDepartment={newDepartment} setNewDepartment={setNewDepartment} addHierarchy={addHierarchy} />}
     {section === 'uploads' && <section className="surface"><SectionHeader eyebrow="Project register" title="All thesis uploads" copy="Monitor status, student ownership, academic level, and submission timestamps." /><DataTable columns={['Project', 'Student', 'Degree', 'Status', 'Submitted']} rows={projects.map(item => [item.title, item.profiles?.full_name || 'Student', item.degree || '—', <StatusChip status={item.status} key={`${item.id}-status`} />, displayDate(item.created_at)])} empty="No project uploads found." /></section>}
-    {section === 'payments' && <section className="surface"><SectionHeader eyebrow="Finance evidence" title="Payment ledger" copy="Successful and pending Paystack transactions with references for reconciliation." /><DataTable columns={['Reference', 'Type', 'Amount', 'Status', 'Created']} rows={payments.map(item => [item.paystack_reference || '—', item.transaction_type?.replaceAll('_', ' ') || '—', formatNaira(item.amount), item.status || '—', displayDate(item.created_at)])} empty="No payment records found." /></section>}
+    {section === 'payments' && <section className="surface"><SectionHeader eyebrow="Finance evidence" title="Payment ledger" copy="Clearance payments and guest repository downloads with references for reconciliation." /><DataTable columns={['Reference', 'Type', 'Amount', 'Status', 'Created']} rows={[...payments.map(item => [item.paystack_reference || '—', item.transaction_type?.replaceAll('_', ' ') || '—', formatNaira(item.amount), item.status || '—', displayDate(item.created_at)]), ...guestOrders.map(item => [item.paystack_reference || '—', 'repository guest download', formatNaira(item.amount), item.status || '—', displayDate(item.created_at)])]} empty="No payment records found." /></section>}
     {section === 'reports' && <AdminReports schedules={schedules} generatedReports={generatedReports} schedule={schedule} setSchedule={setSchedule} createSchedule={createSchedule} generateReport={generateReport} runDue={runDue} />}
     {section === 'settings' && <AdminSettings institution={institution} settings={settings} onInstitutionChange={updateInstitution} onSettingsChange={updateSettings} onSave={saveSettings} saving={saving} />}
   </Workspace>;

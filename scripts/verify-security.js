@@ -26,6 +26,7 @@ const rlsTables = [
   'project_reviews',
   'public_catalog',
   'repository_unlocks',
+  'guest_download_orders',
   'clearance_receipts',
   'audit_logs',
   'notifications',
@@ -134,6 +135,15 @@ function checkRls() {
   ].forEach((policy) => {
     assert(sql.includes(`CREATE POLICY "${policy}"`), `policy exists: ${policy}`);
   });
+  assert(/current_institution_id\(\)/.test(sql), 'tenant-aware RLS helper exists');
+  assert(/Admins read all projects[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'admin project policy is tenant scoped');
+  assert(/Library read review queue[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'library queue policy is tenant scoped');
+  assert(/Admins read guest download orders[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'guest download records are tenant scoped');
+  const repositoryAccess = read('supabase/functions/repository-access/index.ts');
+  assert(/initialize_guest_download|verify_guest_download/.test(repositoryAccess), 'guest repository actions are handled server-side');
+  assert(/requireEmail\(body\.email\)/.test(repositoryAccess), 'guest download requires a validated email address');
+  assert(/transaction\.customer\.email\.toLowerCase\(\) !== email/.test(repositoryAccess), 'guest payment email is matched before issuing access');
+  assert(/guest_download_orders\?select=\*/.test(repositoryAccess), 'successful guest download payments are persisted');
 }
 
 function checkStoragePrivacy() {

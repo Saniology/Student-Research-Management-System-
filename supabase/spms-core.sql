@@ -259,6 +259,27 @@ CREATE TABLE IF NOT EXISTS repository_unlocks (
   UNIQUE (user_id, project_id)
 );
 
+CREATE TABLE IF NOT EXISTS guest_download_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID REFERENCES institutions(id) ON DELETE SET NULL,
+  project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  paystack_reference TEXT NOT NULL UNIQUE,
+  paystack_transaction_id TEXT,
+  amount INTEGER NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'NGN',
+  status TEXT NOT NULL DEFAULT 'success' CHECK (status IN ('pending', 'success', 'failed')),
+  watermark_identity TEXT NOT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  unlocked_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_guest_download_orders_institution
+  ON guest_download_orders(institution_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_guest_download_orders_project
+  ON guest_download_orders(project_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS clearance_receipts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
@@ -455,6 +476,64 @@ WHERE s.role = 'student'
   AND s.department = t.department
   AND s.supervisor_id IS NULL;
 
+-- Resolve the tenant attached to the authenticated user for staff policies.
+CREATE OR REPLACE FUNCTION public.current_institution_id()
+RETURNS UUID
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+STABLE
+AS $$
+  SELECT institution_id
+  FROM public.profiles
+  WHERE id = auth.uid();
+$$;
+
+GRANT EXECUTE ON FUNCTION public.current_institution_id() TO authenticated;
+
+-- Replace the base signup trigger after institutions exist so new users inherit
+-- the tenant selected by the browser during signup.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  tenant_id UUID;
+BEGIN
+  SELECT id INTO tenant_id
+  FROM public.institutions
+  WHERE slug = COALESCE(NEW.raw_user_meta_data->>'tenant_slug', 'kasu')
+  LIMIT 1;
+
+  INSERT INTO public.profiles (id, email, role, full_name, matric, department, institution_id)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE((NEW.raw_user_meta_data->>'role')::user_role, 'student'),
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'matric',
+    NEW.raw_user_meta_data->>'department',
+    tenant_id
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    email = EXCLUDED.email,
+    role = COALESCE(EXCLUDED.role, profiles.role),
+    full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
+    matric = COALESCE(EXCLUDED.matric, profiles.matric),
+    department = COALESCE(EXCLUDED.department, profiles.department),
+    institution_id = COALESCE(profiles.institution_id, EXCLUDED.institution_id),
+    updated_at = NOW();
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 WITH registry_department_backfill AS (
   SELECT sr.matric,
          i.id AS institution_id,
@@ -486,6 +565,7 @@ ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public_catalog ENABLE ROW LEVEL SECURITY;
 ALTER TABLE repository_unlocks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE guest_download_orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE clearance_receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
@@ -602,6 +682,11 @@ CREATE POLICY "Admins read all unlocks"
   ON repository_unlocks FOR SELECT
   USING (public.is_admin());
 
+DROP POLICY IF EXISTS "Admins read guest download orders" ON guest_download_orders;
+CREATE POLICY "Admins read guest download orders"
+  ON guest_download_orders FOR SELECT
+  USING (public.is_admin() AND institution_id = public.current_institution_id());
+
 DROP POLICY IF EXISTS "Students read own receipts" ON clearance_receipts;
 CREATE POLICY "Students read own receipts"
   ON clearance_receipts FOR SELECT
@@ -680,6 +765,156 @@ CREATE POLICY "Admins read repository download files"
     AND public.is_admin()
   );
 
+-- ---------------------------------------------------------------------------
+-- Tenant isolation hardening
+-- ---------------------------------------------------------------------------
+
+DROP POLICY IF EXISTS "Admins read all profiles" ON profiles;
+CREATE POLICY "Admins read all profiles"
+  ON profiles FOR SELECT
+  USING (public.is_admin() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Staff read institution profiles" ON profiles;
+CREATE POLICY "Staff read institution profiles"
+  ON profiles FOR SELECT
+  USING (public.is_staff() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Admins read all submissions" ON submissions;
+CREATE POLICY "Admins read all submissions"
+  ON submissions FOR SELECT
+  USING (
+    public.is_admin()
+    AND EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.id = submissions.student_id
+        AND p.institution_id = public.current_institution_id()
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins read all payments" ON payments;
+CREATE POLICY "Admins read all payments"
+  ON payments FOR SELECT
+  USING (
+    public.is_admin()
+    AND EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.id = payments.student_id
+        AND p.institution_id = public.current_institution_id()
+    )
+  );
+
+DROP POLICY IF EXISTS "Library read review queue" ON projects;
+CREATE POLICY "Library read review queue"
+  ON projects FOR SELECT
+  USING (
+    public.has_role('library')
+    AND institution_id = public.current_institution_id()
+    AND status IN ('supervisor_approved', 'library_review', 'published', 'cleared')
+  );
+
+DROP POLICY IF EXISTS "Admins read all projects" ON projects;
+CREATE POLICY "Admins read all projects"
+  ON projects FOR SELECT
+  USING (public.is_admin() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Project reviews visible to participants" ON project_reviews;
+CREATE POLICY "Project reviews visible to participants"
+  ON project_reviews FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM projects p
+      WHERE p.id = project_reviews.project_id
+        AND (
+          p.student_id = auth.uid()
+          OR p.supervisor_id = auth.uid()
+          OR (public.is_admin() AND p.institution_id = public.current_institution_id())
+          OR (public.has_role('library') AND p.institution_id = public.current_institution_id())
+        )
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins read all unlocks" ON repository_unlocks;
+CREATE POLICY "Admins read all unlocks"
+  ON repository_unlocks FOR SELECT
+  USING (
+    public.is_admin()
+    AND EXISTS (
+      SELECT 1 FROM projects p
+      WHERE p.id = repository_unlocks.project_id
+        AND p.institution_id = public.current_institution_id()
+    )
+  );
+
+DROP POLICY IF EXISTS "Staff read receipts" ON clearance_receipts;
+CREATE POLICY "Staff read receipts"
+  ON clearance_receipts FOR SELECT
+  USING (
+    public.is_staff()
+    AND EXISTS (
+      SELECT 1 FROM projects p
+      WHERE p.id = clearance_receipts.project_id
+        AND p.institution_id = public.current_institution_id()
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins read audit logs" ON audit_logs;
+CREATE POLICY "Admins read audit logs"
+  ON audit_logs FOR SELECT
+  USING (
+    public.is_admin()
+    AND EXISTS (
+      SELECT 1 FROM profiles p
+      WHERE p.id = audit_logs.actor_id
+        AND p.institution_id = public.current_institution_id()
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins read all notifications" ON notifications;
+CREATE POLICY "Admins read all notifications"
+  ON notifications FOR SELECT
+  USING (public.is_admin() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Admins manage report schedules" ON report_schedules;
+CREATE POLICY "Admins manage report schedules"
+  ON report_schedules FOR ALL
+  USING (public.is_admin() AND institution_id = public.current_institution_id())
+  WITH CHECK (public.is_admin() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Admins read generated reports" ON generated_reports;
+CREATE POLICY "Admins read generated reports"
+  ON generated_reports FOR SELECT
+  USING (public.is_admin() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Admins manage institutions" ON institutions;
+CREATE POLICY "Admins manage institutions"
+  ON institutions FOR ALL
+  USING (public.is_admin() AND id = public.current_institution_id())
+  WITH CHECK (public.is_admin() AND id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Admins manage configs" ON system_configs;
+CREATE POLICY "Admins manage configs"
+  ON system_configs FOR ALL
+  USING (public.is_admin() AND institution_id = public.current_institution_id())
+  WITH CHECK (public.is_admin() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Admins manage faculties" ON faculties;
+CREATE POLICY "Admins manage faculties"
+  ON faculties FOR ALL
+  USING (public.is_admin() AND institution_id = public.current_institution_id())
+  WITH CHECK (public.is_admin() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Admins manage colleges" ON colleges;
+CREATE POLICY "Admins manage colleges"
+  ON colleges FOR ALL
+  USING (public.is_admin() AND institution_id = public.current_institution_id())
+  WITH CHECK (public.is_admin() AND institution_id = public.current_institution_id());
+
+DROP POLICY IF EXISTS "Admins manage departments" ON departments;
+CREATE POLICY "Admins manage departments"
+  ON departments FOR ALL
+  USING (public.is_admin() AND institution_id = public.current_institution_id())
+  WITH CHECK (public.is_admin() AND institution_id = public.current_institution_id());
+
 -- Storage read access for reviewers. Students keep the existing own-folder policies.
 DROP POLICY IF EXISTS "Supervisors read assigned thesis files" ON storage.objects;
 CREATE POLICY "Supervisors read assigned thesis files"
@@ -704,8 +939,60 @@ CREATE POLICY "Library read approved thesis files"
       SELECT 1
       FROM projects p
       WHERE p.file_path = storage.objects.name
+        AND p.institution_id = public.current_institution_id()
         AND p.status IN ('supervisor_approved', 'library_review', 'published', 'cleared')
     )
+  );
+
+DROP POLICY IF EXISTS "Supervisors read assigned thesis files" ON storage.objects;
+CREATE POLICY "Supervisors read assigned thesis files"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'thesis-pdfs'
+    AND EXISTS (
+      SELECT 1
+      FROM projects p
+      WHERE p.file_path = storage.objects.name
+        AND p.supervisor_id = auth.uid()
+        AND p.institution_id = public.current_institution_id()
+    )
+  );
+
+DROP POLICY IF EXISTS "Library read approved thesis files" ON storage.objects;
+CREATE POLICY "Library read approved thesis files"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'thesis-pdfs'
+    AND public.has_role('library')
+    AND EXISTS (
+      SELECT 1
+      FROM projects p
+      WHERE p.file_path = storage.objects.name
+        AND p.institution_id = public.current_institution_id()
+        AND p.status IN ('supervisor_approved', 'library_review', 'published', 'cleared')
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins read generated report files" ON storage.objects;
+CREATE POLICY "Admins read generated report files"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'reports'
+    AND public.is_admin()
+    AND EXISTS (
+      SELECT 1 FROM generated_reports r
+      WHERE r.file_path = storage.objects.name
+        AND r.institution_id = public.current_institution_id()
+    )
+  );
+
+DROP POLICY IF EXISTS "Admins read repository download files" ON storage.objects;
+CREATE POLICY "Admins read repository download files"
+  ON storage.objects FOR SELECT
+  USING (
+    bucket_id = 'repository-downloads'
+    AND public.is_admin()
+    AND split_part(storage.objects.name, '/', 1) = public.current_institution_id()::text
   );
 
 -- ---------------------------------------------------------------------------
@@ -714,12 +1001,16 @@ CREATE POLICY "Library read approved thesis files"
 
 CREATE OR REPLACE VIEW admin_overview AS
 SELECT
-  (SELECT COUNT(*) FROM profiles WHERE role = 'student') AS total_students,
-  (SELECT COUNT(*) FROM profiles WHERE role = 'teacher') AS total_supervisors,
-  (SELECT COUNT(*) FROM projects) AS total_projects,
-  (SELECT COUNT(*) FROM projects WHERE status IN ('submitted', 'supervisor_review')) AS pending_supervisor_review,
-  (SELECT COUNT(*) FROM projects WHERE status IN ('supervisor_approved', 'library_review')) AS pending_library_review,
-  (SELECT COUNT(*) FROM public_catalog) AS published_projects,
-  (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'success') AS total_revenue_kobo;
+  (SELECT COUNT(*) FROM profiles WHERE role = 'student' AND institution_id = public.current_institution_id()) AS total_students,
+  (SELECT COUNT(*) FROM profiles WHERE role = 'teacher' AND institution_id = public.current_institution_id()) AS total_supervisors,
+  (SELECT COUNT(*) FROM projects WHERE institution_id = public.current_institution_id()) AS total_projects,
+  (SELECT COUNT(*) FROM projects WHERE institution_id = public.current_institution_id() AND status IN ('submitted', 'supervisor_review')) AS pending_supervisor_review,
+  (SELECT COUNT(*) FROM projects WHERE institution_id = public.current_institution_id() AND status IN ('supervisor_approved', 'library_review')) AS pending_library_review,
+  (SELECT COUNT(*) FROM public_catalog WHERE institution_id = public.current_institution_id()) AS published_projects,
+  (SELECT COALESCE(SUM(payments.amount), 0)
+   FROM payments
+   JOIN profiles p ON p.id = payments.student_id
+   WHERE payments.status = 'success'
+     AND p.institution_id = public.current_institution_id()) AS total_revenue_kobo;
 
 GRANT SELECT ON admin_overview TO authenticated;

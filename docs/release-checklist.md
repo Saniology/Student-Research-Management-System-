@@ -33,6 +33,8 @@ Use this checklist before a production handover or institutional demo.
 - Confirm `spms-core.sql` completes without SQL Editor errors.
 - Confirm storage buckets exist: `thesis-pdfs`, `repository-downloads`,
   `reports`.
+- Confirm the latest `supabase/spms-core.sql` version has created
+  `guest_download_orders` and its tenant-scoped RLS policy.
 - Confirm RLS remains enabled on workflow, payment, report, and notification
   tables.
 - Complete `docs/disaster-recovery-runbook.md`.
@@ -77,6 +79,8 @@ Use this checklist before a production handover or institutional demo.
 - Test a clearance payment in Paystack test mode.
 - Test retry verification using the saved reference.
 - Test a paid repository download and confirm the returned PDF is watermarked.
+- Test a guest paid repository download with an email address and confirm the
+  order appears in Admin > Payments and financial reports.
 - Confirm payment records include transaction type, Paystack reference, status,
   and institution/provider split fields.
 

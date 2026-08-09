@@ -27,6 +27,7 @@ const rlsTables = [
   'project_reviews',
   'public_catalog',
   'repository_unlocks',
+  'guest_download_orders',
   'clearance_receipts',
   'audit_logs',
   'notifications',
@@ -56,6 +57,8 @@ const requiredIndexes = [
   'idx_generated_reports_schedule',
   'idx_payments_project',
   'idx_payments_type',
+  'idx_guest_download_orders_institution',
+  'idx_guest_download_orders_project',
 ];
 
 const requiredForeignKeys = [
@@ -67,6 +70,7 @@ const requiredForeignKeys = [
   /project_reviews[\s\S]+project_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+projects\(id\)\s+ON\s+DELETE\s+CASCADE/i,
   /public_catalog[\s\S]+project_id\s+UUID\s+NOT\s+NULL\s+UNIQUE\s+REFERENCES\s+projects\(id\)\s+ON\s+DELETE\s+CASCADE/i,
   /repository_unlocks[\s\S]+project_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+projects\(id\)\s+ON\s+DELETE\s+CASCADE/i,
+  /guest_download_orders[\s\S]+project_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+projects\(id\)\s+ON\s+DELETE\s+CASCADE/i,
   /clearance_receipts[\s\S]+project_id\s+UUID\s+NOT\s+NULL\s+UNIQUE\s+REFERENCES\s+projects\(id\)\s+ON\s+DELETE\s+CASCADE/i,
   /notifications[\s\S]+recipient_id\s+UUID\s+NOT\s+NULL\s+REFERENCES\s+profiles\(id\)\s+ON\s+DELETE\s+CASCADE/i,
   /report_schedules[\s\S]+created_by\s+UUID\s+REFERENCES\s+profiles\(id\)\s+ON\s+DELETE\s+SET\s+NULL/i,
@@ -141,6 +145,7 @@ function checkConstraints(sql) {
     /CONSTRAINT\s+projects_pdf_only\s+CHECK\s*\(\s*mime_type\s*=\s*'application\/pdf'\s*\)/i,
     /report_type\s+TEXT\s+NOT\s+NULL\s+CHECK\s*\(\s*report_type\s+IN/i,
     /frequency\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'monthly'\s+CHECK\s*\(\s*frequency\s+IN/i,
+    /guest_download_orders[\s\S]+paystack_reference\s+TEXT\s+NOT\s+NULL\s+UNIQUE/i,
   ].forEach((pattern, index) => {
     assert(pattern.test(sql), `required data constraint ${index + 1} exists`);
   });
@@ -178,6 +183,7 @@ function checkSecurityDefiner(sql) {
   assert(/GRANT EXECUTE ON FUNCTION public\.is_admin\(\) TO authenticated/i.test(sql), 'is_admin execute grant exists');
   assert(/GRANT EXECUTE ON FUNCTION public\.has_role\(user_role\) TO authenticated/i.test(sql), 'has_role execute grant exists');
   assert(/GRANT EXECUTE ON FUNCTION public\.is_staff\(\) TO authenticated/i.test(sql), 'is_staff execute grant exists');
+  assert(/GRANT EXECUTE ON FUNCTION public\.current_institution_id\(\) TO authenticated/i.test(sql), 'current institution execute grant exists');
 }
 
 function checkDocumentedRunOrder() {

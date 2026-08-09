@@ -35,11 +35,14 @@ It adds:
 - Library catalog publishing fields: shelf number, QR payload, DOI.
 - Public anonymized catalog table.
 - Repository unlock records for paid downloads.
+- Guest repository download orders with email attribution, payment references,
+  tenant scoping, and watermarked access evidence.
 - Clearance receipt verification records.
 - Tenant payment split settings for institution/SPMS provider accounting.
 - In-app workflow notifications with unread/read state.
 - Audit logs.
 - RLS policies for students, supervisors, library staff, admins, and public catalog readers.
+- Tenant-aware RLS policies and institution resolution for multi-institution data isolation.
 
 ## Edge Functions
 
@@ -69,6 +72,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - `get_download_url`: checks whether a user already unlocked a published project and returns a short-lived private signed URL to a per-user watermarked PDF copy.
 - `initialize_download`: initializes paid repository download payments from the backend with configured fee, reference, metadata, and split/subaccount rules.
 - `verify_download`: verifies the Paystack repository download fee, records the transaction split, creates a persistent unlock, and returns a short-lived signed URL to a per-user watermarked PDF copy.
+- `initialize_guest_download` and `verify_guest_download`: allow public visitors to pay with an email address, verify the Paystack reference server-side, record a tenant-scoped guest order, and receive a short-lived watermarked PDF copy.
 - Payment records use the tenant-configured institution/provider split percentages and keep Paystack subaccount codes in metadata for reconciliation.
 - Uses `pdf-lib@1.17.1` in the Edge Function to stamp repository downloads with user identity, timestamp, project ID, and project title.
 
@@ -83,6 +87,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 
 - Lets admins generate one-off CSV reports from the dashboard.
 - Runs due report schedules for student registers, project lifecycle, financial, and archive reports.
+- Financial reports include authenticated payments and guest repository download orders.
 - Stores generated CSV files in the private `reports` storage bucket.
 - Supports authenticated admin execution or external cron execution through `REPORT_CRON_SECRET`.
 - Optionally emails private signed report links through Resend when report delivery secrets are configured.
@@ -100,7 +105,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Students can replace a revision-requested PDF and resubmit through `project-workflow` without paying the clearance fee again.
 - Supervisor dashboard can load real assigned `projects`, securely preview private thesis PDFs with short-lived signed links, and call approval/revision actions.
 - Library dashboard can load approved projects and publish them to the public catalog.
-- Public repository can read anonymized `public_catalog` records, with demo fallback.
+- Configured tenants read live anonymized `public_catalog` records without silently falling back to demo data after a database error.
 - Public repository download buttons now route through Paystack and the `repository-access` function for paid unlocks.
 - Paid repository PDFs are generated as watermarked copies before a signed download URL is returned.
 - Admin dashboard can read `admin_overview` metrics and department activity, with legacy fallback.
@@ -116,6 +121,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Logged-in users have a notification center with unread badges and mark-as-read support.
 - Admin reports can export student registers, project lifecycle/accreditation data, payment split records, financial PDFs, and archive/audit logs.
 - Admin report automation can create recurring schedules, store report recipients, run due reports, generate one-off report files, email private signed links when configured, and download generated CSV artifacts.
+- Admin finance views include authenticated payments and guest repository orders in the same reconciliation stream.
 - Production email deliverability handover is documented for SPF, DKIM, DMARC, authenticated sender alignment, bounces, complaints, suppression lists, and provider rollback.
 - Admin analytics now include workflow funnel, revenue split, monthly revenue trend, publication progress, and workflow signal panels backed by live records.
 - Frontend tenant resolution supports URL slug selection, configured default tenant slug, custom domain lookup through `institutions.allowed_domains`, and tenant-specific branding/config.
@@ -147,6 +153,7 @@ supabase functions deploy verify-paystack project-workflow repository-access ver
 - Real provider-side email domain authentication and deliverability monitoring with institution DNS access.
 - Provider-specific production DNS credentials and hosting target values for each institution.
 - Full Playwright role automation against seeded Supabase test data; the deterministic preview suite is in place, while authenticated seeded runs still require a dedicated test project and credentials.
-- Production Supabase handover: apply the migrations in the owner account, deploy all Edge Functions, and configure the required server-side secrets.
+- Production Supabase handover: apply the latest `supabase/spms-core.sql` changes in the owner account, confirm the `guest_download_orders` table and tenant-scoped RLS policies, and keep deployed functions and server-side secrets aligned. All six Edge Functions are currently deployed and the live preflight/health check passes.
 - A genuine end-to-end smoke test with a real Paystack test transaction, private PDF upload, supervisor review, library publication, QR verification, and paid repository download.
+- A genuine guest repository payment smoke test, including email attribution, watermarked PDF delivery, admin ledger visibility, and financial report inclusion.
 - Production hosting, institution DNS, email provider credentials, monitoring endpoints, and rollback evidence for each tenant.

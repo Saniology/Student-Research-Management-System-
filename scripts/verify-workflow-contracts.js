@@ -38,9 +38,9 @@ const edgeContracts = [
   {
     functionName: 'repository-access',
     file: files.repositoryAccess,
-    frontendActions: ['get_download_url', 'initialize_download', 'verify_download'],
-    handlerActions: ['get_download_url', 'initialize_download', 'verify_download'],
-    requiredFields: ['project_id', 'reference', 'signed_url', 'watermark_identity'],
+    frontendActions: ['get_download_url', 'initialize_download', 'verify_download', 'initialize_guest_download', 'verify_guest_download'],
+    handlerActions: ['get_download_url', 'initialize_download', 'verify_download', 'initialize_guest_download', 'verify_guest_download'],
+    requiredFields: ['project_id', 'reference', 'signed_url', 'watermark_identity', 'email'],
   },
   {
     functionName: 'scheduled-reports',
@@ -173,6 +173,10 @@ function checkSqlEnumsAndStatusFlow() {
     assert(inSqlEnum(sql, 'transaction_type', type), `SQL transaction_type includes ${type}`);
     assert(verifyPaystack.includes(type) || repositoryAccess.includes(type) || html.includes(type), `payment flow references transaction type ${type}`);
   });
+
+  assert(/CREATE TABLE IF NOT EXISTS guest_download_orders/i.test(sql), 'guest repository downloads have a durable order table');
+  assert(/repository_guest_download/.test(repositoryAccess), 'guest repository payments use a dedicated payment metadata type');
+  assert(/guest_download_orders/.test(scheduledReports), 'financial reports include guest repository downloads');
 
   reportTypes.forEach((type) => {
     assert(sql.includes(`'${type}'`), `SQL report_schedules permits ${type}`);

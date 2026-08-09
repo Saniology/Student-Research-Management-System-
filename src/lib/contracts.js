@@ -9,6 +9,8 @@ export const workflowActions = {
   repositoryGetUrl: 'get_download_url',
   repositoryInitialize: 'initialize_download',
   repositoryVerify: 'verify_download',
+  repositoryGuestInitialize: 'initialize_guest_download',
+  repositoryGuestVerify: 'verify_guest_download',
   reportsDue: 'run_due',
   reportsOnce: 'run_once',
 };

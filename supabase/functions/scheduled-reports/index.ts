@@ -174,11 +174,25 @@ async function reportRows(
     const institutionFilter = schedule.institution_id
       ? `&profiles.institution_id=eq.${encodeURIComponent(schedule.institution_id)}`
       : "";
-    return await supabaseRest(
-      supabaseUrl,
-      serviceRoleKey,
-      `/payments?status=eq.success${institutionFilter}&select=amount,currency,transaction_type,institution_share_kobo,provider_share_kobo,paystack_reference,status,paid_at,created_at,${profileJoin}`,
+    const paymentsPath = `/payments?status=eq.success${institutionFilter}&select=amount,currency,transaction_type,institution_share_kobo,provider_share_kobo,paystack_reference,status,paid_at,created_at,${profileJoin}`;
+    const guestOrdersPath = withInstitution(
+      "/guest_download_orders?status=eq.success&select=amount,currency,status,paystack_reference,created_at,unlocked_at,email,project_id,institution_id,metadata",
+      schedule.institution_id,
     );
+    const [payments, guestOrders] = await Promise.all([
+      supabaseRest(supabaseUrl, serviceRoleKey, paymentsPath),
+      supabaseRest(supabaseUrl, serviceRoleKey, guestOrdersPath),
+    ]);
+    return [
+      ...payments,
+      ...guestOrders.map((order: Record<string, unknown>) => ({
+        ...order,
+        transaction_type: "repository_guest_download",
+        paid_at: order.unlocked_at || order.created_at,
+        institution_share_kobo: (order.metadata as Record<string, unknown> | null)?.institution_share_kobo || null,
+        provider_share_kobo: (order.metadata as Record<string, unknown> | null)?.provider_share_kobo || null,
+      })),
+    ];
   }
 
   if (schedule.report_type === "archive") {

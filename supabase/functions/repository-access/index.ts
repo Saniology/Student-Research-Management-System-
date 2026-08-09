@@ -27,7 +27,12 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return jsonResponse({ error: "Missing authorization header" }, 401);
+    const body = await req.json();
+    const action = body.action;
+    const guestAction = action === "initialize_guest_download" || action === "verify_guest_download";
+    if (!guestAction && !authHeader) {
+      return jsonResponse({ error: "Missing authorization header" }, 401);
+    }
 
     const paystackSecret = Deno.env.get("PAYSTACK_SECRET_KEY");
     if (!paystackSecret) {
@@ -42,6 +47,24 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Supabase function environment is not configured" }, 500);
     }
 
+    if (guestAction) {
+      if (action === "initialize_guest_download") {
+        return await initializeGuestDownloadPayment(
+          supabaseUrl,
+          supabaseServiceKey,
+          paystackSecret,
+          body,
+        );
+      }
+      return await verifyGuestDownloadPayment(
+        supabaseUrl,
+        supabaseServiceKey,
+        paystackSecret,
+        body,
+      );
+    }
+
+    if (!authHeader) return jsonResponse({ error: "Missing authorization header" }, 401);
     const user = await getAuthenticatedUser(supabaseUrl, supabaseAnonKey, authHeader);
     if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
 
@@ -51,9 +74,6 @@ Deno.serve(async (req) => {
       `/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,email,matric,full_name`,
     );
     if (!profile) return jsonResponse({ error: "Profile not found" }, 404);
-
-    const body = await req.json();
-    const action = body.action;
 
     if (action === "get_download_url") {
       return await getDownloadUrl(supabaseUrl, supabaseServiceKey, profile, body);
@@ -277,6 +297,138 @@ async function verifyDownloadPayment(
     success: true,
     payment,
     unlock,
+    signed_url: signedUrl,
+    expires_in: SIGNED_URL_TTL_SECONDS,
+    watermark_identity: watermarkIdentity,
+    watermarked: true,
+    project: publicProject(project),
+  });
+}
+
+async function initializeGuestDownloadPayment(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  paystackSecret: string,
+  body: Record<string, unknown>,
+) {
+  const email = requireEmail(body.email);
+  const projectId = requireString(body.project_id, "project_id");
+  const [project] = await getPublishedProject(supabaseUrl, serviceRoleKey, projectId);
+  if (!project) return jsonResponse({ error: "Published project not found" }, 404);
+
+  const config = await getDownloadConfig(supabaseUrl, serviceRoleKey, project.institution_id);
+  const reference = `SPMS-GUEST-DL-${Date.now()}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+  const split = calculateSplit(config.download_fee_kobo, config);
+  const payload = buildPaystackInitializePayload({
+    email,
+    amount: config.download_fee_kobo,
+    currency: config.currency,
+    reference,
+    config,
+    metadata: {
+      payment_type: "repository_guest_download",
+      project_id: project.id,
+      guest_email: email,
+      institution_id: project.institution_id || null,
+      institution_share_kobo: split.institutionShareKobo,
+      provider_share_kobo: split.providerShareKobo,
+    },
+  });
+  const paystackData = await initializePaystackTransaction(paystackSecret, payload);
+  return jsonResponse({
+    success: true,
+    guest: true,
+    reference,
+    amount: config.download_fee_kobo,
+    currency: config.currency,
+    access_code: paystackData.access_code,
+    authorization_url: paystackData.authorization_url,
+    split_applied: describePaystackSplit(payload),
+    project: publicProject(project),
+  });
+}
+
+async function verifyGuestDownloadPayment(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  paystackSecret: string,
+  body: Record<string, unknown>,
+) {
+  const email = requireEmail(body.email);
+  const projectId = requireString(body.project_id, "project_id");
+  const reference = requireString(body.reference, "reference");
+  const [project] = await getPublishedProject(supabaseUrl, serviceRoleKey, projectId);
+  if (!project) return jsonResponse({ error: "Published project not found" }, 404);
+
+  const existing = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/guest_download_orders?paystack_reference=eq.${encodeURIComponent(reference)}&select=*`,
+  );
+  if (existing[0]) return jsonResponse({ error: "Payment reference has already been used" }, 409);
+
+  const config = await getDownloadConfig(supabaseUrl, serviceRoleKey, project.institution_id);
+  const paystackRes = await fetch(
+    `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+    { headers: { Authorization: `Bearer ${paystackSecret}` } },
+  );
+  const paystackData = await paystackRes.json();
+  if (!paystackRes.ok || !paystackData.status) {
+    return jsonResponse({ error: paystackData.message || "Paystack verification failed" }, 400);
+  }
+
+  const transaction = paystackData.data;
+  if (transaction.status !== "success") return jsonResponse({ error: "Payment was not successful" }, 400);
+  if (transaction.amount !== config.download_fee_kobo) return jsonResponse({ error: "Invalid repository download amount" }, 400);
+  if (!transaction.customer?.email || transaction.customer.email.toLowerCase() !== email) {
+    return jsonResponse({ error: "Payment email does not match the guest email" }, 403);
+  }
+
+  const metadata = normalizePaystackMetadata(transaction.metadata);
+  if (metadata.payment_type !== "repository_guest_download") {
+    return jsonResponse({ error: "Payment reference is not for a guest repository download" }, 400);
+  }
+  if (metadata.project_id && metadata.project_id !== project.id) {
+    return jsonResponse({ error: "Payment reference belongs to another project" }, 403);
+  }
+
+  const watermarkIdentity = `guest-${email}`;
+  const signedUrl = await createWatermarkedDownloadUrl(
+    supabaseUrl,
+    serviceRoleKey,
+    project,
+    watermarkIdentity,
+  );
+  const split = calculateSplit(transaction.amount, config);
+  const [order] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    "/guest_download_orders?select=*",
+    {
+      method: "POST",
+      body: {
+        institution_id: project.institution_id || null,
+        project_id: project.id,
+        email,
+        paystack_reference: reference,
+        paystack_transaction_id: String(transaction.id),
+        amount: transaction.amount,
+        currency: transaction.currency || config.currency,
+        status: "success",
+        watermark_identity: watermarkIdentity,
+        metadata: {
+          channel: transaction.channel || null,
+          institution_share_kobo: split.institutionShareKobo,
+          provider_share_kobo: split.providerShareKobo,
+        },
+      },
+    },
+  );
+
+  return jsonResponse({
+    success: true,
+    guest: true,
+    order,
     signed_url: signedUrl,
     expires_in: SIGNED_URL_TTL_SECONDS,
     watermark_identity: watermarkIdentity,
@@ -578,6 +730,7 @@ async function createWatermarkedDownloadUrl(
     projectId: project.id,
   });
   const watermarkedPath = [
+    project.institution_id || "global",
     "watermarked-downloads",
     safeStorageSegment(watermarkIdentity),
     `${project.id}-${Date.now()}.pdf`,
@@ -795,6 +948,14 @@ function requireString(value: unknown, field: string) {
     throw new Error(`${field} is required`);
   }
   return value.trim();
+}
+
+function requireEmail(value: unknown) {
+  const email = requireString(value, "email").toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error("A valid email address is required");
+  }
+  return email;
 }
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
