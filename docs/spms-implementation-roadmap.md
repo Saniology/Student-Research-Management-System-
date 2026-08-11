@@ -175,6 +175,45 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 - Repository signed URLs include the Supabase Storage API prefix, and report
   uploads use the exact `text/csv` bucket MIME type required by Storage.
 
+## Current Handover Evidence (2026-08-11)
+
+The UI pause has been merged back into the full product work. After resuming:
+
+- The library workspace now receives the authenticated tenant profile before
+  loading its queue, preventing the regression caused by an undefined profile
+  guard.
+- The authenticated shell opens a notification center with unread workflow
+  items and a mark-all-as-read action.
+- Shared role workspaces now give every sidebar item a real action, update the
+  active state, and navigate to the relevant workspace section; browser tests
+  cover Student submission, Supervisor history, and every Library desk.
+- The Library workspace now exposes separate Verification queue, Public
+  catalogue, QR labels, and Archive sections backed by the loaded project data.
+- An authenticated browser smoke run signed in with the four documented demo
+  accounts and activated a role-specific sidebar destination for Student,
+  Supervisor, Library, and Admin without page errors.
+- The UI smoke verifier covers the notification-center entry point and actions.
+- `npm run build`, `npm run verify:ui`, `npm run verify:a11y`,
+  `npm run verify:security`, `npm run verify:roles`,
+  `npm run verify:interactions`, and `npm run verify:lifecycle` pass with zero
+  failures.
+- The broader release gates also pass: database, workflow, Edge Function,
+  email, monitoring, governance, disaster-recovery, and release-readiness
+  verification all report zero failures.
+- `npm run verify:deploy` confirms all eight hosted Edge Functions are
+  deployed with CORS-enabled preflight routes and a healthy live deployment.
+- Browser role coverage runs 14 tests: 9 local role tests pass and 5 seeded
+  Supabase tests remain intentionally skipped until a dedicated non-production
+  project is supplied.
+- `SPMS_REUSE_SERVER=true npm run verify:playwright` passes the nine local role
+  workflow tests. The five seeded Supabase tests remain skipped until a
+  dedicated non-production project is supplied.
+- The local Vite app responds at `http://127.0.0.1:5510/`, and the live KASU
+  deployment evidence above remains valid.
+
+The remaining items below are owner-controlled production handover actions,
+not unimplemented SPMS application workflows.
+
 ## Still Remaining
 
 - Real provider-side email domain authentication and deliverability monitoring with institution DNS access.

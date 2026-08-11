@@ -56,6 +56,30 @@ test.describe('SPMS role workflows', () => {
     await expect(page.getByText('Web-Based E-Voting System', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /Assign/ })).toBeVisible();
   });
+
+  test('student sidebar navigates to submission controls', async ({ page }) => {
+    await openPreview(page, 'student');
+    await page.getByRole('button', { name: 'Submission', exact: true }).click();
+    await expect(page.locator('#student-submission')).toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Submission', exact: true })).toHaveClass(/active/);
+  });
+
+  test('supervisor sidebar navigates to review history', async ({ page }) => {
+    await openPreview(page, 'teacher');
+    await page.getByRole('button', { name: 'Review history', exact: true }).click();
+    await expect(page.locator('#teacher-history')).toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Review history', exact: true })).toHaveClass(/active/);
+  });
+
+  test('library sidebar navigates across each desk', async ({ page }) => {
+    await openPreview(page, 'library');
+    for (const [label, target] of [['Verification queue', '#library-queue'], ['Public catalogue', '#library-catalogue'], ['QR labels', '#library-qr'], ['Archive', '#library-archive']]) {
+      const button = page.getByRole('button', { name: label, exact: true });
+      await button.click();
+      await expect(page.locator(target)).toBeInViewport();
+      await expect(button).toHaveClass(/active/);
+    }
+  });
 });
 
 const seededRoles = [
