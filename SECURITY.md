@@ -17,6 +17,8 @@
   Edge Functions using `PAYSTACK_SECRET_KEY`.
 - Payment records should include server-verified status, reference, transaction
   type, and split accounting metadata.
+- Replaying a successful repository reference must return the existing unlock
+  or guest order and never create a second payment record or charge.
 
 ## Data Access
 

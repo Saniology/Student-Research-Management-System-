@@ -155,6 +155,7 @@ function checkRls() {
   assert(/requireEmail\(body\.email\)/.test(repositoryAccess), 'guest download requires a validated email address');
   assert(/transaction\.customer\.email\.toLowerCase\(\) !== email/.test(repositoryAccess), 'guest payment email is matched before issuing access');
   assert(/guest_download_orders\?select=\*/.test(repositoryAccess), 'successful guest download payments are persisted');
+  assert(/existingPayment[\s\S]+already_unlocked/.test(repositoryAccess) && /existing\[0\][\s\S]+already_unlocked/.test(repositoryAccess), 'repository payment retries are idempotent');
   assert(/GuestDownloadModal/.test(html) && /initialize_guest_download/.test(html), 'public repository exposes a guest download payment flow');
 }
 

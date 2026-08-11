@@ -74,6 +74,9 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 - `get_download_url`: checks whether a user already unlocked a published project and returns a short-lived private signed URL to a per-user watermarked PDF copy.
 - `initialize_download`: initializes paid repository download payments from the backend with configured fee, reference, metadata, and split/subaccount rules.
 - `verify_download`: verifies the Paystack repository download fee, records the transaction split, creates a persistent unlock, and returns a short-lived signed URL to a per-user watermarked PDF copy.
+- Registered and guest repository verification retries are idempotent: an
+  already-recorded successful reference returns the existing unlock/order with
+  a fresh short-lived watermarked URL instead of recording a duplicate.
 - Public repository downloads support both an email-verified guest path and a registered-account path. Guest `initialize_guest_download` and `verify_guest_download` actions verify the ₦500 Paystack payment, persist a tenant-scoped order, and return a short-lived email-watermarked PDF copy; registered users receive a permanent account/project unlock and matric-watermarked copy.
 - `student-identity` validates the school email and matric against a configured SIS adapter, falling back to the tenant registry for the KASU pilot without exposing registry rows to the browser.
 - Payment records use the tenant-configured institution/provider split percentages and keep Paystack subaccount codes in metadata for reconciliation.
@@ -209,9 +212,9 @@ The UI pause has been merged back into the full product work. After resuming:
 - The deployed repository endpoint accepts the guest action path without an
   account and performs published-project validation before any payment call;
   no payment or database fixture was created by this smoke check.
-- Browser role coverage runs 14 tests: 9 local role tests pass and 5 seeded
-  Supabase tests remain intentionally skipped until a dedicated non-production
-  project is supplied.
+- Browser coverage runs 15 tests: 10 local role tests pass, including the
+  public guest checkout modal, and 5 seeded Supabase tests remain intentionally
+  skipped until a dedicated non-production project is supplied.
 - The local Vite app responds at `http://127.0.0.1:5510/`, and the live KASU
   deployment evidence above remains valid.
 

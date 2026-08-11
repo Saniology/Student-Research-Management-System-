@@ -13,7 +13,20 @@ async function openPreview(page, role, action = '') {
   await expect(page.locator(`html[data-role-preview="${role}"]`)).toBeAttached();
 }
 
+async function openPublicPreview(page) {
+  await page.goto('/?preview_surface=public', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('html[data-public-preview="true"]')).toBeAttached();
+}
+
 test.describe('SPMS role workflows', () => {
+  test('public reader can open the guest repository checkout', async ({ page }) => {
+    await openPublicPreview(page);
+    await page.getByRole('button', { name: /Download/ }).first().click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog')).toContainText('Download full thesis');
+    await expect(page.getByRole('dialog').getByLabel('Email address')).toBeVisible();
+  });
+
   test('student can reach the clearance receipt state', async ({ page }) => {
     await openPreview(page, 'student', 'show_receipt');
     await expect(page.getByText('Digital Clearance Receipt', { exact: true })).toBeVisible();

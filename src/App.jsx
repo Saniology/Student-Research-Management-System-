@@ -12,7 +12,9 @@ import './styles.css';
 const previewParams = new URLSearchParams(window.location.search);
 const isLocalHost = hostname => ['localhost', '127.0.0.1', '0.0.0.0'].includes(hostname);
 const isRolePreviewAllowed = () => isLocalHost(window.location.hostname) && ['student', 'teacher', 'library', 'admin'].includes(previewParams.get('preview_role'));
+const isPublicPreviewAllowed = () => isLocalHost(window.location.hostname) && previewParams.get('preview_surface') === 'public';
 const previewRole = isRolePreviewAllowed() ? previewParams.get('preview_role') : '';
+const previewPublic = isPublicPreviewAllowed() && !previewRole;
 const previewAction = previewParams.get('preview_action') || '';
 
 function formatNaira(kobo = 0) { return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(kobo) / 100); }
@@ -51,10 +53,11 @@ export default function App() {
   useEffect(() => {
     document.documentElement.dataset.rolePreview = previewRole || '';
     document.documentElement.dataset.rolePreviewAction = previewAction;
+    document.documentElement.dataset.publicPreview = previewPublic ? 'true' : '';
     const bootstrap = async () => {
-      if (previewRole) {
+      if (previewRole || previewPublic) {
         setTenant(fallbackTenant);
-        setProfile({ id: `preview-${previewRole}-user`, role: previewRole, full_name: previewRole === 'teacher' ? 'Dr. Sani Musa' : previewRole === 'admin' ? 'SPMS Administrator' : previewRole === 'library' ? 'Library Officer' : 'Musa Abdullahi', matric: 'KASU/SCI/20/123', department: 'Computer Science', email: `${previewRole}.preview@kasu.edu.ng` });
+        if (previewRole) setProfile({ id: `preview-${previewRole}-user`, role: previewRole, full_name: previewRole === 'teacher' ? 'Dr. Sani Musa' : previewRole === 'admin' ? 'SPMS Administrator' : previewRole === 'library' ? 'Library Officer' : 'Musa Abdullahi', matric: 'KASU/SCI/20/123', department: 'Computer Science', email: `${previewRole}.preview@kasu.edu.ng` });
         setBooting(false);
         return;
       }
@@ -68,7 +71,7 @@ export default function App() {
       setBooting(false);
     };
     bootstrap();
-    if (!supabase || previewRole) return undefined;
+    if (!supabase || previewRole || previewPublic) return undefined;
     const { data } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       setSession(nextSession);
       if (nextSession) setProfile(await loadProfile(nextSession.user.id)); else setProfile(null);
@@ -77,7 +80,7 @@ export default function App() {
   }, [notify]);
 
   useEffect(() => {
-    if (!supabase || !session || previewRole) return undefined;
+    if (!supabase || !session || previewRole || previewPublic) return undefined;
     const fetchNotifications = async () => {
       const { data } = await supabase.from('notifications').select('*').eq('recipient_id', session.user.id).is('read_at', null).order('created_at', { ascending: false }).limit(10);
       setNotifications(data || []);
@@ -176,7 +179,7 @@ export default function App() {
   }, [guestDownloadProject, notify]);
   if (booting) return <><AppShell tenant={tenant} onHome={goHome} onLogin={openLogin}><PageSkeleton role="landing" /></AppShell></>;
   return <AppShell tenant={tenant} role={role} onHome={goHome} onLogin={openLogin} onLogout={logout} notificationCount={notifications.length} onNotifications={openNotificationCenter}>
-    {view === 'landing' && <Landing tenant={tenant} session={session} onLogin={openLogin} onWorkspace={() => role ? enterWorkspace(role) : openLogin()} onDownload={handleDownload} configError={!config.valid && !previewRole} />}
+    {view === 'landing' && <Landing tenant={tenant} session={session} onLogin={openLogin} onWorkspace={() => role ? enterWorkspace(role) : openLogin()} onDownload={handleDownload} configError={!config.valid && !previewRole && !previewPublic} />}
     {view === 'student' && <StudentWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'teacher' && <TeacherWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'library' && <LibraryWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
