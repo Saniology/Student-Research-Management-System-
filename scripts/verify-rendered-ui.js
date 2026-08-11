@@ -108,12 +108,25 @@ function renderViewport(chrome, viewport) {
     '--virtual-time-budget=4000',
     `--window-size=${viewport.width},${viewport.height}`,
     `--screenshot=${screenshotPath}`,
+    '--noerrdialogs',
+    '--no-first-run',
+    '--disable-extensions',
+    '--disable-background-networking',
+    '--disable-component-update',
+    '--disable-sync',
     url,
   ], {
     cwd: root,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
+    timeout: 30_000,
+    killSignal: 'SIGKILL',
   });
+
+  if (result.error) {
+    fail(`${viewport.name} render failed: ${result.error.code === 'ETIMEDOUT' ? 'Chrome timed out after 30 seconds' : result.error.message}`);
+    return;
+  }
 
   if (result.status !== 0) {
     fail(`${viewport.name} render failed${result.stderr ? `: ${result.stderr.trim()}` : ''}`);
