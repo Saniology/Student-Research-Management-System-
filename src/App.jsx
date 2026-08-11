@@ -114,7 +114,8 @@ export default function App() {
       if (access.signed_url) { window.open(access.signed_url, '_blank', 'noopener'); return; }
       const payment = await invoke('repository-access', { action: 'initialize_download', project_id: project.id });
       if (!window.PaystackPop) throw new Error('Paystack failed to load. Refresh and try again.');
-      window.PaystackPop.resumeTransaction(payment.access_code, { onSuccess: async response => { const reference = response?.reference || response?.trxref || payment.reference; const result = await invoke('repository-access', { action: 'verify_download', project_id: project.id, reference }); if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener'); notify('Watermarked download unlocked for five minutes.'); }, onCancel: () => notify('Download payment was cancelled.'), onError: error => notify(error?.message || 'Paystack could not open.') });
+      const paystack = new window.PaystackPop();
+      paystack.resumeTransaction(payment.access_code, { onSuccess: async response => { const reference = response?.reference || response?.trxref || payment.reference; const result = await invoke('repository-access', { action: 'verify_download', project_id: project.id, reference }); if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener'); notify('Watermarked download unlocked for five minutes.'); }, onCancel: () => notify('Download payment was cancelled.'), onError: error => notify(error?.message || 'Paystack could not open.') });
     } catch (error) { notify(error.message); }
   }, [notify, session]);
   const handleDownload = project => {
@@ -286,7 +287,8 @@ function StudentWorkspace({ profile, session, preview, onToast }) {
       }
       const init = await invoke('verify-paystack', { action: 'initialize_clearance' });
       if (!window.PaystackPop) throw new Error('Paystack failed to load. Refresh and try again.');
-      window.PaystackPop.resumeTransaction(init.access_code, { onSuccess: async response => { const reference = response?.reference || response?.trxref || init.reference; const path = `${session.user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`; const upload = await supabase.storage.from('thesis-pdfs').upload(path, file, { contentType: 'application/pdf', upsert: false }); if (upload.error) throw upload.error; const data = await retryPaymentVerification(reference, { file_name: file.name, file_path: upload.data.path, title: form.title, abstract: form.abstract, degree: form.degree, file_size_bytes: file.size, mime_type: file.type || 'application/pdf' }); setPayment(data.payment); setProject(data.project); setFile(null); onToast('Payment verified and thesis submitted for review.'); }, onCancel: () => onToast('Payment was cancelled.'), onError: error => onToast(error?.message || 'Paystack could not open.') });
+      const paystack = new window.PaystackPop();
+      paystack.resumeTransaction(init.access_code, { onSuccess: async response => { const reference = response?.reference || response?.trxref || init.reference; const path = `${session.user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`; const upload = await supabase.storage.from('thesis-pdfs').upload(path, file, { contentType: 'application/pdf', upsert: false }); if (upload.error) throw upload.error; const data = await retryPaymentVerification(reference, { file_name: file.name, file_path: upload.data.path, title: form.title, abstract: form.abstract, degree: form.degree, file_size_bytes: file.size, mime_type: file.type || 'application/pdf' }); setPayment(data.payment); setProject(data.project); setFile(null); onToast('Payment verified and thesis submitted for review.'); }, onCancel: () => onToast('Payment was cancelled.'), onError: error => onToast(error?.message || 'Paystack could not open.') });
     } catch (error) { onToast(error.message); }
   };
   const generateReceipt = async () => {

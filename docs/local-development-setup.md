@@ -38,6 +38,19 @@ npm ci
 npm run dev -- --host 0.0.0.0 --port 5500
 ```
 
+For local Vite configuration, copy the committed template into the ignored
+local file and fill the owner-only values when needed:
+
+```bash
+cp .env.production.example .env
+```
+
+The `.env` file may contain `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and
+`VITE_PAYSTACK_PUBLIC_KEY`; these are browser-safe public values. Keep
+`SUPABASE_SERVICE_ROLE_KEY`, `PAYSTACK_SECRET_KEY`, `SIS_API_TOKEN`, email
+provider keys, and DNS tokens without a `VITE_` prefix. Those values are only
+for owner scripts and Supabase deployment secrets. Never commit `.env`.
+
 Open:
 
 ```text
