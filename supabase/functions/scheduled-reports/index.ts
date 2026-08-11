@@ -260,7 +260,9 @@ async function uploadReport(
       headers: {
         apikey: serviceRoleKey,
         Authorization: `Bearer ${serviceRoleKey}`,
-        "Content-Type": "text/csv; charset=utf-8",
+        // Supabase Storage matches the bucket allow-list against the exact
+        // MIME value, so keep the charset out of the upload header.
+        "Content-Type": "text/csv",
         "x-upsert": "true",
       },
       body: csv,

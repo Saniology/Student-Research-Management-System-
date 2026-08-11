@@ -168,18 +168,16 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 - A live KASU thesis record has completed clearance payment, supervisor
   approval, library publication, receipt issuance, QR verification, and
   catalog registration. It is retained as payment/workflow evidence.
+- The same registered student has completed a successful ₦500 repository
+  payment. The live payment smoke gate verified the Paystack transaction,
+  payment ledger, permanent unlock, matric watermark, valid signed PDF,
+  receipt/QR/catalog evidence, and admin financial report inclusion.
+- Repository signed URLs include the Supabase Storage API prefix, and report
+  uploads use the exact `text/csv` bucket MIME type required by Storage.
 
 ## Still Remaining
 
 - Real provider-side email domain authentication and deliverability monitoring with institution DNS access.
 - Provider-specific production DNS credentials and hosting target values for each institution.
 - Full Playwright role automation against seeded Supabase test data; `scripts/seed-e2e-data.js` and the expanded seeded suite now provide the dedicated project dataset path, but the owner still needs to run it against a dedicated test project and retain the authenticated evidence.
-- A genuine authenticated repository payment smoke test for a registered student,
-  including the ₦500 transaction, permanent unlock, matric watermark, admin
-  ledger visibility, and financial report inclusion. The repository function
-  initializes correctly and returns `requires_payment`; hosted Paystack checkout
-  still needs to be completed in a normal browser.
-- `scripts/verify-payment-smoke.js` now provides a guarded evidence check for
-  the real payment smoke above; the owner still needs to run it with real
-  Paystack test references and owner-only credentials.
 - Production hosting, institution DNS, email provider credentials, monitoring endpoints, and rollback evidence for each tenant.

@@ -157,7 +157,9 @@ function checkStoragePrivacy() {
   });
   assert(/createSignedUrl/.test(frontendSource()), 'frontend downloads generated reports through signed URLs');
   assert(/createSignedReportUrl/.test(read('supabase/functions/scheduled-reports/index.ts')), 'scheduled report email uses signed URLs');
-  assert(/watermarkPdf/.test(read('supabase/functions/repository-access/index.ts')), 'repository downloads are watermarked');
+  const repositoryAccess = read('supabase/functions/repository-access/index.ts');
+  assert(/watermarkPdf/.test(repositoryAccess), 'repository downloads are watermarked');
+  assert(/storagePath[\s\S]+\/storage\/v1/.test(repositoryAccess), 'repository signed URLs include the storage API prefix');
 }
 
 function checkPdfValidation() {

@@ -166,14 +166,27 @@ CREATE TABLE IF NOT EXISTS departments (
   UNIQUE (institution_id, name)
 );
 
+CREATE TABLE IF NOT EXISTS courses (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  institution_id UUID NOT NULL REFERENCES institutions(id) ON DELETE CASCADE,
+  department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+  code TEXT NOT NULL,
+  name TEXT NOT NULL,
+  level TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (institution_id, code)
+);
+
 ALTER TABLE profiles
   ADD COLUMN IF NOT EXISTS institution_id UUID REFERENCES institutions(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS supervisor_id UUID REFERENCES profiles(id) ON DELETE SET NULL;
 
 ALTER TABLE students_registry
   ADD COLUMN IF NOT EXISTS institution_id UUID REFERENCES institutions(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS supervisor_email TEXT,
   ADD COLUMN IF NOT EXISTS degree TEXT,
   ADD COLUMN IF NOT EXISTS project_topic TEXT,
@@ -189,6 +202,7 @@ CREATE TABLE IF NOT EXISTS projects (
   student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   supervisor_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+  course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
   submission_id UUID REFERENCES submissions(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   abstract TEXT,
@@ -211,9 +225,13 @@ CREATE TABLE IF NOT EXISTS projects (
   CONSTRAINT projects_pdf_only CHECK (mime_type = 'application/pdf')
 );
 
+ALTER TABLE projects
+  ADD COLUMN IF NOT EXISTS course_id UUID REFERENCES courses(id) ON DELETE SET NULL;
+
 CREATE INDEX IF NOT EXISTS idx_projects_student ON projects(student_id);
 CREATE INDEX IF NOT EXISTS idx_projects_supervisor ON projects(supervisor_id);
 CREATE INDEX IF NOT EXISTS idx_projects_department ON projects(department_id);
+CREATE INDEX IF NOT EXISTS idx_projects_course ON projects(course_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
 
 CREATE TABLE IF NOT EXISTS project_reviews (
@@ -234,7 +252,9 @@ CREATE TABLE IF NOT EXISTS public_catalog (
   project_id UUID NOT NULL UNIQUE REFERENCES projects(id) ON DELETE CASCADE,
   institution_id UUID REFERENCES institutions(id) ON DELETE SET NULL,
   department_id UUID REFERENCES departments(id) ON DELETE SET NULL,
+  course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
   department_name TEXT NOT NULL,
+  course_name TEXT,
   title TEXT NOT NULL,
   abstract TEXT,
   degree TEXT,
@@ -246,7 +266,12 @@ CREATE TABLE IF NOT EXISTS public_catalog (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+ALTER TABLE public_catalog
+  ADD COLUMN IF NOT EXISTS course_id UUID REFERENCES courses(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS course_name TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_public_catalog_department ON public_catalog(department_id);
+CREATE INDEX IF NOT EXISTS idx_public_catalog_course ON public_catalog(course_id);
 CREATE INDEX IF NOT EXISTS idx_public_catalog_search
   ON public_catalog USING GIN (to_tsvector('english', coalesce(title, '') || ' ' || coalesce(abstract, '')));
 
@@ -453,6 +478,19 @@ CROSS JOIN (VALUES ('Accounting', 'ACC')) AS d(name, code)
 WHERE i.slug = 'kasu'
 ON CONFLICT (institution_id, name) DO NOTHING;
 
+INSERT INTO courses (institution_id, department_id, code, name, level)
+SELECT i.id, d.id, c.code, c.name, c.level
+FROM institutions i
+JOIN departments d ON d.institution_id = i.id AND d.name = 'Computer Science'
+CROSS JOIN (VALUES
+  ('CSC-BSC', 'Computer Science', 'Undergraduate')
+) AS c(code, name, level)
+WHERE i.slug = 'kasu'
+ON CONFLICT (institution_id, code) DO UPDATE SET
+  department_id = EXCLUDED.department_id,
+  name = EXCLUDED.name,
+  level = EXCLUDED.level;
+
 WITH profile_department_backfill AS (
   SELECT p.id AS profile_id,
          i.id AS institution_id,
@@ -508,7 +546,7 @@ BEGIN
   WHERE slug = COALESCE(NEW.raw_user_meta_data->>'tenant_slug', 'kasu')
   LIMIT 1;
 
-  INSERT INTO public.profiles (id, email, role, full_name, matric, department, department_id, avatar_url, institution_id)
+  INSERT INTO public.profiles (id, email, role, full_name, matric, department, department_id, course_id, avatar_url, institution_id)
   VALUES (
     NEW.id,
     NEW.email,
@@ -517,6 +555,7 @@ BEGIN
     NEW.raw_user_meta_data->>'matric',
     NEW.raw_user_meta_data->>'department',
     NULLIF(NEW.raw_user_meta_data->>'department_id', '')::UUID,
+    NULLIF(NEW.raw_user_meta_data->>'course_id', '')::UUID,
     NEW.raw_user_meta_data->>'avatar_url',
     tenant_id
   )
@@ -527,6 +566,7 @@ BEGIN
     matric = COALESCE(EXCLUDED.matric, profiles.matric),
     department = COALESCE(EXCLUDED.department, profiles.department),
     department_id = COALESCE(EXCLUDED.department_id, profiles.department_id),
+    course_id = COALESCE(EXCLUDED.course_id, profiles.course_id),
     avatar_url = COALESCE(EXCLUDED.avatar_url, profiles.avatar_url),
     institution_id = COALESCE(profiles.institution_id, EXCLUDED.institution_id),
     updated_at = NOW();
@@ -542,16 +582,21 @@ CREATE TRIGGER on_auth_user_created
 WITH registry_department_backfill AS (
   SELECT sr.matric,
          i.id AS institution_id,
-         d.id AS department_id
+         d.id AS department_id,
+         c.id AS course_id
   FROM students_registry sr
   JOIN institutions i ON i.slug = 'kasu'
   LEFT JOIN departments d ON d.institution_id = i.id
     AND d.name = sr.department
+  LEFT JOIN courses c ON c.institution_id = i.id
+    AND c.department_id = d.id
+    AND c.code = 'CSC-BSC'
   WHERE sr.institution_id IS NULL
 )
 UPDATE students_registry sr
 SET institution_id = b.institution_id,
     department_id = b.department_id,
+    course_id = COALESCE(sr.course_id, b.course_id),
     supervisor_email = COALESCE(sr.supervisor_email, 'teacher@kasu.edu.ng'),
     degree = COALESCE(sr.degree, 'BSc')
 FROM registry_department_backfill b
@@ -567,6 +612,7 @@ ALTER TABLE system_configs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE colleges ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faculties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public_catalog ENABLE ROW LEVEL SECURITY;
@@ -608,6 +654,11 @@ CREATE POLICY "Public read departments"
   ON departments FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Public read courses" ON courses;
+CREATE POLICY "Public read courses"
+  ON courses FOR SELECT
+  USING (true);
+
 DROP POLICY IF EXISTS "Admins manage institutions" ON institutions;
 CREATE POLICY "Admins manage institutions"
   ON institutions FOR ALL
@@ -635,6 +686,12 @@ CREATE POLICY "Admins manage colleges"
 DROP POLICY IF EXISTS "Admins manage departments" ON departments;
 CREATE POLICY "Admins manage departments"
   ON departments FOR ALL
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "Admins manage courses" ON courses;
+CREATE POLICY "Admins manage courses"
+  ON courses FOR ALL
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
@@ -926,6 +983,12 @@ CREATE POLICY "Admins manage departments"
   USING (public.is_admin() AND institution_id = public.current_institution_id())
   WITH CHECK (public.is_admin() AND institution_id = public.current_institution_id());
 
+DROP POLICY IF EXISTS "Admins manage courses" ON courses;
+CREATE POLICY "Admins manage courses"
+  ON courses FOR ALL
+  USING (public.is_admin() AND institution_id = public.current_institution_id())
+  WITH CHECK (public.is_admin() AND institution_id = public.current_institution_id());
+
 -- Storage read access for reviewers. Students keep the existing own-folder policies.
 DROP POLICY IF EXISTS "Supervisors read assigned thesis files" ON storage.objects;
 CREATE POLICY "Supervisors read assigned thesis files"
@@ -1014,6 +1077,7 @@ CREATE OR REPLACE VIEW admin_overview AS
 SELECT
   (SELECT COUNT(*) FROM profiles WHERE role = 'student' AND institution_id = public.current_institution_id()) AS total_students,
   (SELECT COUNT(*) FROM profiles WHERE role = 'teacher' AND institution_id = public.current_institution_id()) AS total_supervisors,
+  (SELECT COUNT(*) FROM courses WHERE institution_id = public.current_institution_id()) AS total_courses,
   (SELECT COUNT(*) FROM projects WHERE institution_id = public.current_institution_id()) AS total_projects,
   (SELECT COUNT(*) FROM projects WHERE institution_id = public.current_institution_id() AND status IN ('submitted', 'supervisor_review')) AS pending_supervisor_review,
   (SELECT COUNT(*) FROM projects WHERE institution_id = public.current_institution_id() AND status IN ('supervisor_approved', 'library_review')) AS pending_library_review,

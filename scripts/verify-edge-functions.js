@@ -175,6 +175,9 @@ function checkLiveSmokeVerifier() {
 }
 
 contracts.forEach(checkCommonFunctionContract);
+const scheduledReports = read('supabase/functions/scheduled-reports/index.ts');
+assert(/"Content-Type":\s*"text\/csv"/.test(scheduledReports), 'scheduled reports upload uses the allowed CSV MIME type');
+assert(!/text\/csv;\s*charset/i.test(scheduledReports), 'scheduled reports upload does not append an unsupported CSV charset');
 checkSupabaseConfig();
 checkDeployScript();
 checkLiveSmokeVerifier();

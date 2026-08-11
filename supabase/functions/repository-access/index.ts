@@ -695,7 +695,12 @@ async function createSignedUrl(
   const body = await res.json();
   const signedPath = body.signedURL || body.signedUrl || body.signed_url;
   if (!signedPath) throw new Error("Storage did not return a signed URL");
-  return signedPath.startsWith("http") ? signedPath : `${supabaseUrl}${signedPath}`;
+  if (signedPath.startsWith("http")) return signedPath;
+  const relativePath = signedPath.startsWith("/") ? signedPath : `/${signedPath}`;
+  const storagePath = relativePath.startsWith("/storage/v1/")
+    ? relativePath
+    : `/storage/v1${relativePath}`;
+  return `${supabaseUrl}${storagePath}`;
 }
 
 async function createWatermarkedDownloadUrl(
