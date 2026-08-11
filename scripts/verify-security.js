@@ -25,6 +25,7 @@ const rlsTables = [
   'institutions',
   'system_configs',
   'projects',
+  'courses',
   'project_reviews',
   'public_catalog',
   'repository_unlocks',

@@ -165,6 +165,7 @@ function checkProductCapabilities() {
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS report_schedules/, 'scheduled report schema exists');
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS generated_reports/, 'generated report archive schema exists');
   assertContains('supabase/spms-core.sql', /CREATE OR REPLACE VIEW admin_overview/, 'admin overview view exists');
+  assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS courses/, 'academic course schema exists');
   assertNotContains('supabase/spms-core.sql', /JOIN\s+departments[^\n]+(p|sr)\.department/, 'tenant department backfill avoids invalid UPDATE join aliases');
 
   assertContains('supabase/functions/verify-paystack/index.ts', /initialize_clearance/, 'clearance payments initialize server-side');
@@ -207,6 +208,7 @@ function checkProductCapabilities() {
   assertContains('index.html', /loadTenant/, 'frontend resolves tenant context');
   assertContains('src/lib/supabase.js', /public-config/, 'frontend loads safe public configuration through Edge Function');
   assertContains('index.html', /allowed_domains/, 'frontend manages tenant domains');
+  assertContains('index.html', /courses|new-course/, 'admin manages academic courses');
   assertContains('index.html', /validateAppConfig/, 'frontend validates browser configuration');
   assertContains('index.html', /app-config-error/, 'frontend exposes configuration errors');
   assertContains('index.html', /className="hero"/, 'frontend has polished portal home shell');

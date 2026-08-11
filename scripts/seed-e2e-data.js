@@ -108,7 +108,7 @@ async function cleanup(client, ids, studentId) {
   console.log(`Removed ${ids.projects.length} project fixtures for ${fixturePrefix}.`);
 }
 
-async function seed(client, institution, student, teacher, library, admin, department) {
+async function seed(client, institution, student, teacher, library, admin, department, course) {
   const ids = fixtureIds();
   const now = new Date();
   const safePrefix = fixturePrefix.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -140,6 +140,7 @@ async function seed(client, institution, student, teacher, library, admin, depar
     student_id: student.id,
     supervisor_id: teacher.id,
     department_id: department?.id || null,
+    course_id: course?.id || null,
     submission_id: record.submissionId,
     title: record.title,
     abstract: `This ${fixturePrefix.toLowerCase()} demonstrates the ${record.status.replaceAll('_', ' ')} workflow state for browser verification. It is synthetic test data and contains no real student research or payment history.`,
@@ -172,7 +173,9 @@ async function seed(client, institution, student, teacher, library, admin, depar
     project_id: ids.projects[2],
     institution_id: institution.id,
     department_id: department?.id || null,
+    course_id: course?.id || null,
     department_name: department?.name || 'Computer Science',
+    course_name: course?.name || null,
     title: records[2].title,
     abstract: projects[2].abstract,
     degree: 'BSc',
@@ -242,8 +245,9 @@ async function main() {
     if (profiles[role].institution_id && profiles[role].institution_id !== institution.id) throw new Error(`${email} belongs to another institution`);
   }
   const department = await requiredQuery(client.from('departments').select('id,name').eq('institution_id', institution.id).eq('name', 'Computer Science').maybeSingle(), 'Computer Science department lookup');
+  const course = await requiredQuery(client.from('courses').select('id,name,code,level').eq('institution_id', institution.id).eq('code', 'CSC-BSC').maybeSingle(), 'Computer Science course lookup');
   if (isCleanup) await cleanup(client, fixtureIds(), profiles.student.id);
-  else await seed(client, institution, profiles.student, profiles.teacher, profiles.library, profiles.admin, department);
+  else await seed(client, institution, profiles.student, profiles.teacher, profiles.library, profiles.admin, department, course);
 }
 
 main().catch((error) => {

@@ -33,7 +33,7 @@ Public:
 
 Internal:
 
-- Institution, college, faculty, department, tenant domain, and branding
+- Institution, college, faculty, department, course, tenant domain, and branding
   settings.
 - Aggregated dashboard metrics and non-sensitive operational status.
 
@@ -163,4 +163,3 @@ Before production handover, record:
   `npm run verify:dr`, and `npm run verify:monitor` results;
 - location of encrypted database and storage backups;
 - process for handling correction, export, restriction, and deletion requests.
-

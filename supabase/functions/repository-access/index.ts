@@ -497,7 +497,7 @@ async function getPublishedProject(
   return await supabaseRest(
     supabaseUrl,
     serviceRoleKey,
-    `/projects?id=eq.${encodeURIComponent(projectId)}&status=in.(published,cleared)&select=id,institution_id,title,abstract,degree,file_path,status,departments(name)`,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&status=in.(published,cleared)&select=id,institution_id,title,abstract,degree,file_path,status,departments(name),courses(name)`,
   );
 }
 
@@ -842,6 +842,7 @@ function publicProject(project: Project) {
     abstract: project.abstract,
     degree: project.degree,
     department_name: project.departments?.name || "Department",
+    course_name: project.courses?.name || null,
   };
 }
 
@@ -971,4 +972,5 @@ type Project = {
   file_path: string;
   status: string;
   departments?: { name?: string | null } | null;
+  courses?: { name?: string | null } | null;
 };

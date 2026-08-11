@@ -28,7 +28,7 @@ Run `supabase/spms-core.sql` after `schema.sql` and `payments.sql`.
 It adds:
 
 - Institution and white-label settings.
-- Faculties and departments.
+- Colleges, faculties, departments, and courses.
 - Student-to-supervisor assignment fields.
 - Project lifecycle table with statuses from submission to clearance.
 - Supervisor review history.
@@ -120,7 +120,7 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 - Library publishing and clearance receipts now render QR codes tied to the verification endpoint.
 - QR codes prefer server-rendered SVG assets from `verification-lookup`, with browser rendering as fallback.
 - Public repository includes a receipt verification form.
-- Admin academic hierarchy management can create colleges, faculties, and departments from the dashboard.
+- Admin academic hierarchy management can create colleges, faculties, departments, and courses from the dashboard; course identity is carried into student, project, and public catalog metadata.
 - Logged-in users have a notification center with unread badges and mark-as-read support.
 - Admin reports can export student registers, project lifecycle/accreditation data, payment split records, financial PDFs, and archive/audit logs.
 - Admin report automation can create recurring schedules, store report recipients, run due reports, generate one-off report files, email private signed links when configured, and download generated CSV artifacts.

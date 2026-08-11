@@ -186,7 +186,8 @@ npx supabase db push --linked --yes
 The current migration removes the public `system_configs` read policy. The
 browser loads only safe fee and upload settings through the deployed
 `public-config` Edge Function; Paystack split and subaccount fields remain
-server-only.
+server-only. The tracked migrations also add tenant-scoped course records and
+carry course identity into student, project, and public catalog metadata.
 
 Never commit or share the Paystack secret key. The browser only uses the Paystack
 public key from `js/config.js`.

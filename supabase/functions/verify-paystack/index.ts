@@ -202,6 +202,7 @@ Deno.serve(async (req) => {
             student_id: user.id,
             supervisor_id: supervisorId,
             department_id: profile?.department_id || null,
+            course_id: profile?.course_id || null,
             submission_id: submission.id,
             title: projectTitle,
             abstract: typeof abstract === "string" && abstract.trim() ? abstract.trim() : null,
@@ -472,7 +473,7 @@ async function getStudentProfile(
     const [profile] = await supabaseRest(
       supabaseUrl,
       serviceRoleKey,
-      `/profiles?id=eq.${encodeURIComponent(userId)}&select=id,institution_id,department_id,department,supervisor_id,matric`,
+      `/profiles?id=eq.${encodeURIComponent(userId)}&select=id,institution_id,department_id,course_id,department,supervisor_id,matric`,
     );
     return profile || null;
   } catch (err) {

@@ -95,7 +95,7 @@ async function verifyProject(
   const catalog = await supabaseRest(
     supabaseUrl,
     serviceRoleKey,
-    `/public_catalog?project_id=eq.${encodeURIComponent(projectId)}&select=project_id,title,abstract,degree,department_name,shelf_number,doi,published_at`,
+    `/public_catalog?project_id=eq.${encodeURIComponent(projectId)}&select=project_id,title,abstract,degree,department_name,course_name,shelf_number,doi,published_at`,
   );
 
   const project = catalog[0];
@@ -111,6 +111,7 @@ async function verifyProject(
       title: project.title,
       degree: project.degree,
       department_name: project.department_name,
+      course_name: project.course_name,
       shelf_number: project.shelf_number,
       doi: project.doi,
       published_at: project.published_at,

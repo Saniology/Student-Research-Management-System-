@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
         full_name: normalizeString(record.full_name),
         department: normalizeString(record.department),
         department_id: normalizeString(record.department_id),
+        course_id: normalizeString(record.course_id),
         supervisor_email: normalizeString(record.supervisor_email),
         degree: normalizeString(record.degree),
         avatar_url: normalizeString(record.avatar_url),
@@ -79,7 +80,7 @@ async function lookupRegistry(supabaseUrl: string, serviceRoleKey: string, insti
   const records = await supabaseRest(
     supabaseUrl,
     serviceRoleKey,
-    `/students_registry?institution_id=eq.${encodeURIComponent(institutionId)}&matric=eq.${encodeURIComponent(matric)}&select=matric,full_name,department,department_id,supervisor_email,degree,avatar_url`,
+    `/students_registry?institution_id=eq.${encodeURIComponent(institutionId)}&matric=eq.${encodeURIComponent(matric)}&select=matric,full_name,department,department_id,course_id,supervisor_email,degree,avatar_url`,
   );
   return records[0] || null;
 }

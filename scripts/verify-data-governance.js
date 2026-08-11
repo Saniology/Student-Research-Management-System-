@@ -95,7 +95,7 @@ function checkPublicVerificationBoundary() {
   assert(/clearance_receipts/.test(edge), 'verification endpoint verifies clearance receipts');
   assert(/public_catalog/.test(edge), 'verification endpoint verifies published catalog records');
   assert(!/file_path|storage_path|signedUrl|signedURL|signed_url|reports|audit_logs|payment_metadata/i.test(edge), 'verification endpoint does not expose private paths, signed URLs, reports, audit logs, or payment metadata');
-  assert(/select=project_id,title,abstract,degree,department_name,shelf_number,doi,published_at/.test(edge), 'project verification selects only public catalog fields');
+  assert(/select=project_id,title,abstract,degree,department_name,course_name,shelf_number,doi,published_at/.test(edge), 'project verification selects only public catalog fields');
 }
 
 function checkDocsAndAutomation() {

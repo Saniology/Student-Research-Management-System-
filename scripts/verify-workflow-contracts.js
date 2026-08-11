@@ -27,14 +27,14 @@ const edgeContracts = [
     file: files.verifyPaystack,
     frontendActions: ['initialize_clearance'],
     handlerActions: ['initialize_clearance'],
-    requiredFields: ['reference', 'file_name', 'file_path', 'title', 'abstract', 'degree', 'file_size_bytes'],
+    requiredFields: ['reference', 'file_name', 'file_path', 'title', 'abstract', 'degree', 'course_id', 'file_size_bytes'],
   },
   {
     functionName: 'project-workflow',
     file: files.projectWorkflow,
     frontendActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_publish', 'issue_receipt'],
     handlerActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_publish', 'issue_receipt'],
-    requiredFields: ['project_id', 'decision', 'supervisor_id', 'file_path', 'file_name', 'shelf_number', 'verification_code'],
+    requiredFields: ['project_id', 'decision', 'supervisor_id', 'file_path', 'file_name', 'course_id', 'shelf_number', 'verification_code'],
   },
   {
     functionName: 'repository-access',

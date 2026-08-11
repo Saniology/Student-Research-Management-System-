@@ -290,6 +290,7 @@ async function handleStudentResubmission(
   const title = optionalString(body.title) || project.title;
   const abstract = optionalString(body.abstract) || project.abstract;
   const degree = optionalString(body.degree) || project.degree;
+  const courseId = optionalString(body.course_id) || project.course_id || null;
   if (!abstract || abstract.length < 50) {
     return jsonResponse({ error: "A complete abstract is required before resubmission" }, 400);
   }
@@ -304,6 +305,7 @@ async function handleStudentResubmission(
         title,
         abstract,
         degree,
+        course_id: courseId,
         file_name: fileName,
         file_path: filePath,
         file_size_bytes: fileSizeBytes,
@@ -407,7 +409,7 @@ async function handleLibraryPublish(
   const [updated] = await supabaseRest(
     supabaseUrl,
     serviceRoleKey,
-    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*,departments(name)`,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*,departments(name),courses(name)`,
     {
       method: "PATCH",
       body: {
@@ -541,7 +543,7 @@ async function getProject(supabaseUrl: string, serviceRoleKey: string, projectId
   return await supabaseRest(
     supabaseUrl,
     serviceRoleKey,
-    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*,departments(name)`,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*,departments(name),courses(name)`,
   );
 }
 
@@ -565,6 +567,8 @@ async function upsertPublicCatalog(
     project_id: project.id,
     institution_id: project.institution_id || null,
     department_id: project.department_id || null,
+    course_id: project.course_id || null,
+    course_name: project.courses?.name || null,
     department_name: departmentName,
     title: project.title,
     abstract: project.abstract || null,
@@ -811,6 +815,7 @@ type Project = {
   student_id: string;
   supervisor_id?: string | null;
   department_id?: string | null;
+  course_id?: string | null;
   department_name?: string;
   title: string;
   abstract?: string | null;
@@ -823,4 +828,5 @@ type Project = {
   cleared_at?: string | null;
   metadata_verified_at?: string | null;
   departments?: { name?: string | null } | null;
+  courses?: { name?: string | null } | null;
 };

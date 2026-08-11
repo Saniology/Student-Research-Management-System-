@@ -26,6 +26,7 @@ assert(/library_publish/.test(source) && /Verify (?:&amp;|&) Publish/.test(sourc
 assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source), 'admin assignment controls exist');
 assert(/AdminLivePanel/.test(source) && /admin_overview/.test(source), 'admin dashboard reads live overview data');
 assert(/HierarchyManager/.test(source) && /system_configs/.test(source), 'admin hierarchy and settings controls exist');
+assert(/courses/.test(source) && /new-course/.test(source), 'admin course management controls exist');
 assert(/fetchQrSvg/.test(source) && /Project verification QR code/.test(source), 'library QR verification display is wired');
 assert(/storage\.from\('thesis-pdfs'\)\.upload/.test(source) && /file_path: upload\.data\.path/.test(source), 'student PDF upload is completed before payment verification');
 assert(/repository-access/.test(source) && /initialize_download/.test(source) && /verify_download/.test(source), 'paid repository download flow exists');
