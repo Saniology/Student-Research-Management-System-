@@ -29,6 +29,7 @@ assert(/HierarchyManager/.test(source) && /system_configs/.test(source), 'admin 
 assert(/fetchQrSvg/.test(source) && /Project verification QR code/.test(source), 'library QR verification display is wired');
 assert(/storage\.from\('thesis-pdfs'\)\.upload/.test(source) && /file_path: upload\.data\.path/.test(source), 'student PDF upload is completed before payment verification');
 assert(/repository-access/.test(source) && /initialize_download/.test(source) && /verify_download/.test(source), 'paid repository download flow exists');
+assert(/project\.project_id \? \{ \.\.\.project, id: project\.project_id \}/.test(source), 'public repository downloads use the underlying project identifier');
 assert(/public_catalog/.test(source) && /department_name/.test(source) && !/public_catalog.*author_name/.test(source), 'public repository reads the anonymized catalog schema');
 assert(/config\.valid \? \[\] : demoProjects/.test(source), 'configured public repository does not silently fall back to demo records');
 assert(/scheduled-reports/.test(source) && /run_once/.test(source) && /run_due/.test(source), 'scheduled reporting contract exists');
@@ -44,6 +45,9 @@ assert(!/onclick=/.test(source), 'React actions do not rely on inline onclick ha
 assert(!/PaystackPop\.setup|openIframe\(/.test(source), 'browser does not create direct Paystack transactions');
 assert(/new window\.PaystackPop\(\)[\s\S]*resumeTransaction/.test(source), 'Paystack Popup v2 is instantiated before resuming backend transactions');
 assert(/Math\.max\(1,[\s\S]*numericValue/.test(source), 'analytics progress bars remain valid for zero-record institutions');
+assert(/eq\(['\"]transaction_type['\"]\s*,\s*['\"]clearance_fee['\"]\)/.test(source), 'student payment evidence is scoped to clearance fees');
+assert(/clearance_receipts['\"]\)\.select\(['\"]\*['\"]\)/.test(source), 'student workspace restores issued receipts after reload');
+assert(/\['published','cleared'\]\.includes\(project\?\.status\)/.test(source), 'students can issue receipts after library publication');
 
 console.log('');
 console.log(`UI smoke verification complete: ${failures.length} failure(s).`);
