@@ -87,6 +87,9 @@ Use this checklist before a production handover or institutional demo.
 - Confirm a renamed non-PDF upload is rejected by server-side object validation.
 - Test retry verification using the saved reference.
 - Test a paid repository download and confirm the returned PDF is watermarked.
+- As a public reader, enter an email, complete a paid repository download, and
+  confirm the guest order is attributed to the Paystack customer email and the
+  returned PDF is watermarked with a short-lived signed link.
 - Create a registered student account with matric and school email, test a paid
   repository download, and confirm the permanent account unlock, matric
   watermark, Admin > Payments entry, and financial report inclusion.

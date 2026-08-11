@@ -15,7 +15,8 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.repository-access]
-# JWT is validated inside the function via auth.getUser().
+# Registered actions use auth.getUser(); the two guest actions use strict
+# Paystack/email attribution before issuing a watermarked signed URL.
 verify_jwt = false
 
 [functions.student-identity]

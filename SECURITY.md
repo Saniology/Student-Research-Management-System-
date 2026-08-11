@@ -35,6 +35,10 @@
 - Browser-callable functions use `verify_jwt = false` only so CORS preflight
   requests can succeed; functions must validate auth or a cron secret inside the
   function body.
+- The repository function's two public guest actions are the documented
+  exception: they validate the project, email format, Paystack amount,
+  transaction metadata, and paid customer email before issuing a short-lived
+  watermarked link. They never expose the original storage path.
 - Public verification may be unauthenticated, but it must not return private file
   paths, storage object names, or secret metadata.
 - Scheduled report cron execution must require `REPORT_CRON_SECRET`.

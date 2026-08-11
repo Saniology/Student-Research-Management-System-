@@ -33,6 +33,7 @@ assert(/paystack_split_code/.test(source) && /paystack_institution_subaccount/.t
 assert(/fetchQrSvg/.test(source) && /Project verification QR code/.test(source), 'library QR verification display is wired');
 assert(/storage\.from\('thesis-pdfs'\)\.upload/.test(source) && /file_path: upload\.data\.path/.test(source), 'student PDF upload is completed before payment verification');
 assert(/repository-access/.test(source) && /initialize_download/.test(source) && /verify_download/.test(source), 'paid repository download flow exists');
+assert(/GuestDownloadModal/.test(source) && /initialize_guest_download/.test(source) && /verify_guest_download/.test(source), 'public repository guest payment flow exists');
 assert(/project\.project_id \? \{ \.\.\.project, id: project\.project_id \}/.test(source), 'public repository downloads use the underlying project identifier');
 assert(/public_catalog/.test(source) && /department_name/.test(source) && !/public_catalog.*author_name/.test(source), 'public repository reads the anonymized catalog schema');
 assert(/config\.valid \? \[\] : demoProjects/.test(source), 'configured public repository does not silently fall back to demo records');

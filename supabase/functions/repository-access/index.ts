@@ -30,10 +30,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const action = body.action;
     const guestAction = action === "initialize_guest_download" || action === "verify_guest_download";
-    if (guestAction) {
-      return jsonResponse({ error: "Repository downloads require an account with a matric number and institutional email" }, 401);
-    }
-    if (!authHeader) {
+    if (!guestAction && !authHeader) {
       return jsonResponse({ error: "Missing authorization header" }, 401);
     }
 
@@ -50,6 +47,29 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Supabase function environment is not configured" }, 500);
     }
 
+    if (guestAction) {
+      if (action === "initialize_guest_download") {
+        return await initializeGuestDownloadPayment(
+          supabaseUrl,
+          supabaseServiceKey,
+          paystackSecret,
+          body,
+        );
+      }
+      if (action === "verify_guest_download") {
+        return await verifyGuestDownloadPayment(
+          supabaseUrl,
+          supabaseServiceKey,
+          paystackSecret,
+          body,
+        );
+      }
+      return jsonResponse({ error: "Unknown guest repository access action" }, 400);
+    }
+
+    if (!authHeader) {
+      return jsonResponse({ error: "Missing authorization header" }, 401);
+    }
     const user = await getAuthenticatedUser(supabaseUrl, supabaseAnonKey, authHeader);
     if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
 
@@ -178,7 +198,56 @@ async function verifyDownloadPayment(
     `/payments?paystack_reference=eq.${encodeURIComponent(reference)}&select=*`,
   );
   if (existingPayment[0]) {
-    return jsonResponse({ error: "Payment reference has already been used" }, 409);
+    const payment = existingPayment[0];
+    if (
+      payment.transaction_type !== "repository_download" ||
+      payment.student_id !== profile.id ||
+      payment.project_id !== project.id
+    ) {
+      return jsonResponse({ error: "Payment reference has already been used" }, 409);
+    }
+    let unlock = await getUnlock(supabaseUrl, serviceRoleKey, profile.id, project.id);
+    if (!unlock) {
+      const watermarkIdentity = profile.matric || profile.email || user.email || profile.id;
+      [unlock] = await supabaseRest(
+        supabaseUrl,
+        serviceRoleKey,
+        "/repository_unlocks?select=*",
+        {
+          method: "POST",
+          body: {
+            user_id: profile.id,
+            project_id: project.id,
+            payment_id: payment.id,
+            watermark_identity: watermarkIdentity,
+          },
+        },
+      );
+    }
+    const watermarkIdentity = unlock.watermark_identity;
+    const signedUrl = await createWatermarkedDownloadUrl(
+      supabaseUrl,
+      serviceRoleKey,
+      project,
+      watermarkIdentity,
+    );
+    await writeAudit(supabaseUrl, serviceRoleKey, profile.id, "repository_watermarked_download_url_issued", project.id, {
+      unlock_id: unlock.id,
+      payment_id: payment.id,
+      watermark_identity: watermarkIdentity,
+      retry: true,
+    });
+    return jsonResponse({
+      success: true,
+      payment,
+      unlock,
+      already_unlocked: true,
+      signed_url: signedUrl,
+      expires_in: SIGNED_URL_TTL_SECONDS,
+      watermark_identity: watermarkIdentity,
+      watermarked: true,
+      project: publicProject(project),
+    });
   }
 
   const config = await getDownloadConfig(supabaseUrl, serviceRoleKey, project.institution_id);
@@ -354,7 +423,30 @@ async function verifyGuestDownloadPayment(
     serviceRoleKey,
     `/guest_download_orders?paystack_reference=eq.${encodeURIComponent(reference)}&select=*`,
   );
-  if (existing[0]) return jsonResponse({ error: "Payment reference has already been used" }, 409);
+  if (existing[0]) {
+    const order = existing[0];
+    if (order.project_id !== project.id || String(order.email).toLowerCase() !== email) {
+      return jsonResponse({ error: "Payment reference has already been used" }, 409);
+    }
+    const watermarkIdentity = order.watermark_identity || `guest-${email}`;
+    const signedUrl = await createWatermarkedDownloadUrl(
+      supabaseUrl,
+      serviceRoleKey,
+      project,
+      watermarkIdentity,
+    );
+    return jsonResponse({
+      success: true,
+      guest: true,
+      order,
+      already_unlocked: true,
+      signed_url: signedUrl,
+      expires_in: SIGNED_URL_TTL_SECONDS,
+      watermark_identity: watermarkIdentity,
+      watermarked: true,
+      project: publicProject(project),
+    });
+  }
 
   const config = await getDownloadConfig(supabaseUrl, serviceRoleKey, project.institution_id);
   const paystackRes = await fetch(
@@ -377,8 +469,11 @@ async function verifyGuestDownloadPayment(
   if (metadata.payment_type !== "repository_guest_download") {
     return jsonResponse({ error: "Payment reference is not for a guest repository download" }, 400);
   }
-  if (metadata.project_id && metadata.project_id !== project.id) {
+  if (metadata.project_id !== project.id) {
     return jsonResponse({ error: "Payment reference belongs to another project" }, 403);
+  }
+  if (typeof metadata.guest_email !== "string" || metadata.guest_email.toLowerCase() !== email) {
+    return jsonResponse({ error: "Payment reference belongs to another guest email" }, 403);
   }
 
   const watermarkIdentity = `guest-${email}`;

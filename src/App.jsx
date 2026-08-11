@@ -39,7 +39,8 @@ export default function App() {
   const [booting, setBooting] = useState(true);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState('login');
-  const [pendingDownloadProject, setPendingDownloadProject] = useState(null);
+  const [guestDownloadProject, setGuestDownloadProject] = useState(null);
+  const [guestDownloadBusy, setGuestDownloadBusy] = useState(false);
   const [toast, setToast] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -140,21 +141,39 @@ export default function App() {
   }, [notify, session]);
   const handleDownload = project => {
     if (!session) {
-      setPendingDownloadProject(project);
-      setAuthMode('signup');
-      setAuthOpen(true);
-      notify('Create an account with your matric number and school email to download this thesis.');
+      setGuestDownloadProject(project);
       return;
     }
     continueRepositoryDownload(project);
   };
-  useEffect(() => {
-    if (!session || !profile || !pendingDownloadProject || previewRole) return;
-    const project = pendingDownloadProject;
-    setPendingDownloadProject(null);
-    continueRepositoryDownload(project);
-  }, [continueRepositoryDownload, pendingDownloadProject, profile, session]);
-
+  const startGuestDownload = useCallback(async email => {
+    if (!guestDownloadProject) return;
+    const normalizedEmail = email.trim().toLowerCase();
+    setGuestDownloadBusy(true);
+    try {
+      const payment = await invoke('repository-access', { action: 'initialize_guest_download', project_id: guestDownloadProject.id, email: normalizedEmail });
+      setGuestDownloadBusy(false);
+      setGuestDownloadProject(null);
+      resumePaystackPayment(payment, {
+        onSuccess: async response => {
+          setGuestDownloadBusy(false);
+          try {
+            const reference = response?.reference || response?.trxref || payment.reference;
+            const result = await invoke('repository-access', { action: 'verify_guest_download', project_id: guestDownloadProject.id, email: normalizedEmail, reference });
+            if (result.signed_url) window.open(result.signed_url, '_blank', 'noopener');
+            notify('Watermarked download unlocked for five minutes.');
+          } catch (error) {
+            notify(`Payment completed, but the download could not be unlocked: ${error.message}`);
+          }
+        },
+        onCancel: () => { setGuestDownloadBusy(false); notify('Download payment was cancelled.'); },
+        onError: error => { setGuestDownloadBusy(false); notify(error?.message || 'Paystack could not open.'); },
+      });
+    } catch (error) {
+      setGuestDownloadBusy(false);
+      notify(error.message);
+    }
+  }, [guestDownloadProject, notify]);
   if (booting) return <><AppShell tenant={tenant} onHome={goHome} onLogin={openLogin}><PageSkeleton role="landing" /></AppShell></>;
   return <AppShell tenant={tenant} role={role} onHome={goHome} onLogin={openLogin} onLogout={logout} notificationCount={notifications.length} onNotifications={openNotificationCenter}>
     {view === 'landing' && <Landing tenant={tenant} session={session} onLogin={openLogin} onWorkspace={() => role ? enterWorkspace(role) : openLogin()} onDownload={handleDownload} configError={!config.valid && !previewRole} />}
@@ -162,6 +181,7 @@ export default function App() {
     {view === 'teacher' && <TeacherWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'library' && <LibraryWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'admin' && <AdminWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
+    <GuestDownloadModal project={guestDownloadProject} busy={guestDownloadBusy} onClose={() => setGuestDownloadProject(null)} onSubmit={startGuestDownload} onSignIn={() => { setGuestDownloadProject(null); setAuthMode('login'); setAuthOpen(true); }} />
     <AuthModal tenant={tenant} open={authOpen} mode={authMode} onClose={() => setAuthOpen(false)} onModeChange={setAuthMode} onSuccess={(nextSession, nextProfile) => { setSession(nextSession); setProfile(nextProfile); enterWorkspace(nextProfile.role); }} onToast={notify} />
     <Modal open={notificationsOpen} onClose={closeNotificationCenter} eyebrow="Workflow activity" title="Notification center" wide>
       {notifications.length ? <div className="notification-list">{notifications.map(notification => <article className="notification-item" key={notification.id}><div className="notification-item-icon"><Bell size={16} /></div><div className="notification-item-copy"><div className="notification-item-head"><strong>{notification.title}</strong><span className="tag">Unread</span></div><p>{notification.message}</p><small>{displayDate(notification.created_at)}</small></div></article>)}</div> : <EmptyState icon={Bell} title="You are all caught up" copy="New submission, review, publication, and receipt updates will appear here." />}
@@ -228,6 +248,19 @@ function VerificationBox() {
 function LogInIcon() { return <ArrowRight size={16} />; }
 function OperationsBoard() { return <div className="operations-board"><div className="board-head"><div><p className="eyebrow">Operations board</p><h2>Clearance Pipeline</h2></div><span className="status-chip status-published"><span className="status-dot" />Ready</span></div>{[[FileText,'Student submission','Metadata, PDF, and fee captured together.','PDF'],[UserCheck,'Supervisor review','Approvals, revisions, and comments stay auditable.','RLS'],[BookOpen,'Library publishing','Public metadata, shelf details, and QR verification.','QR'],[CircleDollarSign,'Finance evidence','Paystack references support reconciliation.','AUDIT']].map(([Icon,title,copy,tag]) => <div className="pipeline-row" key={title}><span className="pipeline-icon"><Icon size={16} /></span><div><p>{title}</p><p>{copy}</p></div><span className="tag">{tag}</span></div>)}</div>; }
 function ProjectCard({ project, onAbstract, onDownload }) { const downloadProject = project.project_id ? { ...project, id: project.project_id } : project; return <article className="project-card"><div className="project-meta"><span className="tag">{project.degree || 'Research'}</span><span>{project.course || project.dept || 'Institution'}</span></div><h3>{project.title}</h3><p>{project.abstract}</p><div className="card-actions"><button className="button button-ghost button-small" onClick={onAbstract}>View abstract</button><button className="button button-primary button-small" onClick={() => onDownload(downloadProject)}><Download size={14} />Download</button></div></article>; }
+
+function GuestDownloadModal({ project, busy, onClose, onSubmit, onSignIn }) {
+  const [email, setEmail] = useState('');
+  useEffect(() => { if (project) setEmail(''); }, [project?.id]);
+  return <Modal open={Boolean(project)} onClose={onClose} eyebrow="Public repository" title="Download full thesis">
+    <form className="auth-form" onSubmit={event => { event.preventDefault(); onSubmit(email); }}>
+      <div className="status-panel"><h3>{project?.title || 'Research project'}</h3><p className="helper">Read the abstract for free. Enter an email address to pay for a watermarked five-minute download link.</p></div>
+      <div className="field"><label htmlFor="guest-download-email">Email address</label><input id="guest-download-email" type="email" required value={email} onChange={event => setEmail(event.target.value)} placeholder="reader@example.com" autoComplete="email" /></div>
+      <div className="modal-actions"><button className="button button-ghost" type="button" onClick={onClose}>Cancel</button><button className="button button-primary" type="submit" disabled={busy}><Download size={15} />{busy ? 'Opening secure checkout...' : 'Continue to payment'}</button></div>
+    </form>
+    <div className="auth-switch">Already have an account? <button type="button" onClick={onSignIn}>Sign in</button></div>
+  </Modal>;
+}
 
 function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToast }) {
   const [form, setForm] = useState({ email: '', password: '', matric: '' });
@@ -613,7 +646,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
     {section === 'supervisors' && <AdminSupervisorQueue profile={profile} onToast={onToast} />}
     {section === 'departments' && <HierarchyManager colleges={colleges} faculties={faculties} departments={departments} courses={courses} newCollege={newCollege} setNewCollege={setNewCollege} newFaculty={newFaculty} setNewFaculty={setNewFaculty} newDepartment={newDepartment} setNewDepartment={setNewDepartment} newCourse={newCourse} setNewCourse={setNewCourse} addHierarchy={addHierarchy} />}
     {section === 'uploads' && <section className="surface"><SectionHeader eyebrow="Project register" title="All thesis uploads" copy="Monitor status, student ownership, academic level, and submission timestamps." /><DataTable columns={['Project', 'Student', 'Degree', 'Status', 'Submitted']} rows={projects.map(item => [item.title, item.profiles?.full_name || 'Student', item.degree || '—', <StatusChip status={item.status} key={`${item.id}-status`} />, displayDate(item.created_at)])} empty="No project uploads found." /></section>}
-    {section === 'payments' && <section className="surface"><SectionHeader eyebrow="Finance evidence" title="Payment ledger" copy="Clearance payments and registered repository downloads with references for reconciliation." /><DataTable columns={['Reference', 'Type', 'Amount', 'Status', 'Created', 'Receipt']} rows={[...payments.map(item => { const receipt = receipts.find(record => record.project_id === item.project_id); return [item.paystack_reference || '—', item.transaction_type?.replaceAll('_', ' ') || '—', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), receipt ? <button className="button button-ghost button-small" onClick={() => setSelectedReceipt(receipt)}>View</button> : '—']; }), ...guestOrders.map(item => [item.paystack_reference || '—', 'legacy guest download', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), '—'])]} empty="No payment records found." /><Modal open={Boolean(selectedReceipt)} onClose={() => setSelectedReceipt(null)} eyebrow="Clearance evidence" title={selectedReceipt?.verification_code || 'Receipt'}><div className="receipt"><h3>{selectedReceipt?.projects?.title || 'Clearance receipt'}</h3><dl><dt>Student</dt><dd>{selectedReceipt?.profiles?.full_name || '—'}</dd><dt>Matric</dt><dd>{selectedReceipt?.profiles?.matric || '—'}</dd><dt>Issued</dt><dd>{displayDate(selectedReceipt?.issued_at)}</dd><dt>Verification code</dt><dd>{selectedReceipt?.verification_code || '—'}</dd></dl></div><div className="modal-actions"><button className="button button-ghost" onClick={() => setSelectedReceipt(null)}>Close</button>{selectedReceipt && <button className="button button-primary" onClick={() => downloadReceiptEvidence(selectedReceipt)}><Download size={15} />Download evidence</button>}</div></Modal></section>}
+    {section === 'payments' && <section className="surface"><SectionHeader eyebrow="Finance evidence" title="Payment ledger" copy="Clearance payments and registered or guest repository downloads with references for reconciliation." /><DataTable columns={['Reference', 'Type', 'Amount', 'Status', 'Created', 'Receipt']} rows={[...payments.map(item => { const receipt = receipts.find(record => record.project_id === item.project_id); return [item.paystack_reference || '—', item.transaction_type?.replaceAll('_', ' ') || '—', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), receipt ? <button className="button button-ghost button-small" onClick={() => setSelectedReceipt(receipt)}>View</button> : '—']; }), ...guestOrders.map(item => [item.paystack_reference || '—', 'guest repository download', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), '—'])]} empty="No payment records found." /><Modal open={Boolean(selectedReceipt)} onClose={() => setSelectedReceipt(null)} eyebrow="Clearance evidence" title={selectedReceipt?.verification_code || 'Receipt'}><div className="receipt"><h3>{selectedReceipt?.projects?.title || 'Clearance receipt'}</h3><dl><dt>Student</dt><dd>{selectedReceipt?.profiles?.full_name || '—'}</dd><dt>Matric</dt><dd>{selectedReceipt?.profiles?.matric || '—'}</dd><dt>Issued</dt><dd>{displayDate(selectedReceipt?.issued_at)}</dd><dt>Verification code</dt><dd>{selectedReceipt?.verification_code || '—'}</dd></dl></div><div className="modal-actions"><button className="button button-ghost" onClick={() => setSelectedReceipt(null)}>Close</button>{selectedReceipt && <button className="button button-primary" onClick={() => downloadReceiptEvidence(selectedReceipt)}><Download size={15} />Download evidence</button>}</div></Modal></section>}
     {section === 'reports' && <AdminReports schedules={schedules} generatedReports={generatedReports} schedule={schedule} setSchedule={setSchedule} createSchedule={createSchedule} generateReport={generateReport} runDue={runDue} />}
     {section === 'settings' && <AdminSettings institution={institution} settings={settings} onInstitutionChange={updateInstitution} onSettingsChange={updateSettings} onSave={saveSettings} saving={saving} />}
   </Workspace>;

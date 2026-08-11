@@ -146,14 +146,16 @@ function checkRls() {
   assert(/Library read review queue[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'library queue policy is tenant scoped');
   assert(/Admins read guest download orders[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'guest download records are tenant scoped');
   const repositoryAccess = read('supabase/functions/repository-access/index.ts');
+  const html = frontendSource();
   assert(/select=id,email,matric,full_name,institution_id/.test(repositoryAccess), 'repository access loads the authenticated tenant');
   assert(/assertProjectTenant\(profile, project\)/g.test(repositoryAccess), 'repository actions enforce project institution isolation');
   assert(/Repository record belongs to another institution/.test(repositoryAccess), 'repository rejects cross-tenant downloads');
   assert(/initialize_guest_download|verify_guest_download/.test(repositoryAccess), 'guest repository actions are handled server-side');
-  assert(/Repository downloads require an account with a matric number and institutional email/.test(repositoryAccess), 'unauthenticated repository downloads are rejected');
+  assert(/if \(guestAction\) \{[\s\S]{0,1400}initializeGuestDownloadPayment/.test(repositoryAccess), 'public guest repository payment path is handled before authentication');
   assert(/requireEmail\(body\.email\)/.test(repositoryAccess), 'guest download requires a validated email address');
   assert(/transaction\.customer\.email\.toLowerCase\(\) !== email/.test(repositoryAccess), 'guest payment email is matched before issuing access');
   assert(/guest_download_orders\?select=\*/.test(repositoryAccess), 'successful guest download payments are persisted');
+  assert(/GuestDownloadModal/.test(html) && /initialize_guest_download/.test(html), 'public repository exposes a guest download payment flow');
 }
 
 function checkStoragePrivacy() {
