@@ -156,22 +156,29 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 - The linked project `tejkksgyqltudpfuzjdo` contains the KASU tenant, the
   tenant-scoped repository audit table, the private student registry, and the tenant-aware
   `current_institution_id()` helper.
-- All seven Edge Functions, including `student-identity`, are deployed with browser-safe preflight handling, and
+- All eight Edge Functions, including `student-identity` and `public-config`, are deployed with browser-safe preflight handling, and
   the live deployment verifier reports `health-check: ok`.
+- The browser no longer reads `system_configs` directly. A migration removes
+  its public read policy, while `public-config` returns only safe fee/upload
+  settings.
 - Live identity smoke verification accepts the seeded KASU matric/school-email
   pair and the repository endpoint rejects unauthenticated guest actions.
 - The four documented demo accounts authenticate successfully against the hosted
   project and reach their student, teacher, library, and admin workspaces.
-- The hosted database currently has no project/catalog records, which is
-  expected until a real thesis submission completes the workflow.
+- A live KASU thesis record has completed clearance payment, supervisor
+  approval, library publication, receipt issuance, QR verification, and
+  catalog registration. It is retained as payment/workflow evidence.
 
 ## Still Remaining
 
 - Real provider-side email domain authentication and deliverability monitoring with institution DNS access.
 - Provider-specific production DNS credentials and hosting target values for each institution.
 - Full Playwright role automation against seeded Supabase test data; `scripts/seed-e2e-data.js` and the expanded seeded suite now provide the dedicated project dataset path, but the owner still needs to run it against a dedicated test project and retain the authenticated evidence.
-- A genuine end-to-end smoke test with a real Paystack test transaction, private PDF upload, supervisor review, library publication, QR verification, and paid repository download.
-- A genuine authenticated repository payment smoke test for a registered student, including the ₦500 transaction, permanent unlock, matric watermark, admin ledger visibility, and financial report inclusion.
+- A genuine authenticated repository payment smoke test for a registered student,
+  including the ₦500 transaction, permanent unlock, matric watermark, admin
+  ledger visibility, and financial report inclusion. The repository function
+  initializes correctly and returns `requires_payment`; hosted Paystack checkout
+  still needs to be completed in a normal browser.
 - `scripts/verify-payment-smoke.js` now provides a guarded evidence check for
   the real payment smoke above; the owner still needs to run it with real
   Paystack test references and owner-only credentials.

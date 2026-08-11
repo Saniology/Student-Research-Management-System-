@@ -3,7 +3,7 @@
 # Optional: supabase secrets set REPORT_CRON_SECRET=long_random_value
 # Optional: supabase secrets set HEALTH_CHECK_SECRET=long_random_value
 # Optional: supabase secrets set RESEND_API_KEY=re_... REPORT_FROM_EMAIL=reports@example.edu
-# Deploy:   supabase functions deploy verify-paystack project-workflow repository-access student-identity verification-lookup scheduled-reports health-check --use-api
+# Deploy:   supabase functions deploy verify-paystack project-workflow repository-access student-identity verification-lookup public-config scheduled-reports health-check --use-api
 
 [functions.verify-paystack]
 # JWT is validated inside the function via auth.getUser().
@@ -20,6 +20,10 @@ verify_jwt = false
 
 [functions.student-identity]
 # Signup identity is checked inside the function against SIS or the private registry.
+verify_jwt = false
+
+[functions.public-config]
+# The browser receives safe fee/upload settings; server-only payment split fields stay private.
 verify_jwt = false
 
 [functions.verification-lookup]

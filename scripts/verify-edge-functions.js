@@ -41,6 +41,14 @@ const contracts = [
     auth: false,
   },
   {
+    name: 'public-config',
+    methods: ['POST', 'OPTIONS'],
+    actions: ['clearance_fee_kobo', 'download_fee_kobo', 'max_pdf_size_bytes'],
+    errors: ['Method not allowed', 'Public configuration service is not configured'],
+    env: ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'],
+    auth: false,
+  },
+  {
     name: 'verification-lookup',
     methods: ['POST', 'OPTIONS'],
     actions: ['qr_svg', 'receipt', 'project'],

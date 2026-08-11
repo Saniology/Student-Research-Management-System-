@@ -106,6 +106,7 @@ function checkRequiredFiles() {
     'supabase/functions/project-workflow/index.ts',
     'supabase/functions/repository-access/index.ts',
     'supabase/functions/student-identity/index.ts',
+    'supabase/functions/public-config/index.ts',
     'supabase/functions/verification-lookup/index.ts',
     'supabase/functions/scheduled-reports/index.ts',
     'supabase/functions/health-check/index.ts',
@@ -159,6 +160,7 @@ function checkProductCapabilities() {
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS projects/, 'workflow projects schema exists');
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS notifications/, 'notifications schema exists');
   assertContains('supabase/spms-core.sql', /paystack_split_code/, 'tenant Paystack split code setting exists');
+  assertContains('supabase/spms-core.sql', /DROP POLICY IF EXISTS "Public read configs"/, 'server-only payment config is not publicly readable');
   assertContains('supabase/spms-core.sql', /allowed_domains/, 'tenant domain mapping exists');
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS report_schedules/, 'scheduled report schema exists');
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS generated_reports/, 'generated report archive schema exists');
@@ -203,6 +205,7 @@ function checkProductCapabilities() {
   assertContains('index.html', /pdf-frame|PdfPreview/, 'supervisor PDF preview surface exists');
   assertContains('index.html', /signedPdfUrl|createSignedUrl/, 'supervisor PDF previews use signed storage links');
   assertContains('index.html', /loadTenant/, 'frontend resolves tenant context');
+  assertContains('src/lib/supabase.js', /public-config/, 'frontend loads safe public configuration through Edge Function');
   assertContains('index.html', /allowed_domains/, 'frontend manages tenant domains');
   assertContains('index.html', /validateAppConfig/, 'frontend validates browser configuration');
   assertContains('index.html', /app-config-error/, 'frontend exposes configuration errors');
@@ -349,6 +352,7 @@ function checkDeployConfig() {
     'scheduled-reports',
     'health-check',
     'student-identity',
+    'public-config',
   ];
 
   const deployScript = read('supabase/deploy-verify-paystack.sh');
@@ -461,6 +465,7 @@ function checkDenoFunctions() {
     'supabase/functions/verify-paystack/index.ts',
     'supabase/functions/project-workflow/index.ts',
     'supabase/functions/repository-access/index.ts',
+    'supabase/functions/public-config/index.ts',
     'supabase/functions/verification-lookup/index.ts',
     'supabase/functions/scheduled-reports/index.ts',
     'supabase/functions/health-check/index.ts',

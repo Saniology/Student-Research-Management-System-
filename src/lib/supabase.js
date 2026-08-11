@@ -45,12 +45,11 @@ export async function loadProfile(userId) {
 
 export async function loadSystemConfig(institutionId) {
   if (!supabase) return null;
-  const query = supabase.from('system_configs').select('*');
-  const { data, error } = institutionId
-    ? await query.eq('institution_id', institutionId).maybeSingle()
-    : await query.limit(1).maybeSingle();
-  if (error) throw error;
-  return data;
+  const { data, error } = await supabase.functions.invoke('public-config', {
+    body: { institution_id: institutionId || null, tenant_slug: window.SPMS_DEFAULT_TENANT_SLUG || 'kasu' },
+  });
+  if (error || data?.error) throw new Error(data?.error || error?.message || 'Public configuration lookup failed.');
+  return data?.config || null;
 }
 
 export async function signedPdfUrl(path, ttl = 300) {

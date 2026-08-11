@@ -177,6 +177,17 @@ supabase/secure-payments.sql
 supabase/spms-core.sql
 ```
 
+For an already-linked project, apply tracked migrations after the core schema:
+
+```bash
+npx supabase db push --linked --yes
+```
+
+The current migration removes the public `system_configs` read policy. The
+browser loads only safe fee and upload settings through the deployed
+`public-config` Edge Function; Paystack split and subaccount fields remain
+server-only.
+
 Never commit or share the Paystack secret key. The browser only uses the Paystack
 public key from `js/config.js`.
 

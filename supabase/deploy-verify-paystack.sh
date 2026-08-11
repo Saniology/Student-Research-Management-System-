@@ -82,13 +82,14 @@ else
 fi
 
 echo "Deploying SPMS edge functions..."
-"${SUPABASE_CMD[@]}" functions deploy verify-paystack project-workflow repository-access student-identity verification-lookup scheduled-reports health-check --no-verify-jwt --use-api
+"${SUPABASE_CMD[@]}" functions deploy verify-paystack project-workflow repository-access student-identity verification-lookup public-config scheduled-reports health-check --no-verify-jwt --use-api
 
 echo "Done. Test with:"
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verify-paystack\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/project-workflow\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/repository-access\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/student-identity\""
+echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/public-config\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/verification-lookup\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/scheduled-reports\""
 echo "  curl -i -X OPTIONS \"https://${PROJECT_REF}.supabase.co/functions/v1/health-check\""

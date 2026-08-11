@@ -15,6 +15,7 @@ const requiredFunctions = [
   'repository-access',
   'student-identity',
   'verification-lookup',
+  'public-config',
   'scheduled-reports',
   'health-check',
 ];

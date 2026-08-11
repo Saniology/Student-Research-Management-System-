@@ -588,10 +588,10 @@ CREATE POLICY "Public read institutions"
   ON institutions FOR SELECT
   USING (true);
 
+-- Payment split codes, subaccounts, and other server-only settings must never
+-- be readable through the browser. The public-config Edge Function exposes
+-- only the safe fee and upload fields needed by the student UI.
 DROP POLICY IF EXISTS "Public read configs" ON system_configs;
-CREATE POLICY "Public read configs"
-  ON system_configs FOR SELECT
-  USING (true);
 
 DROP POLICY IF EXISTS "Public read faculties" ON faculties;
 CREATE POLICY "Public read faculties"

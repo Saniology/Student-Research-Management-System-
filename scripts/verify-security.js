@@ -11,6 +11,7 @@ const edgeFunctions = [
   'project-workflow',
   'repository-access',
   'student-identity',
+  'public-config',
   'verification-lookup',
   'scheduled-reports',
   'health-check',
@@ -183,6 +184,9 @@ function checkEdgeFunctionAuthAndCors() {
     const content = read(`supabase/functions/${name}/index.ts`);
     assert(/auth\/v1\/user|auth\.getUser|REPORT_CRON_SECRET|HEALTH_CHECK_SECRET/.test(content), `${name} validates auth or secret inside function`);
   });
+  const publicConfig = read('supabase/functions/public-config/index.ts');
+  assert(/select=institution_id,clearance_fee_kobo,download_fee_kobo,max_pdf_size_bytes,allowed_mime_types,currency,receipt_prefix/.test(publicConfig), 'public config exposes only safe browser settings');
+  assert(!/paystack_split_code|paystack_institution_subaccount|paystack_provider_subaccount/.test(publicConfig), 'public config does not expose Paystack split credentials');
 
   const publicVerification = read('supabase/functions/verification-lookup/index.ts');
   assert(!/file_path|storage_path|signedUrl|signedURL/.test(publicVerification), 'public verification function does not expose private file paths or signed URLs');

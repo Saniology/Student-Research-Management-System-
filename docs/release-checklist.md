@@ -30,6 +30,9 @@ Use this checklist before a production handover or institutional demo.
 
 - Apply SQL in the documented order:
   `schema.sql`, `payments.sql`, `secure-payments.sql`, `spms-core.sql`.
+- Apply tracked Supabase migrations with `npx supabase db push --linked --yes`.
+- Confirm the browser cannot read `system_configs` directly and that the
+  `public-config` Edge Function returns only safe fee/upload settings.
 - Confirm `spms-core.sql` completes without SQL Editor errors.
 - Confirm storage buckets exist: `thesis-pdfs`, `repository-downloads`,
   `reports`.
