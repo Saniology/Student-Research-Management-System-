@@ -172,4 +172,7 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 - Full Playwright role automation against seeded Supabase test data; `scripts/seed-e2e-data.js` and the expanded seeded suite now provide the dedicated project dataset path, but the owner still needs to run it against a dedicated test project and retain the authenticated evidence.
 - A genuine end-to-end smoke test with a real Paystack test transaction, private PDF upload, supervisor review, library publication, QR verification, and paid repository download.
 - A genuine authenticated repository payment smoke test for a registered student, including the ₦500 transaction, permanent unlock, matric watermark, admin ledger visibility, and financial report inclusion.
+- `scripts/verify-payment-smoke.js` now provides a guarded evidence check for
+  the real payment smoke above; the owner still needs to run it with real
+  Paystack test references and owner-only credentials.
 - Production hosting, institution DNS, email provider credentials, monitoring endpoints, and rollback evidence for each tenant.

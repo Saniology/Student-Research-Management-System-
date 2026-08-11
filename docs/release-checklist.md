@@ -89,6 +89,9 @@ Use this checklist before a production handover or institutional demo.
   watermark, Admin > Payments entry, and financial report inclusion.
 - Confirm payment records include transaction type, Paystack reference, status,
   and institution/provider split fields.
+- After a real Paystack test transaction, run the owner-only payment evidence
+  check documented in `docs/local-development-setup.md`:
+  `npm run verify:payment-smoke`.
 
 ## Roles
 

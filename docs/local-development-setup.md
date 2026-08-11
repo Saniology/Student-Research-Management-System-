@@ -100,6 +100,31 @@ npm run seed:e2e -- --cleanup
 Never place `SUPABASE_SERVICE_ROLE_KEY` in `js/config.js`, a frontend `.env`
 file, or a committed workflow file.
 
+### Owner-Only Payment Smoke Verification
+
+After a real Paystack test payment has completed the full workflow, the owner
+can verify the recorded references without fabricating ledger rows:
+
+```bash
+SPMS_PAYMENT_SMOKE_CONFIRM=verify \
+SPMS_PAYMENT_SMOKE_ALLOW_REMOTE=true \
+SPMS_PAYMENT_SMOKE_PROJECT_ID=<cleared-project-uuid> \
+SPMS_PAYMENT_SMOKE_CLEARANCE_REFERENCE=<clearance-paystack-reference> \
+SPMS_PAYMENT_SMOKE_REPOSITORY_REFERENCE=<repository-paystack-reference> \
+SPMS_PAYMENT_SMOKE_STUDENT_PASSWORD=<student-password> \
+SPMS_PAYMENT_SMOKE_ADMIN_PASSWORD=<admin-password> \
+npm run verify:payment-smoke
+```
+
+Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `PAYSTACK_SECRET_KEY` in
+the owner-only environment. Student/admin email variables default to the
+documented demo accounts and can be overridden with
+`SPMS_PAYMENT_SMOKE_STUDENT_EMAIL` and `SPMS_PAYMENT_SMOKE_ADMIN_EMAIL`.
+The verifier checks Paystack, the payment ledger, the clearance receipt and QR
+payload, workflow history, registered-student unlock, matric watermark, and
+the admin financial report. It requires the explicit confirmation above and
+must only be run against a dedicated test project or an approved pilot.
+
 For normal frontend testing, that is enough after the owner has deployed the
 Supabase schema and Edge Functions.
 
