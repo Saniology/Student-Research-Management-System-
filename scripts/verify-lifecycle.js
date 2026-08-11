@@ -111,6 +111,7 @@ function checkRequiredFiles() {
     'supabase/functions/health-check/index.ts',
     'supabase/functions/_shared/pdf.ts',
     'scripts/provision-cloudflare-domain.js',
+    'scripts/seed-e2e-data.js',
     'scripts/verify-accessibility.js',
     'scripts/verify-browser-config.js',
     'scripts/verify-data-governance.js',
@@ -240,6 +241,7 @@ function checkProductCapabilities() {
   assertContains('package.json', /"verify:roles"/, 'role rendering verification command exists');
   assertContains('package.json', /"verify:interactions"/, 'role interaction verification command exists');
   assertContains('package.json', /"verify:playwright"/, 'Playwright role verification command exists');
+  assertContains('package.json', /"seed:e2e"/, 'opt-in E2E fixture seed command exists');
   assertContains('package.json', /"@playwright\/test"/, 'Playwright test dependency exists');
   assertContains('package.json', /"verify:monitor"/, 'monitoring verification command exists');
   assertContains('package.json', /"verify:security"/, 'security verification command exists');
@@ -327,6 +329,9 @@ function checkProductCapabilities() {
   assertContains('scripts/verify-role-interactions.js', /role="dialog"/, 'role interaction verifier checks supervisor modal');
   assertContains('scripts/verify-role-interactions.js', /role="dialog"/, 'role interaction verifier checks library modal');
   assertContains('scripts/verify-role-interactions.js', /admin-reports/, 'role interaction verifier checks admin report section');
+  assertContains('scripts/seed-e2e-data.js', /SPMS_E2E_FIXTURE_CONFIRM/, 'E2E fixture seeding requires explicit confirmation');
+  assertContains('scripts/seed-e2e-data.js', /SPMS_E2E_ALLOW_REMOTE/, 'E2E fixture seeding guards remote mutation');
+  assertContains('scripts/seed-e2e-data.js', /No payment rows were created/, 'E2E fixtures do not fabricate financial evidence');
 }
 
 function checkDeployConfig() {

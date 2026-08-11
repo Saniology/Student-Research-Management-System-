@@ -169,7 +169,7 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 
 - Real provider-side email domain authentication and deliverability monitoring with institution DNS access.
 - Provider-specific production DNS credentials and hosting target values for each institution.
-- Full Playwright role automation against seeded Supabase test data; the authenticated smoke suite now passes for the four hosted demo accounts, while broader project-data scenarios still need a dedicated test dataset.
+- Full Playwright role automation against seeded Supabase test data; `scripts/seed-e2e-data.js` and the expanded seeded suite now provide the dedicated project dataset path, but the owner still needs to run it against a dedicated test project and retain the authenticated evidence.
 - A genuine end-to-end smoke test with a real Paystack test transaction, private PDF upload, supervisor review, library publication, QR verification, and paid repository download.
 - A genuine authenticated repository payment smoke test for a registered student, including the ₦500 transaction, permanent unlock, matric watermark, admin ledger visibility, and financial report inclusion.
 - Production hosting, institution DNS, email provider credentials, monitoring endpoints, and rollback evidence for each tenant.

@@ -64,6 +64,42 @@ and password pairs (`SPMS_E2E_STUDENT_EMAIL`, `SPMS_E2E_STUDENT_PASSWORD`, and
 the corresponding `TEACHER`, `LIBRARY`, and `ADMIN` variables). Keep those
 values in a local environment file and never commit them.
 
+### Optional Real-Record E2E Fixtures
+
+The seeded Playwright checks can also exercise real project, supervisor, library,
+and public-catalog records. This is an owner-only operation because it needs the
+Supabase service-role key. Run it only against a dedicated test project, never a
+production institution:
+
+```bash
+SPMS_E2E_MODE=seeded \
+SPMS_E2E_FIXTURES=1 \
+SPMS_E2E_FIXTURE_CONFIRM=seed \
+SPMS_E2E_ALLOW_REMOTE=true \
+npm run seed:e2e
+```
+
+The command loads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the shell,
+`.env.production.local`, or `.env.local`. It uploads a valid synthetic PDF to
+the private thesis bucket and creates three clearly labelled `SPMS E2E Fixture`
+records: supervisor review, library approval, and a published public-catalog
+record. It creates no payment rows and cannot run remotely without the explicit
+allow flag. The prefix must contain `E2E`; use `SPMS_E2E_FIXTURE_PREFIX` when a
+separate fixture namespace is needed.
+
+Remove the same fixture namespace with:
+
+```bash
+SPMS_E2E_MODE=seeded \
+SPMS_E2E_FIXTURES=1 \
+SPMS_E2E_FIXTURE_CONFIRM=cleanup \
+SPMS_E2E_ALLOW_REMOTE=true \
+npm run seed:e2e -- --cleanup
+```
+
+Never place `SUPABASE_SERVICE_ROLE_KEY` in `js/config.js`, a frontend `.env`
+file, or a committed workflow file.
+
 For normal frontend testing, that is enough after the owner has deployed the
 Supabase schema and Edge Functions.
 

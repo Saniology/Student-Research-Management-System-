@@ -1,5 +1,7 @@
 const { test, expect } = require('@playwright/test');
 
+const fixturePrefix = process.env.SPMS_E2E_FIXTURE_PREFIX || 'SPMS E2E Fixture';
+
 function previewUrl(role, action = '') {
   const params = new URLSearchParams({ preview_role: role });
   if (action) params.set('preview_action', action);
@@ -78,6 +80,28 @@ test.describe('SPMS seeded Supabase role smoke', () => {
       await page.locator('#auth-password').fill(password);
       await page.getByRole('button', { name: 'Sign in' }).click();
       await expect(page.getByRole('heading', { name: role === 'teacher' ? 'Supervisor review queue' : role === 'library' ? 'Library verification desk' : role === 'admin' ? 'Analytics hub' : 'Your clearance workspace' })).toBeVisible({ timeout: 30_000 });
+      if (role === 'student') {
+        await expect(page.locator('#project-title-input')).toHaveValue(`${fixturePrefix} Supervisor Review`, { timeout: 30_000 });
+      }
+      if (role === 'teacher') {
+        await expect(page.getByText(`${fixturePrefix} Supervisor Review`, { exact: true })).toBeVisible({ timeout: 30_000 });
+        await page.getByRole('button', { name: 'Review' }).first().click();
+        await expect(page.locator('iframe.pdf-frame')).toBeVisible({ timeout: 30_000 });
+      }
+      if (role === 'library') {
+        await expect(page.getByText(`${fixturePrefix} Library Record`, { exact: true })).toBeVisible({ timeout: 30_000 });
+        await page.getByRole('button', { name: 'Open record' }).first().click();
+        await expect(page.getByRole('dialog')).toBeVisible();
+      }
+      if (role === 'admin') {
+        await page.getByRole('button', { name: 'Uploads' }).click();
+        await expect(page.getByText(`${fixturePrefix} Supervisor Review`, { exact: true })).toBeVisible({ timeout: 30_000 });
+      }
     });
   }
+
+  test('public repository exposes the seeded published record', async ({ page }) => {
+    await page.goto('/#repository', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText(`${fixturePrefix} Public Repository Record`, { exact: true })).toBeVisible({ timeout: 30_000 });
+  });
 });
