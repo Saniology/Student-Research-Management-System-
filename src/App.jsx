@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Archive, ArrowRight, BookOpen, Check, CheckCircle2, CircleDollarSign, Download, FileCheck2, FileText, GraduationCap, Library, LockKeyhole, PencilLine, Plus, QrCode, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, UserCheck, UserPlus, Users, XCircle } from 'lucide-react';
+import { Archive, ArrowRight, Bell, BookOpen, Check, CheckCircle2, CircleDollarSign, Download, FileCheck2, FileText, GraduationCap, Library, LockKeyhole, PencilLine, Plus, QrCode, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, UserCheck, UserPlus, Users, XCircle } from 'lucide-react';
 import { AppShell, EmptyState, SearchBox, SectionHeader } from './components/AppShell';
 import { Modal } from './components/Modal';
 import { PageSkeleton } from './components/Skeleton';
@@ -42,6 +42,7 @@ export default function App() {
   const [pendingDownloadProject, setPendingDownloadProject] = useState(null);
   const [toast, setToast] = useState('');
   const [notifications, setNotifications] = useState([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const notify = useCallback(message => { setToast(message); window.setTimeout(() => setToast(''), 4200); }, []);
   const role = profile?.role || (previewRole || '');
@@ -112,6 +113,8 @@ export default function App() {
   const openLogin = () => { setAuthMode('login'); setAuthOpen(true); };
   const logout = async () => { if (supabase) await supabase.auth.signOut(); setSession(null); setProfile(null); setView('landing'); notify('You have been signed out.'); };
   const enterWorkspace = nextRole => { setView(nextRole); setAuthOpen(false); };
+  const openNotificationCenter = () => setNotificationsOpen(true);
+  const closeNotificationCenter = () => setNotificationsOpen(false);
   const continueRepositoryDownload = useCallback(async project => {
     if (!session) return;
     if (previewRole || project?.id?.startsWith('demo-')) { notify('Preview download is protected by the repository payment gate.'); return; }
@@ -153,13 +156,17 @@ export default function App() {
   }, [continueRepositoryDownload, pendingDownloadProject, profile, session]);
 
   if (booting) return <><AppShell tenant={tenant} onHome={goHome} onLogin={openLogin}><PageSkeleton role="landing" /></AppShell></>;
-  return <AppShell tenant={tenant} role={role} onHome={goHome} onLogin={openLogin} onLogout={logout} notificationCount={notifications.length} onNotifications={markNotificationsRead}>
+  return <AppShell tenant={tenant} role={role} onHome={goHome} onLogin={openLogin} onLogout={logout} notificationCount={notifications.length} onNotifications={openNotificationCenter}>
     {view === 'landing' && <Landing tenant={tenant} session={session} onLogin={openLogin} onWorkspace={() => role ? enterWorkspace(role) : openLogin()} onDownload={handleDownload} configError={!config.valid && !previewRole} />}
     {view === 'student' && <StudentWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'teacher' && <TeacherWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'library' && <LibraryWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'admin' && <AdminWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     <AuthModal tenant={tenant} open={authOpen} mode={authMode} onClose={() => setAuthOpen(false)} onModeChange={setAuthMode} onSuccess={(nextSession, nextProfile) => { setSession(nextSession); setProfile(nextProfile); enterWorkspace(nextProfile.role); }} onToast={notify} />
+    <Modal open={notificationsOpen} onClose={closeNotificationCenter} eyebrow="Workflow activity" title="Notification center" wide>
+      {notifications.length ? <div className="notification-list">{notifications.map(notification => <article className="notification-item" key={notification.id}><div className="notification-item-icon"><Bell size={16} /></div><div className="notification-item-copy"><div className="notification-item-head"><strong>{notification.title}</strong><span className="tag">Unread</span></div><p>{notification.message}</p><small>{displayDate(notification.created_at)}</small></div></article>)}</div> : <EmptyState icon={Bell} title="You are all caught up" copy="New submission, review, publication, and receipt updates will appear here." />}
+      <div className="modal-actions"><button className="button button-ghost" type="button" onClick={closeNotificationCenter}>Close</button>{notifications.length > 0 && <button className="button button-primary" type="button" onClick={() => { markNotificationsRead(); closeNotificationCenter(); }}><CheckCircle2 size={15} />Mark all as read</button>}</div>
+    </Modal>
     {toast && <div className="toast" role="status">{toast}</div>}
   </AppShell>;
 }

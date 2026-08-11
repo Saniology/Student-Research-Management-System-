@@ -17,6 +17,7 @@ assert(/StudentWorkspace/.test(source), 'student role workspace exists');
 assert(/TeacherWorkspace/.test(source), 'supervisor role workspace exists');
 assert(/LibraryWorkspace/.test(source), 'library role workspace exists');
 assert(/AdminWorkspace/.test(source), 'admin role workspace exists');
+assert(/Notification center/.test(source) && /Mark all as read/.test(source) && /onNotifications=\{openNotificationCenter\}/.test(source), 'notification center opens from the authenticated shell');
 assert(/AuthModal/.test(source) && /signInWithPassword/.test(source), 'authentication workflow exists');
 assert(/project-title-input|project-title/.test(source) && /thesis-pdf-input/.test(source), 'student submission controls exist');
 assert(/student_resubmit/.test(source) && /Upload Revision/.test(source), 'student revision workflow exists');
