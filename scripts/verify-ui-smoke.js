@@ -43,6 +43,7 @@ assert(/Fraunces|DM Sans/.test(source), 'product typography is wired');
 assert(!/onclick=/.test(source), 'React actions do not rely on inline onclick handlers');
 assert(!/PaystackPop\.setup|openIframe\(/.test(source), 'browser does not create direct Paystack transactions');
 assert(/new window\.PaystackPop\(\)[\s\S]*resumeTransaction/.test(source), 'Paystack Popup v2 is instantiated before resuming backend transactions');
+assert(/Math\.max\(1,[\s\S]*numericValue/.test(source), 'analytics progress bars remain valid for zero-record institutions');
 
 console.log('');
 console.log(`UI smoke verification complete: ${failures.length} failure(s).`);
