@@ -27,6 +27,7 @@ assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source
 assert(/AdminLivePanel/.test(source) && /admin_overview/.test(source), 'admin dashboard reads live overview data');
 assert(/HierarchyManager/.test(source) && /system_configs/.test(source), 'admin hierarchy and settings controls exist');
 assert(/courses/.test(source) && /new-course/.test(source), 'admin course management controls exist');
+assert(/paystack_split_code/.test(source) && /paystack_institution_subaccount/.test(source) && /paystack_provider_subaccount/.test(source), 'admin Paystack split routing controls exist');
 assert(/fetchQrSvg/.test(source) && /Project verification QR code/.test(source), 'library QR verification display is wired');
 assert(/storage\.from\('thesis-pdfs'\)\.upload/.test(source) && /file_path: upload\.data\.path/.test(source), 'student PDF upload is completed before payment verification');
 assert(/repository-access/.test(source) && /initialize_download/.test(source) && /verify_download/.test(source), 'paid repository download flow exists');
@@ -49,6 +50,7 @@ assert(/Math\.max\(1,[\s\S]*numericValue/.test(source), 'analytics progress bars
 assert(/eq\(['\"]transaction_type['\"]\s*,\s*['\"]clearance_fee['\"]\)/.test(source), 'student payment evidence is scoped to clearance fees');
 assert(/clearance_receipts['\"]\)\.select\(['\"]\*['\"]\)/.test(source), 'student workspace restores issued receipts after reload');
 assert(/\['published','cleared'\]\.includes\(project\?\.status\)/.test(source), 'students can issue receipts after library publication');
+assert(/pendingVerification/.test(source) && /Retry verification/.test(source) && /localStorage/.test(source), 'students can retry failed payment verification without a second charge');
 
 console.log('');
 console.log(`UI smoke verification complete: ${failures.length} failure(s).`);

@@ -27,6 +27,9 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Build production bundle
+        run: npm run build
+
       - name: Install Playwright Chromium
         run: npx playwright install chromium
 
@@ -47,6 +50,15 @@ jobs:
 
       - name: Verify browser config
         run: npm run verify:config
+
+      - name: Verify accessibility
+        run: npm run verify:a11y
+
+      - name: Verify UI contracts
+        run: npm run verify:ui
+
+      - name: Verify security contracts
+        run: npm run verify:security
 
       - name: Verify rendered UI
         run: npm run verify:render
@@ -80,6 +92,9 @@ jobs:
 
       - name: Verify workflow contracts
         run: npm run verify:workflow
+
+      - name: Verify release readiness
+        run: npm run verify:release
 
       - name: Verify lifecycle
         run: npm run verify:lifecycle

@@ -89,9 +89,17 @@ Deno.serve(async (req) => {
       if (existingPayment.student_id !== user.id) {
         return jsonResponse({ error: "Payment reference belongs to another user" }, 403);
       }
+      const existingProjects = existingPayment.project_id
+        ? await supabaseRest(
+          supabaseUrl,
+          supabaseServiceKey,
+          `/projects?id=eq.${encodeURIComponent(existingPayment.project_id)}&select=*`,
+        )
+        : [];
       return jsonResponse({
         success: true,
         payment: existingPayment,
+        project: existingProjects[0] || null,
         already_processed: true,
       });
     }

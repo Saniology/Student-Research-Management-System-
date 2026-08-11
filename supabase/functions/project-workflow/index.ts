@@ -84,6 +84,8 @@ async function handleAssignSupervisor(
   const supervisorId = requireString(body.supervisor_id, "supervisor_id");
   const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
 
   const supervisors = await supabaseRest(
     supabaseUrl,
@@ -93,11 +95,7 @@ async function handleAssignSupervisor(
   const supervisor = supervisors[0];
   if (!supervisor) return jsonResponse({ error: "Selected supervisor was not found" }, 404);
 
-  if (
-    project.institution_id &&
-    supervisor.institution_id &&
-    project.institution_id !== supervisor.institution_id
-  ) {
+  if (project.institution_id && supervisor.institution_id !== project.institution_id) {
     return jsonResponse({ error: "Supervisor must belong to the same institution" }, 400);
   }
 
@@ -170,6 +168,8 @@ async function handleSupervisorDecision(
 
   const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
 
   if (actor.role !== "admin" && project.supervisor_id !== actor.id) {
     return jsonResponse({ error: "Only the assigned supervisor can review this project" }, 403);
@@ -265,6 +265,8 @@ async function handleStudentResubmission(
   const fileName = requireString(body.file_name, "file_name");
   const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
   if (project.student_id !== actor.id) {
     return jsonResponse({ error: "You can only resubmit your own project" }, 403);
   }
@@ -393,6 +395,8 @@ async function handleLibraryPublish(
 
   const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
 
   if (!["supervisor_approved", "library_review", "published"].includes(project.status)) {
     return jsonResponse({ error: `Project is not ready for library publishing. Current status: ${project.status}` }, 409);
@@ -458,6 +462,8 @@ async function handleIssueReceipt(
   const projectId = requireString(body.project_id, "project_id");
   const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
 
   const isOwner = project.student_id === actor.id;
   const isStaff = ["library", "admin"].includes(actor.role);
@@ -537,6 +543,13 @@ async function handleIssueReceipt(
   });
 
   return jsonResponse({ success: true, receipt, project: updated });
+}
+
+function assertProjectTenant(actor: Profile, project: Project) {
+  if (project.institution_id && actor.institution_id !== project.institution_id) {
+    return jsonResponse({ error: "Project belongs to another institution" }, 403);
+  }
+  return null;
 }
 
 async function getProject(supabaseUrl: string, serviceRoleKey: string, projectId: string) {

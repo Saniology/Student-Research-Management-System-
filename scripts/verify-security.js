@@ -139,10 +139,16 @@ function checkRls() {
     assert(sql.includes(`CREATE POLICY "${policy}"`), `policy exists: ${policy}`);
   });
   assert(/current_institution_id\(\)/.test(sql), 'tenant-aware RLS helper exists');
+  const workflowFunction = read('supabase/functions/project-workflow/index.ts');
+  assert((workflowFunction.match(/assertProjectTenant\(actor, project\)/g) || []).length >= 5, 'workflow actions enforce project institution isolation');
+  assert(/Project belongs to another institution/.test(workflowFunction), 'workflow rejects cross-tenant privileged actions');
   assert(/Admins read all projects[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'admin project policy is tenant scoped');
   assert(/Library read review queue[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'library queue policy is tenant scoped');
   assert(/Admins read guest download orders[\s\S]+institution_id\s*=\s*public\.current_institution_id\(\)/i.test(sql), 'guest download records are tenant scoped');
   const repositoryAccess = read('supabase/functions/repository-access/index.ts');
+  assert(/select=id,email,matric,full_name,institution_id/.test(repositoryAccess), 'repository access loads the authenticated tenant');
+  assert(/assertProjectTenant\(profile, project\)/g.test(repositoryAccess), 'repository actions enforce project institution isolation');
+  assert(/Repository record belongs to another institution/.test(repositoryAccess), 'repository rejects cross-tenant downloads');
   assert(/initialize_guest_download|verify_guest_download/.test(repositoryAccess), 'guest repository actions are handled server-side');
   assert(/Repository downloads require an account with a matric number and institutional email/.test(repositoryAccess), 'unauthenticated repository downloads are rejected');
   assert(/requireEmail\(body\.email\)/.test(repositoryAccess), 'guest download requires a validated email address');

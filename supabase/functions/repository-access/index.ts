@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const [profile] = await supabaseRest(
       supabaseUrl,
       supabaseServiceKey,
-      `/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,email,matric,full_name`,
+      `/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,email,matric,full_name,institution_id`,
     );
     if (!profile) return jsonResponse({ error: "Profile not found" }, 404);
 
@@ -102,6 +102,8 @@ async function getDownloadUrl(
   const projectId = requireString(body.project_id, "project_id");
   const [project] = await getPublishedProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Published project not found" }, 404);
+  const tenantError = assertProjectTenant(profile, project);
+  if (tenantError) return tenantError;
 
   const unlock = await getUnlock(supabaseUrl, serviceRoleKey, profile.id, project.id);
   const config = await getDownloadConfig(supabaseUrl, serviceRoleKey, project.institution_id);
@@ -149,6 +151,8 @@ async function verifyDownloadPayment(
 
   const [project] = await getPublishedProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Published project not found" }, 404);
+  const tenantError = assertProjectTenant(profile, project);
+  if (tenantError) return tenantError;
 
   const existingUnlock = await getUnlock(supabaseUrl, serviceRoleKey, profile.id, project.id);
   if (existingUnlock) {
@@ -437,6 +441,8 @@ async function initializeDownloadPayment(
   const projectId = requireString(body.project_id, "project_id");
   const [project] = await getPublishedProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Published project not found" }, 404);
+  const tenantError = assertProjectTenant(profile, project);
+  if (tenantError) return tenantError;
 
   const existingUnlock = await getUnlock(supabaseUrl, serviceRoleKey, profile.id, project.id);
   if (existingUnlock) {
@@ -851,6 +857,13 @@ function publicProject(project: Project) {
   };
 }
 
+function assertProjectTenant(profile: Profile, project: Project) {
+  if (project.institution_id && profile.institution_id !== project.institution_id) {
+    return jsonResponse({ error: "Repository record belongs to another institution" }, 403);
+  }
+  return null;
+}
+
 async function writeAudit(
   supabaseUrl: string,
   serviceRoleKey: string,
@@ -966,6 +979,7 @@ type Profile = {
   email?: string;
   matric?: string;
   full_name?: string;
+  institution_id?: string | null;
 };
 
 type Project = {

@@ -338,6 +338,9 @@ function checkProductCapabilities() {
   assertContains('scripts/seed-e2e-data.js', /SPMS_E2E_FIXTURE_CONFIRM/, 'E2E fixture seeding requires explicit confirmation');
   assertContains('scripts/seed-e2e-data.js', /SPMS_E2E_ALLOW_REMOTE/, 'E2E fixture seeding guards remote mutation');
   assertContains('scripts/seed-e2e-data.js', /No payment rows were created/, 'E2E fixtures do not fabricate financial evidence');
+  assertContains('scripts/seed-e2e-data.js', /public_catalog.*delete|Catalog fixture cleanup/, 'E2E cleanup removes public catalog fixtures');
+  assertContains('scripts/seed-e2e-data.js', /project_reviews.*delete|Review fixture cleanup/, 'E2E cleanup removes review fixtures');
+  assertContains('scripts/seed-e2e-data.js', /notifications.*delete|Notification fixture cleanup/, 'E2E cleanup removes notification fixtures');
   assertContains('scripts/verify-payment-smoke.js', /SPMS_PAYMENT_SMOKE_CONFIRM/, 'payment smoke requires explicit confirmation');
   assertContains('scripts/verify-payment-smoke.js', /SPMS_PAYMENT_SMOKE_ALLOW_REMOTE/, 'payment smoke guards remote verification');
   assertContains('scripts/verify-payment-smoke.js', /api\.paystack\.co\/transaction\/verify/, 'payment smoke verifies references with Paystack');

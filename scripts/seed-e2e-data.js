@@ -98,6 +98,12 @@ function addDays(date, days) {
 }
 
 async function cleanup(client, ids, studentId) {
+  const catalogDelete = await client.from('public_catalog').delete().in('project_id', ids.projects);
+  if (catalogDelete.error) throw new Error(`Catalog fixture cleanup failed: ${catalogDelete.error.message}`);
+  const reviewDelete = await client.from('project_reviews').delete().in('project_id', ids.projects);
+  if (reviewDelete.error) throw new Error(`Review fixture cleanup failed: ${reviewDelete.error.message}`);
+  const notificationDelete = await client.from('notifications').delete().in('project_id', ids.projects);
+  if (notificationDelete.error) throw new Error(`Notification fixture cleanup failed: ${notificationDelete.error.message}`);
   const projectDelete = await client.from('projects').delete().in('id', ids.projects);
   if (projectDelete.error) throw new Error(`Project fixture cleanup failed: ${projectDelete.error.message}`);
   const submissionDelete = await client.from('submissions').delete().in('id', ids.submissions);
