@@ -401,7 +401,7 @@ function TeacherWorkspace({ profile, session, preview, onToast }) {
 
 function PdfPreview({ path }) { const [url, setUrl] = useState(''); const [error, setError] = useState(''); useEffect(() => { if (!path) return undefined; signedPdfUrl(path).then(setUrl).catch(err => setError(err.message)); return undefined; }, [path]); if (error || !url) return <div className="empty-state surface"><FileText size={22} color="#065f46" /><h3>{error ? 'Preview unavailable' : 'Preparing secure preview...'}</h3><p>{error || 'Creating a short-lived private link.'}</p></div>; return <iframe className="pdf-frame" title="Private thesis PDF preview" src={url} />; }
 
-function LibraryWorkspace({ session, preview, onToast }) {
+function LibraryWorkspace({ profile, session, preview, onToast }) {
   const [projects, setProjects] = useState(preview ? demoReviewProjects.filter(item => ['supervisor_approved','published'].includes(item.status)) : []);
   const [loading, setLoading] = useState(!preview);
   const [selected, setSelected] = useState(null);
