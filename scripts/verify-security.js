@@ -158,6 +158,17 @@ function checkStoragePrivacy() {
   assert(/watermarkPdf/.test(read('supabase/functions/repository-access/index.ts')), 'repository downloads are watermarked');
 }
 
+function checkPdfValidation() {
+  const sharedPdf = read('supabase/functions/_shared/pdf.ts');
+  const paymentFunction = read('supabase/functions/verify-paystack/index.ts');
+  const workflowFunction = read('supabase/functions/project-workflow/index.ts');
+  assert(/PDF_SIGNATURE/.test(sharedPdf), 'server PDF validation checks the file signature');
+  assert(/Range:\s*"bytes=0-4"/.test(sharedPdf), 'server PDF validation reads only the object header');
+  assert(/assertPdfStorageObject/.test(paymentFunction), 'clearance verification validates stored PDF content');
+  assert(/file_path\.startsWith\(`\$\{user\.id\}\/`\)/.test(paymentFunction), 'clearance verification scopes the file path to the authenticated student');
+  assert(/assertPdfStorageObject/.test(workflowFunction), 'revision resubmission validates stored PDF content');
+}
+
 function checkEdgeFunctionAuthAndCors() {
   const config = read('supabase/config.toml');
   edgeFunctions.forEach((name) => {
@@ -194,6 +205,7 @@ checkSecretHygiene();
 checkPaymentSafety();
 checkRls();
 checkStoragePrivacy();
+checkPdfValidation();
 checkEdgeFunctionAuthAndCors();
 checkSecurityDocs();
 

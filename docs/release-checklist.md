@@ -52,6 +52,8 @@ Use this checklist before a production handover or institutional demo.
   `REPORT_DELIVERY_EMAILS`, `REPORT_LINK_TTL_SECONDS`.
 - Run `npm run verify:edge` before deployment to confirm CORS, method guards,
   action names, function config, and deploy script coverage.
+- Confirm submission and revision functions validate the stored PDF signature and
+  keep object paths inside the authenticated student's private folder.
 - Deploy all functions with `bash supabase/deploy-verify-paystack.sh`.
 - Run `npm run verify:deploy`.
 - Confirm every Edge Function `OPTIONS` request returns `HTTP 204`.
@@ -79,6 +81,7 @@ Use this checklist before a production handover or institutional demo.
 ## Payments
 
 - Test a clearance payment in Paystack test mode.
+- Confirm a renamed non-PDF upload is rejected by server-side object validation.
 - Test retry verification using the saved reference.
 - Test a paid repository download and confirm the returned PDF is watermarked.
 - Create a registered student account with matric and school email, test a paid

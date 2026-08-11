@@ -1,3 +1,5 @@
+import { assertPdfStorageObject } from "../_shared/pdf.ts";
+
 const DEFAULT_CLEARANCE_FEE_KOBO = 200_000;
 
 type SupervisorCandidate = {
@@ -72,7 +74,7 @@ Deno.serve(async (req) => {
       file_size_bytes,
       mime_type,
     } = body;
-    if (!reference || !file_name) {
+    if (!reference || !file_name || typeof file_path !== "string" || !file_path.trim()) {
       return jsonResponse({ error: "Missing payment reference or file name" }, 400);
     }
 
@@ -107,6 +109,15 @@ Deno.serve(async (req) => {
     }
     if (!Number.isFinite(fileSizeBytes) || fileSizeBytes <= 0 || fileSizeBytes > paymentConfig.max_pdf_size_bytes) {
       return jsonResponse({ error: `The PDF must be between 1 byte and ${Math.round(paymentConfig.max_pdf_size_bytes / (1024 * 1024))} MB` }, 400);
+    }
+    if (!file_path.startsWith(`${user.id}/`)) {
+      return jsonResponse({ error: "Uploaded file must be in the authenticated student's private folder" }, 403);
+    }
+    try {
+      await assertPdfStorageObject(supabaseUrl, supabaseServiceKey, file_path, fileSizeBytes);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Uploaded file could not be validated";
+      return jsonResponse({ error: message }, 400);
     }
 
     const paystackRes = await fetch(

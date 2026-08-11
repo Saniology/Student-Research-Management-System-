@@ -56,6 +56,7 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 
 - `initialize_clearance`: initializes Paystack clearance payments from the backend with configured fee, reference, metadata, and split/subaccount rules.
 - Verifies Paystack transactions server-side.
+- Confirms the stored upload begins with the PDF signature, matches the submitted size when storage reports it, and belongs to the authenticated student's private folder.
 - Creates the legacy `submissions` and `payments` records.
 - Creates a real `projects` workflow record when `spms-core.sql` has been applied.
 - Falls back to legacy behavior if the workflow schema is not installed yet.
@@ -63,6 +64,7 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 `project-workflow`:
 
 - `supervisor_decision`: approve or request revision.
+- Validates revision objects from private storage before changing the project record.
 - `library_publish`: verify metadata, assign shelf number, publish anonymized catalog record.
 - `issue_receipt`: issue final clearance receipt after library publication.
 - Emits in-app notifications for submissions, supervisor approvals/revisions, library publication, and receipt issuance.

@@ -109,6 +109,7 @@ function checkRequiredFiles() {
     'supabase/functions/verification-lookup/index.ts',
     'supabase/functions/scheduled-reports/index.ts',
     'supabase/functions/health-check/index.ts',
+    'supabase/functions/_shared/pdf.ts',
     'scripts/provision-cloudflare-domain.js',
     'scripts/verify-accessibility.js',
     'scripts/verify-browser-config.js',

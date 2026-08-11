@@ -222,6 +222,7 @@ Run Edge Function checks:
 .deno/bin/deno check supabase/functions/verify-paystack/index.ts
 .deno/bin/deno check supabase/functions/repository-access/index.ts
 .deno/bin/deno check supabase/functions/project-workflow/index.ts supabase/functions/verification-lookup/index.ts supabase/functions/scheduled-reports/index.ts
+.deno/bin/deno check supabase/functions/_shared/pdf.ts
 ```
 
 ## Smoke Tests

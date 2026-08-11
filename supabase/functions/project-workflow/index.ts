@@ -1,3 +1,5 @@
+import { assertPdfStorageObject } from "../_shared/pdf.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -277,6 +279,12 @@ async function handleStudentResubmission(
   const maxPdfSizeBytes = await getMaxPdfSize(supabaseUrl, serviceRoleKey, actor.institution_id);
   if (!Number.isFinite(fileSizeBytes) || fileSizeBytes <= 0 || fileSizeBytes > maxPdfSizeBytes) {
     return jsonResponse({ error: `The PDF must be between 1 byte and ${Math.round(maxPdfSizeBytes / (1024 * 1024))} MB` }, 400);
+  }
+  try {
+    await assertPdfStorageObject(supabaseUrl, serviceRoleKey, filePath, fileSizeBytes);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Uploaded file could not be validated";
+    return jsonResponse({ error: message }, 400);
   }
 
   const title = optionalString(body.title) || project.title;
