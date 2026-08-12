@@ -55,6 +55,10 @@ Deno.serve(async (req) => {
       return await handleAssignSupervisor(supabaseUrl, supabaseServiceKey, actor, body);
     }
 
+    if (action === "library_verify") {
+      return await handleLibraryVerify(supabaseUrl, supabaseServiceKey, actor, body);
+    }
+
     if (action === "library_publish") {
       return await handleLibraryPublish(supabaseUrl, supabaseServiceKey, actor, body);
     }
@@ -378,6 +382,69 @@ async function getMaxPdfSize(supabaseUrl: string, serviceRoleKey: string, instit
   return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_MAX_PDF_SIZE_BYTES;
 }
 
+async function handleLibraryVerify(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  actor: Profile,
+  body: Record<string, unknown>,
+) {
+  if (actor.role !== "library" && actor.role !== "admin") {
+    return jsonResponse({ error: "Only library staff or admins can verify metadata" }, 403);
+  }
+
+  const projectId = requireString(body.project_id, "project_id");
+  const comment = optionalString(body.comment);
+  const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
+  if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
+
+  if (!["supervisor_approved", "library_review"].includes(project.status)) {
+    return jsonResponse({ error: `Project is not ready for metadata verification. Current status: ${project.status}` }, 409);
+  }
+
+  if (!project.title?.trim() || !project.abstract?.trim() || !project.degree?.trim()) {
+    return jsonResponse({ error: "Title, abstract, and degree metadata are required before verification" }, 400);
+  }
+
+  const verifiedAt = project.metadata_verified_at || new Date().toISOString();
+  const [updated] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*`,
+    {
+      method: "PATCH",
+      body: {
+        status: "library_review",
+        metadata_verified_at: verifiedAt,
+        updated_at: new Date().toISOString(),
+      },
+    },
+  );
+
+  await writeReviewAndAudit(supabaseUrl, serviceRoleKey, {
+    actorId: actor.id,
+    projectId,
+    action: "metadata_verified",
+    comment,
+    fromStatus: project.status,
+    toStatus: "library_review",
+    auditAction: "project_metadata_verified",
+  });
+
+  await notifyUsers(supabaseUrl, serviceRoleKey, {
+    recipientIds: compactIds([project.student_id, project.supervisor_id]),
+    actorId: actor.id,
+    institutionId: project.institution_id || actor.institution_id || null,
+    projectId,
+    title: "Metadata verified",
+    message: `"${project.title}" metadata has been verified by the library.`,
+    metadata: { status: "library_review", metadata_verified_at: verifiedAt },
+  });
+
+  return jsonResponse({ success: true, project: updated });
+}
+
 async function handleLibraryPublish(
   supabaseUrl: string,
   serviceRoleKey: string,
@@ -400,6 +467,10 @@ async function handleLibraryPublish(
 
   if (!["supervisor_approved", "library_review", "published"].includes(project.status)) {
     return jsonResponse({ error: `Project is not ready for library publishing. Current status: ${project.status}` }, 409);
+  }
+
+  if (project.status === "supervisor_approved" && !project.metadata_verified_at) {
+    return jsonResponse({ error: "Verify project metadata before publishing" }, 409);
   }
 
   const qrPayload = JSON.stringify({

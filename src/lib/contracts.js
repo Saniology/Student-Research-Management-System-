@@ -4,6 +4,7 @@ export const workflowActions = {
   supervisorDecision: 'supervisor_decision',
   studentResubmit: 'student_resubmit',
   assignSupervisor: 'assign_supervisor',
+  libraryVerify: 'library_verify',
   libraryPublish: 'library_publish',
   issueReceipt: 'issue_receipt',
   repositoryGetUrl: 'get_download_url',

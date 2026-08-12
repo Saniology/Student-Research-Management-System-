@@ -38,6 +38,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
     "lucide-react": "^1.30.0",
+    "qrcode-generator": "2.0.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }
