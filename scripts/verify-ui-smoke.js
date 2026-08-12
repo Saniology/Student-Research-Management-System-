@@ -40,6 +40,7 @@ assert(/config\.valid \? \[\] : demoProjects/.test(source), 'configured public r
 assert(/scheduled-reports/.test(source) && /run_once/.test(source) && /run_due/.test(source), 'scheduled reporting contract exists');
 assert(/verification-lookup/.test(source) && /qr_svg/.test(source) && /receipt/.test(source) && /project/.test(source), 'public verification contract exists');
 assert(/PageSkeleton/.test(source) && /skeleton/.test(source) && /@keyframes shimmer/.test(source), 'animated page-specific skeleton loaders exist');
+assert(/RepositorySkeleton/.test(source) && /catalogLoading/.test(source), 'public repository uses a shaped loading skeleton before empty states');
 assert(/blueprint/.test(source) && /background-image/.test(source), 'maintained patterned light surfaces exist');
 assert(/glass|backdrop-filter/.test(source), 'glassmorphism surfaces exist');
 assert(/focus-visible/.test(source), 'keyboard focus styling exists');

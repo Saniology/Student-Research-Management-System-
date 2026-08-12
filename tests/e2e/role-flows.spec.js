@@ -20,7 +20,12 @@ async function openPublicPreview(page) {
 
 test.describe('SPMS role workflows', () => {
   test('public reader can open the guest repository checkout', async ({ page }) => {
+    await page.route('**/rest/v1/public_catalog*', async route => {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await route.continue();
+    });
     await openPublicPreview(page);
+    await expect(page.getByLabel('Loading repository')).toBeVisible();
     await page.getByRole('button', { name: /Download/ }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByRole('dialog')).toContainText('Download full thesis');

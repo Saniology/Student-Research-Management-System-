@@ -2,6 +2,17 @@ import React from 'react';
 
 export function Skeleton({ className = '' }) { return <span className={`skeleton ${className}`} aria-hidden="true" />; }
 
+export function RepositorySkeleton({ count = 6 }) {
+  return <div className="repo-grid skeleton-repository-grid" aria-label="Loading repository" aria-busy="true">
+    {Array.from({ length: count }, (_, index) => <article className="skeleton-repository-card" key={index}>
+      <div className="skeleton-repository-meta"><Skeleton className="skeleton-tag" /><Skeleton className="skeleton-meta-line" /></div>
+      <Skeleton className="skeleton-repository-title" />
+      <div className="skeleton-repository-copy"><Skeleton /><Skeleton /><Skeleton className="short" /></div>
+      <div className="skeleton-repository-actions"><Skeleton /><Skeleton /></div>
+    </article>)}
+  </div>;
+}
+
 export function PageSkeleton({ role = 'landing' }) {
   if (role === 'landing') return <div className="skeleton-page skeleton-landing" aria-label="Loading portal">
     <div className="skeleton-hero-copy"><Skeleton className="skeleton-pill" /><Skeleton className="skeleton-title" /><Skeleton className="skeleton-line wide" /><Skeleton className="skeleton-line" /><div className="skeleton-actions"><Skeleton /><Skeleton /><Skeleton /></div></div>

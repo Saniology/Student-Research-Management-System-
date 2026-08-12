@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Archive, ArrowRight, Bell, BookOpen, Check, CheckCircle2, CircleDollarSign, Download, FileCheck2, FileText, GraduationCap, Library, LockKeyhole, PencilLine, Plus, QrCode, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, UserCheck, UserPlus, Users, XCircle } from 'lucide-react';
 import { AppShell, EmptyState, SearchBox, SectionHeader } from './components/AppShell';
 import { Modal } from './components/Modal';
-import { PageSkeleton } from './components/Skeleton';
+import { PageSkeleton, RepositorySkeleton } from './components/Skeleton';
 import { StatusChip } from './components/StatusChip';
 import { config, fallbackTenant, invoke, loadProfile, loadSystemConfig, loadTenant, signedPdfUrl, supabase } from './lib/supabase';
 import { fetchQrSvg, issueReceipt, lookupVerification, retryPaymentVerification, runDueReports, runScheduledReport } from './lib/contracts';
@@ -179,7 +179,7 @@ export default function App() {
   }, [guestDownloadProject, notify]);
   if (booting) return <><AppShell tenant={tenant} onHome={goHome} onLogin={openLogin}><PageSkeleton role="landing" /></AppShell></>;
   return <AppShell tenant={tenant} role={role} onHome={goHome} onLogin={openLogin} onLogout={logout} notificationCount={notifications.length} onNotifications={openNotificationCenter}>
-    {view === 'landing' && <Landing tenant={tenant} session={session} onLogin={openLogin} onWorkspace={() => role ? enterWorkspace(role) : openLogin()} onDownload={handleDownload} configError={!config.valid && !previewRole && !previewPublic} />}
+    {view === 'landing' && <Landing tenant={tenant} session={session} localPreview={previewPublic} onLogin={openLogin} onWorkspace={() => role ? enterWorkspace(role) : openLogin()} onDownload={handleDownload} configError={!config.valid && !previewRole && !previewPublic} />}
     {view === 'student' && <StudentWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'teacher' && <TeacherWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'library' && <LibraryWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
@@ -194,14 +194,28 @@ export default function App() {
   </AppShell>;
 }
 
-function Landing({ tenant, session, onLogin, onWorkspace, onDownload, configError }) {
+function Landing({ tenant, session, localPreview = false, onLogin, onWorkspace, onDownload, configError }) {
   const [query, setQuery] = useState('');
-  const [projects, setProjects] = useState(config.valid ? [] : demoProjects);
-  const [impact, setImpact] = useState(config.valid ? { students: '—', submitted: '—', approved: '—', departments: '—' } : demoStats);
+  const [projects, setProjects] = useState(localPreview || !config.valid ? demoProjects : []);
+  const [impact, setImpact] = useState(localPreview || !config.valid ? demoStats : { students: '—', submitted: '—', approved: '—', departments: '—' });
   const [abstractProject, setAbstractProject] = useState(null);
+  const [catalogLoading, setCatalogLoading] = useState(Boolean(supabase));
   useEffect(() => {
-    if (!supabase) return undefined;
+    if (localPreview) {
+      setCatalogLoading(true);
+      const timer = window.setTimeout(() => setCatalogLoading(false), 450);
+      return () => window.clearTimeout(timer);
+    }
+    if (!supabase || !tenant?.id) {
+      setCatalogLoading(false);
+      if (supabase) {
+        setProjects([]);
+        setImpact({ students: '—', submitted: '—', approved: '—', departments: '—' });
+      }
+      return undefined;
+    }
     let active = true;
+    setCatalogLoading(true);
     const catalogQuery = supabase.from('public_catalog').select('id, title, department_name, course_name, degree, abstract, published_at, project_id, institution_id').order('published_at', { ascending: false }).limit(12);
     const publishedCountQuery = supabase.from('public_catalog').select('id', { count: 'exact', head: true });
     const departmentQuery = supabase.from('public_catalog').select('department_id');
@@ -216,9 +230,9 @@ function Landing({ tenant, session, onLogin, onWorkspace, onDownload, configErro
       setProjects((catalogResult.data || []).map(item => ({ ...item, author: 'Anonymized researcher', dept: item.department_name, course: item.course_name, status: 'published' })));
       const departments = new Set((departmentResult.data || []).map(item => item.department_id).filter(Boolean));
       setImpact({ students: '—', submitted: '—', approved: publishedResult.count ?? 0, departments: departments.size || '—' });
-    }).catch(() => { if (active) { setProjects([]); setImpact({ students: '—', submitted: '—', approved: '—', departments: '—' }); } });
+    }).catch(() => { if (active) { setProjects([]); setImpact({ students: '—', submitted: '—', approved: '—', departments: '—' }); } }).finally(() => { if (active) setCatalogLoading(false); });
     return () => { active = false; };
-  }, [tenant?.id]);
+  }, [localPreview, tenant?.id]);
   const visibleProjects = projects.filter(project => [project.title, project.author, project.dept, project.course, project.degree].join(' ').toLowerCase().includes(query.toLowerCase()));
   return <div className="blueprint">
     {configError && <div className="config-alert" id="app-config-error" role="alert"><Settings2 size={16} /><span>Browser configuration is incomplete. Add the public Supabase URL, anon key, and Paystack public key in <code>js/config.js</code> before signing in or submitting.</span></div>}
@@ -226,7 +240,7 @@ function Landing({ tenant, session, onLogin, onWorkspace, onDownload, configErro
     <div className="trust-band"><ShieldCheck size={15} /> Simple, auditable workflow from submission to digital clearance</div>
     <section className="timeline-section"><div className="center-heading"><p className="eyebrow">One connected process</p><h2>The Clearance Process</h2><p className="muted">Every stage is visible, accountable, and connected from the first student submission to final digital clearance.</p></div><div className="timeline">{[[GraduationCap,'Student Login'],[FileText,'Upload Thesis'],[UserCheck,'Supervisor Approval'],[Library,'Library Verification'],[CheckCircle2,'Clearance Completed']].map(([Icon, label]) => <div className="timeline-step" key={label}><span className="timeline-icon"><Icon size={19} /></span><strong>{label}</strong></div>)}</div></section>
     <section className="impact-section"><div className="center-heading"><p className="eyebrow">Institutional signal</p><h2>Institutional Impact</h2></div><div className="metrics-grid">{[[impact.students,'Students'],[impact.submitted,'Projects submitted'],[impact.approved,'Approved'],[impact.departments,'Departments']].map(([value,label]) => <div className="impact-metric" key={label}><strong>{value}</strong><span>{label}</span></div>)}</div></section>
-    <section className="repository-section" id="repository"><div className="page-pad" style={{ paddingTop: 0, paddingBottom: 0 }}><SectionHeader eyebrow="Public repository" title="Browse Past Research" copy="Read approved abstracts for free. Full thesis access remains controlled and attributable." action={<span className="tag"><LockKeyhole size={12} />Private files protected</span>} /><div className="repository-toolbar"><SearchBox value={query} onChange={setQuery} /><span className="muted" style={{ fontSize: '.75rem', alignSelf: 'center' }}>{visibleProjects.length} catalog records</span></div><div className="repo-grid">{visibleProjects.map(project => <ProjectCard project={project} key={project.id} onAbstract={() => setAbstractProject(project)} onDownload={onDownload} />)}</div>{!visibleProjects.length && <EmptyState icon={Search} title="No matching research" copy="Try a broader title, author, or department search." />}</div></section>
+    <section className="repository-section" id="repository"><div className="page-pad" style={{ paddingTop: 0, paddingBottom: 0 }}><SectionHeader eyebrow="Public repository" title="Browse Past Research" copy="Read approved abstracts for free. Full thesis access remains controlled and attributable." action={<span className="tag"><LockKeyhole size={12} />Private files protected</span>} /><div className="repository-toolbar"><SearchBox value={query} onChange={setQuery} /><span className="muted" style={{ fontSize: '.75rem', alignSelf: 'center' }}>{catalogLoading ? 'Loading catalog...' : `${visibleProjects.length} catalog records`}</span></div>{catalogLoading ? <RepositorySkeleton /> : <div className="repo-grid">{visibleProjects.map(project => <ProjectCard project={project} key={project.id} onAbstract={() => setAbstractProject(project)} onDownload={onDownload} />)}</div>}{!catalogLoading && !visibleProjects.length && <EmptyState icon={Search} title="No matching research" copy="Try a broader title, author, or department search." />}</div></section>
     <VerificationBox />
     <Modal open={Boolean(abstractProject)} onClose={() => setAbstractProject(null)} eyebrow="Public catalog" title={abstractProject?.title || ''}><p className="muted" style={{ lineHeight: 1.7 }}>{abstractProject?.abstract}</p><div className="project-meta" style={{ marginTop: '1rem' }}><span>{abstractProject?.author}</span><span>{abstractProject?.dept}</span></div></Modal>
   </div>;
