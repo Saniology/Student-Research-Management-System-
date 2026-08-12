@@ -27,6 +27,8 @@ assert(/createSignedUrl|signedPdfUrl/.test(source) && /Private PDF preview/.test
 assert(/library_publish/.test(source) && /Verify (?:&amp;|&) Publish/.test(source), 'library publishing controls exist');
 assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source), 'admin assignment controls exist');
 assert(/AdminLivePanel/.test(source) && /admin_overview/.test(source), 'admin dashboard reads live overview data');
+assert(/clearance_receipts[\s\S]*profiles!clearance_receipts_student_id_fkey\(full_name,matric\)/.test(source), 'admin receipt evidence includes the student identity');
+assert(/profiles!payments_student_id_fkey!inner\(institution_id\)/.test(source) && /eq\(['"]profiles\.institution_id['"]/.test(source), 'admin payment evidence is explicitly tenant scoped');
 assert(/HierarchyManager/.test(source) && /system_configs/.test(source), 'admin hierarchy and settings controls exist');
 assert(/courses/.test(source) && /new-course/.test(source), 'admin course management controls exist');
 assert(/paystack_split_code/.test(source) && /paystack_institution_subaccount/.test(source) && /paystack_provider_subaccount/.test(source), 'admin Paystack split routing controls exist');
