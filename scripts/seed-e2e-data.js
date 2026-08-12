@@ -21,6 +21,7 @@ function loadEnvFile(relativePath) {
 
 loadEnvFile('.env.production.local');
 loadEnvFile('.env.local');
+loadEnvFile('.env');
 
 const tenantSlug = process.env.SPMS_E2E_TENANT || 'kasu';
 const fixturePrefix = process.env.SPMS_E2E_FIXTURE_PREFIX || 'SPMS E2E Fixture';

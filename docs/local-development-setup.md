@@ -93,7 +93,8 @@ npm run seed:e2e
 ```
 
 The command loads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from the shell,
-`.env.production.local`, or `.env.local`. It uploads a valid synthetic PDF to
+`.env.production.local`, `.env.local`, or the project `.env` file (in that
+precedence order). It uploads a valid synthetic PDF to
 the private thesis bucket and creates three clearly labelled `SPMS E2E Fixture`
 records: supervisor review, library approval, and a published public-catalog
 record. It creates no payment rows and cannot run remotely without the explicit
@@ -130,7 +131,7 @@ npm run verify:payment-smoke
 ```
 
 Set `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `PAYSTACK_SECRET_KEY` in
-the owner-only environment. Student/admin email variables default to the
+the owner-only environment or project `.env` file. Student/admin email variables default to the
 documented demo accounts and can be overridden with
 `SPMS_PAYMENT_SMOKE_STUDENT_EMAIL` and `SPMS_PAYMENT_SMOKE_ADMIN_EMAIL`.
 The verifier checks Paystack, the payment ledger, the clearance receipt and QR

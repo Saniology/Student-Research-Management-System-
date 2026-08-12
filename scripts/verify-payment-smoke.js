@@ -21,6 +21,7 @@ function loadEnvFile(relativePath) {
 
 loadEnvFile('.env.production.local');
 loadEnvFile('.env.local');
+loadEnvFile('.env');
 
 function log(status, message) {
   console.log(`${status.padEnd(5, ' ')} ${message}`);

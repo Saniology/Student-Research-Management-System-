@@ -187,6 +187,7 @@ async function checkHealth(baseUrl) {
 async function main() {
   loadEnvFile('.env.production.local');
   loadEnvFile('.env.local');
+  loadEnvFile('.env');
 
   const baseUrl = normalizeSupabaseUrl(configuredSupabaseUrl());
   if (!baseUrl) return finish();
