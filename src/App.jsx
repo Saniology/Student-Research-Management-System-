@@ -664,6 +664,8 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
         scheduleQuery,
         reportQuery,
       ]);
+      const failedQuery = [overviewResult, studentsResult, projectResult, paymentResult, guestOrderResult, receiptResult, departmentResult, courseResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult].find(result => result?.error);
+      if (failedQuery?.error) throw failedQuery.error;
       const reportRows = await Promise.all((reportResult.data || []).map(async item => {
         const signed = await supabase.storage.from('reports').createSignedUrl(item.file_path, 900);
         return signed.error ? item : { ...item, download_url: signed.data?.signedUrl || '' };
