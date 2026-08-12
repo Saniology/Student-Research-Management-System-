@@ -262,6 +262,7 @@ function Landing({ tenant, session, localPreview = false, onLogin, onWorkspace, 
     }
     let active = true;
     setCatalogLoading(true);
+    const searchTerm = query.trim().replace(/[^a-zA-Z0-9\s_-]/g, ' ').replace(/\s+/g, ' ').slice(0, 80);
     const catalogQuery = supabase.from('public_catalog').select('id, title, department_name, course_name, degree, abstract, published_at, project_id, institution_id').order('published_at', { ascending: false }).limit(12);
     const publishedCountQuery = supabase.from('public_catalog').select('id', { count: 'exact', head: true });
     const departmentQuery = supabase.from('public_catalog').select('department_id');
@@ -270,6 +271,7 @@ function Landing({ tenant, session, localPreview = false, onLogin, onWorkspace, 
       publishedCountQuery.eq('institution_id', tenant.id);
       departmentQuery.eq('institution_id', tenant.id);
     }
+    if (searchTerm) catalogQuery.or(`title.ilike.%${searchTerm}%,department_name.ilike.%${searchTerm}%,course_name.ilike.%${searchTerm}%,abstract.ilike.%${searchTerm}%`);
     Promise.all([catalogQuery, publishedCountQuery, departmentQuery]).then(([catalogResult, publishedResult, departmentResult]) => {
       if (!active) return;
       if (catalogResult.error) throw catalogResult.error;
@@ -278,7 +280,7 @@ function Landing({ tenant, session, localPreview = false, onLogin, onWorkspace, 
       setImpact({ students: '—', submitted: '—', approved: publishedResult.count ?? 0, departments: departments.size || '—' });
     }).catch(() => { if (active) { setProjects([]); setImpact({ students: '—', submitted: '—', approved: '—', departments: '—' }); } }).finally(() => { if (active) setCatalogLoading(false); });
     return () => { active = false; };
-  }, [localPreview, tenant?.id]);
+  }, [localPreview, query, tenant?.id]);
   const visibleProjects = projects.filter(project => [project.title, project.author, project.dept, project.course, project.degree].join(' ').toLowerCase().includes(query.toLowerCase()));
   return <div className="blueprint">
     {configError && <div className="config-alert" id="app-config-error" role="alert"><Settings2 size={16} /><span>Browser configuration is incomplete. Add the public Supabase URL, anon key, and Paystack public key in <code>js/config.js</code> before signing in or submitting.</span></div>}
@@ -286,7 +288,7 @@ function Landing({ tenant, session, localPreview = false, onLogin, onWorkspace, 
     <div className="trust-band"><ShieldCheck size={15} /> Simple, auditable workflow from submission to digital clearance</div>
     <section className="timeline-section"><div className="center-heading"><p className="eyebrow">One connected process</p><h2>The Clearance Process</h2><p className="muted">Every stage is visible, accountable, and connected from the first student submission to final digital clearance.</p></div><div className="timeline">{[[GraduationCap,'Student Login'],[FileText,'Upload Thesis'],[UserCheck,'Supervisor Approval'],[Library,'Library Verification'],[CheckCircle2,'Clearance Completed']].map(([Icon, label]) => <div className="timeline-step" key={label}><span className="timeline-icon"><Icon size={19} /></span><strong>{label}</strong></div>)}</div></section>
     <section className="impact-section"><div className="center-heading"><p className="eyebrow">Institutional signal</p><h2>Institutional Impact</h2></div><div className="metrics-grid">{[[impact.students,'Students'],[impact.submitted,'Projects submitted'],[impact.approved,'Approved'],[impact.departments,'Departments']].map(([value,label]) => <div className="impact-metric" key={label}><strong>{value}</strong><span>{label}</span></div>)}</div></section>
-    <section className="repository-section" id="repository"><div className="page-pad" style={{ paddingTop: 0, paddingBottom: 0 }}><SectionHeader eyebrow="Public repository" title="Browse Past Research" copy="Read approved abstracts for free. Full thesis access remains controlled and attributable." action={<span className="tag"><LockKeyhole size={12} />Private files protected</span>} /><div className="repository-toolbar"><SearchBox value={query} onChange={setQuery} /><span className="muted" style={{ fontSize: '.75rem', alignSelf: 'center' }}>{catalogLoading ? 'Loading catalog...' : `${visibleProjects.length} catalog records`}</span></div>{catalogLoading ? <RepositorySkeleton /> : <div className="repo-grid">{visibleProjects.map(project => <ProjectCard project={project} key={project.id} onAbstract={() => setAbstractProject(project)} onDownload={onDownload} />)}</div>}{!catalogLoading && !visibleProjects.length && <EmptyState icon={Search} title="No matching research" copy="Try a broader title, author, or department search." />}</div></section>
+    <section className="repository-section" id="repository"><div className="page-pad" style={{ paddingTop: 0, paddingBottom: 0 }}><SectionHeader eyebrow="Public repository" title="Browse Past Research" copy="Read approved abstracts for free. Full thesis access remains controlled and attributable." action={<span className="tag"><LockKeyhole size={12} />Private files protected</span>} /><div className="repository-toolbar"><SearchBox value={query} onChange={setQuery} placeholder="Search titles, departments, or courses" /><span className="muted" style={{ fontSize: '.75rem', alignSelf: 'center' }}>{catalogLoading ? 'Loading catalog...' : `${visibleProjects.length} catalog records`}</span></div>{catalogLoading ? <RepositorySkeleton /> : <div className="repo-grid">{visibleProjects.map(project => <ProjectCard project={project} key={project.id} onAbstract={() => setAbstractProject(project)} onDownload={onDownload} />)}</div>}{!catalogLoading && !visibleProjects.length && <EmptyState icon={Search} title="No matching research" copy="Try a broader title, department, or course search." />}</div></section>
     <VerificationBox />
     <Modal open={Boolean(abstractProject)} onClose={() => setAbstractProject(null)} eyebrow="Public catalog" title={abstractProject?.title || ''}><p className="muted" style={{ lineHeight: 1.7 }}>{abstractProject?.abstract}</p><div className="project-meta" style={{ marginTop: '1rem' }}><span>{abstractProject?.author}</span><span>{abstractProject?.dept}</span></div></Modal>
   </div>;
