@@ -20,7 +20,7 @@ async function openPublicPreview(page) {
 }
 
 test.describe('SPMS role workflows', () => {
-  test('public reader can open the guest repository checkout', async ({ page }) => {
+  test('public reader must authenticate before repository checkout', async ({ page }) => {
     await page.route('**/rest/v1/public_catalog*', async route => {
       await new Promise(resolve => setTimeout(resolve, 500));
       await route.continue();
@@ -29,8 +29,9 @@ test.describe('SPMS role workflows', () => {
     await expect(page.getByLabel('Loading repository')).toBeVisible();
     await page.getByRole('button', { name: /Download/ }).first().click();
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog')).toContainText('Download full thesis');
-    await expect(page.getByRole('dialog').getByLabel('Email address')).toBeVisible();
+    await expect(page.getByRole('dialog')).toContainText('Sign in to download');
+    await expect(page.getByRole('dialog')).toContainText('Account required');
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Create account' })).toBeVisible();
   });
 
   test('student can reach the clearance receipt state', async ({ page }) => {
@@ -65,7 +66,7 @@ test.describe('SPMS role workflows', () => {
     await openPreview(page, 'library', 'open_catalog_record');
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.locator('#lib-comment-input')).toHaveValue('Preview catalog note for automated library interaction coverage.');
-    await expect(page.getByRole('button', { name: /Verify & Publish/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Generate QR & Publish/ })).toBeVisible();
   });
 
   test('admin can open scheduled reporting controls', async ({ page }) => {

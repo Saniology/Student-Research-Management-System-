@@ -24,7 +24,7 @@ assert(/project-title-input|project-title/.test(source) && /thesis-pdf-input/.te
 assert(/student_resubmit/.test(source) && /Upload Revision/.test(source), 'student revision workflow exists');
 assert(/supervisor_decision/.test(source) && /Approve Project/.test(source), 'supervisor decision controls exist');
 assert(/createSignedUrl|signedPdfUrl/.test(source) && /Private PDF preview/.test(source), 'supervisor private PDF preview exists');
-assert(/library_publish/.test(source) && /Verify (?:&amp;|&) Publish/.test(source), 'library publishing controls exist');
+assert(/library_verify/.test(source) && /library_publish/.test(source) && /Verify metadata/.test(source), 'library metadata verification and publishing controls exist');
 assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source), 'admin assignment controls exist');
 assert(/AdminLivePanel/.test(source) && /admin_overview/.test(source), 'admin dashboard reads live overview data');
 assert(/clearance_receipts[\s\S]*profiles!clearance_receipts_student_id_fkey\(full_name,matric\)/.test(source), 'admin receipt evidence includes the student identity');
@@ -36,7 +36,11 @@ assert(/paystack_split_code/.test(source) && /paystack_institution_subaccount/.t
 assert(/fetchQrSvg/.test(source) && /Project verification QR code/.test(source), 'library QR verification display is wired');
 assert(/storage\.from\('thesis-pdfs'\)\.upload/.test(source) && /file_path: upload\.data\.path/.test(source), 'student PDF upload is completed before payment verification');
 assert(/repository-access/.test(source) && /initialize_download/.test(source) && /verify_download/.test(source), 'paid repository download flow exists');
-assert(/GuestDownloadModal/.test(source) && /initialize_guest_download/.test(source) && /verify_guest_download/.test(source), 'public repository guest payment flow exists');
+assert(/GuestDownloadModal/.test(source) && /Account required/.test(source) && /Create account/.test(source), 'public repository requires an authenticated student account before payment');
+assert(/receiptQrCommands/.test(source) && /qrcode-generator/.test(source), 'receipt PDF embeds a QR verification graphic');
+assert(/departmentScope/.test(source) && /department_name/.test(source), 'student repository browsing is department scoped');
+assert(/queueQuery/.test(source) && /queueStatus/.test(source), 'library queue has search and status filters');
+assert(/ProfileAvatar/.test(source) && /avatar_url/.test(source), 'staff review surfaces show student identity context');
 assert(/project\.project_id \? \{ \.\.\.project, id: project\.project_id \}/.test(source), 'public repository downloads use the underlying project identifier');
 assert(/public_catalog/.test(source) && /department_name/.test(source) && !/public_catalog.*author_name/.test(source), 'public repository reads the anonymized catalog schema');
 assert(/catalogQuery\.or\(/.test(source) && /title\.ilike|department_name\.ilike|course_name\.ilike/.test(source), 'public repository searches catalog fields server-side');

@@ -150,13 +150,11 @@ function checkRls() {
   assert(/select=id,email,matric,full_name,institution_id/.test(repositoryAccess), 'repository access loads the authenticated tenant');
   assert(/assertProjectTenant\(profile, project\)/g.test(repositoryAccess), 'repository actions enforce project institution isolation');
   assert(/Repository record belongs to another institution/.test(repositoryAccess), 'repository rejects cross-tenant downloads');
-  assert(/initialize_guest_download|verify_guest_download/.test(repositoryAccess), 'guest repository actions are handled server-side');
-  assert(/if \(guestAction\) \{[\s\S]{0,1400}initializeGuestDownloadPayment/.test(repositoryAccess), 'public guest repository payment path is handled before authentication');
-  assert(/requireEmail\(body\.email\)/.test(repositoryAccess), 'guest download requires a validated email address');
-  assert(/transaction\.customer\.email\.toLowerCase\(\) !== email/.test(repositoryAccess), 'guest payment email is matched before issuing access');
-  assert(/guest_download_orders\?select=\*/.test(repositoryAccess), 'successful guest download payments are persisted');
+  assert(/Repository downloads require an authenticated account/.test(repositoryAccess) && /getAuthenticatedUser/.test(repositoryAccess), 'repository downloads require an authenticated account');
+  assert(!/const guestAction|if \(guestAction\)/.test(repositoryAccess), 'anonymous guest checkout is not exposed by repository access');
+  assert(/transaction\.customer\.email\.toLowerCase\(\) !== user\.email/.test(repositoryAccess), 'authenticated payment email is matched before issuing access');
   assert(/existingPayment[\s\S]+already_unlocked/.test(repositoryAccess) && /existing\[0\][\s\S]+already_unlocked/.test(repositoryAccess), 'repository payment retries are idempotent');
-  assert(/GuestDownloadModal/.test(html) && /initialize_guest_download/.test(html), 'public repository exposes a guest download payment flow');
+  assert(/GuestDownloadModal/.test(html) && /Account required/.test(html), 'public repository prompts account sign-in before payment');
   assert(/!supabase \|\| !tenant\?\.id/.test(html) && /institution_id/.test(html), 'public catalog refuses unscoped tenant reads');
 }
 

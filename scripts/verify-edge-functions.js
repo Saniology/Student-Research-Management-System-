@@ -18,7 +18,7 @@ const contracts = [
   {
     name: 'project-workflow',
     methods: ['POST', 'OPTIONS'],
-    actions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_publish', 'issue_receipt'],
+    actions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_verify', 'library_publish', 'issue_receipt'],
     errors: ['Unknown workflow action', 'Missing authorization header', 'Only students can resubmit a revision', 'Only library staff or admins can publish projects', 'Project belongs to another institution'],
     env: ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_SERVICE_ROLE_KEY'],
     auth: true,

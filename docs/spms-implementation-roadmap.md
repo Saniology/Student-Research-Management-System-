@@ -35,8 +35,8 @@ It adds:
 - Library catalog publishing fields: shelf number, QR payload, DOI.
 - Public anonymized catalog table.
 - Repository unlock records for paid downloads.
-- Guest repository download orders with email attribution, payment references,
-  tenant scoping, and watermarked access evidence.
+- Legacy repository download orders with email attribution, payment references,
+  tenant scoping, and watermarked access evidence retained for reconciliation.
 - Clearance receipt verification records.
 - Tenant payment split settings for institution/SPMS provider accounting.
 - In-app workflow notifications with unread/read state.
@@ -65,7 +65,8 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 
 - `supervisor_decision`: approve or request revision.
 - Validates revision objects from private storage before changing the project record.
-- `library_publish`: verify metadata, assign shelf number, publish anonymized catalog record.
+- `library_verify`: validate required metadata and move supervisor-approved work into library review.
+- `library_publish`: assign shelf number, generate QR payload, and publish anonymized catalog record.
 - `issue_receipt`: issue final clearance receipt after library publication.
 - Emits in-app notifications for submissions, supervisor approvals/revisions, library publication, and receipt issuance.
 
@@ -74,10 +75,13 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 - `get_download_url`: checks whether a user already unlocked a published project and returns a short-lived private signed URL to a per-user watermarked PDF copy.
 - `initialize_download`: initializes paid repository download payments from the backend with configured fee, reference, metadata, and split/subaccount rules.
 - `verify_download`: verifies the Paystack repository download fee, records the transaction split, creates a persistent unlock, and returns a short-lived signed URL to a per-user watermarked PDF copy.
-- Registered and guest repository verification retries are idempotent: an
-  already-recorded successful reference returns the existing unlock/order with
-  a fresh short-lived watermarked URL instead of recording a duplicate.
-- Public repository downloads support both an email-verified guest path and a registered-account path. Guest `initialize_guest_download` and `verify_guest_download` actions verify the ₦500 Paystack payment, persist a tenant-scoped order, and return a short-lived email-watermarked PDF copy; registered users receive a permanent account/project unlock and matric-watermarked copy.
+- Authenticated repository verification retries are idempotent: an
+  already-recorded successful reference returns the existing unlock with a
+  fresh short-lived watermarked URL instead of recording a duplicate.
+- Public repository downloads require an authenticated student account. The
+  account owns the permanent project unlock and the generated PDF is
+  watermarked with the student's matric number. Legacy guest order records
+  remain readable by administrators for reconciliation only.
 - `student-identity` validates the school email and matric against a configured SIS adapter, falling back to the tenant registry for the KASU pilot without exposing registry rows to the browser.
 - Payment records use the tenant-configured institution/provider split percentages and keep Paystack subaccount codes in metadata for reconciliation.
 - Uses `pdf-lib@1.17.1` in the Edge Function to stamp repository downloads with user identity, timestamp, project ID, and project title.
@@ -93,7 +97,8 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 
 - Lets admins generate one-off CSV reports from the dashboard.
 - Runs due report schedules for student registers, project lifecycle, financial, and archive reports.
-- Financial reports include authenticated clearance, registered repository payments, and email-attributed guest repository orders.
+- Financial reports include authenticated clearance and repository payments;
+  legacy guest order rows remain available for reconciliation during migration.
 - Stores generated CSV files in the private `reports` storage bucket.
 - Supports authenticated admin execution or external cron execution through `REPORT_CRON_SECRET`.
 - Optionally emails private signed report links through Resend when report delivery secrets are configured.
@@ -167,8 +172,8 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
   its public read policy, while `public-config` returns only safe fee/upload
   settings.
 - Live identity smoke verification accepts the seeded KASU matric/school-email
-  pair; public repository guest payments remain attributable to the verified
-  payment email and never expose original storage paths.
+  pair; authenticated repository payments remain tied to the account and never
+  expose original storage paths.
 - The four documented demo accounts authenticate successfully against the hosted
   project and reach their student, teacher, library, and admin workspaces.
 - A live KASU thesis record has completed clearance payment, supervisor
@@ -195,9 +200,9 @@ The UI pause has been merged back into the full product work. After resuming:
   cover Student submission, Supervisor history, and every Library desk.
 - The Library workspace now exposes separate Verification queue, Public
   catalogue, QR labels, and Archive sections backed by the loaded project data.
-- Public repository downloads now support email-attributed guest checkout as
-  well as registered-account checkout; both paths verify Paystack server-side,
-  watermark the generated copy, and return only short-lived signed URLs.
+- Public repository downloads now require an authenticated student account;
+  Paystack is verified server-side, the generated copy is watermarked, and
+  only a short-lived signed URL is returned.
 - An authenticated browser smoke run signed in with the four documented demo
   accounts and activated a role-specific sidebar destination for Student,
   Supervisor, Library, and Admin without page errors.
@@ -214,12 +219,12 @@ The UI pause has been merged back into the full product work. After resuming:
   verification all report zero failures.
 - `npm run verify:deploy` confirms all eight hosted Edge Functions are
   deployed with CORS-enabled preflight routes and a healthy live deployment.
-- The deployed repository endpoint accepts the guest action path without an
-  account and performs published-project validation before any payment call;
-  no payment or database fixture was created by this smoke check.
+- The deployed repository endpoint requires an authenticated account before
+  payment initialization or verification; no payment or database fixture was
+  created by this smoke check.
 - Browser coverage runs 15 tests: 10 local role tests pass, including the
-  public guest checkout modal. The 5 seeded Supabase tests are an optional
-  owner-only check and are deferred for now.
+  public account-required download modal. The 5 seeded Supabase tests are an
+  optional owner-only check and are deferred for now.
 - The local Vite app responds at `http://127.0.0.1:5510/`, and the live KASU
   deployment evidence above remains valid.
 
