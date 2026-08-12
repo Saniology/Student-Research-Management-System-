@@ -36,7 +36,7 @@ assert(/repository-access/.test(source) && /initialize_download/.test(source) &&
 assert(/GuestDownloadModal/.test(source) && /initialize_guest_download/.test(source) && /verify_guest_download/.test(source), 'public repository guest payment flow exists');
 assert(/project\.project_id \? \{ \.\.\.project, id: project\.project_id \}/.test(source), 'public repository downloads use the underlying project identifier');
 assert(/public_catalog/.test(source) && /department_name/.test(source) && !/public_catalog.*author_name/.test(source), 'public repository reads the anonymized catalog schema');
-assert(/config\.valid \? \[\] : demoProjects/.test(source), 'configured public repository does not silently fall back to demo records');
+assert(/localPreview \|\| !config\.valid \? demoProjects : \[\]/.test(source), 'configured public repository does not silently fall back to demo records');
 assert(/scheduled-reports/.test(source) && /run_once/.test(source) && /run_due/.test(source), 'scheduled reporting contract exists');
 assert(/verification-lookup/.test(source) && /qr_svg/.test(source) && /receipt/.test(source) && /project/.test(source), 'public verification contract exists');
 assert(/PageSkeleton/.test(source) && /skeleton/.test(source) && /@keyframes shimmer/.test(source), 'animated page-specific skeleton loaders exist');

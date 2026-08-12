@@ -22,6 +22,8 @@ Use this checklist before a production handover or institutional demo.
 - With the local server still running, run `npm run verify:interactions` and `npm run verify:playwright`.
 - Run `npm run verify:security`.
 - Run `npm run verify:workflow`.
+- Confirm the public repository shows its shaped skeleton while catalog data is
+  loading, then renders cards or the empty state after the request settles.
 - Run `npm run verify:release`.
 - Run `npm run verify:lifecycle`.
 - Confirm the GitHub Actions `Verify SPMS` workflow passes on the release branch.

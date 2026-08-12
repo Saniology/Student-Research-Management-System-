@@ -157,6 +157,7 @@ function checkRls() {
   assert(/guest_download_orders\?select=\*/.test(repositoryAccess), 'successful guest download payments are persisted');
   assert(/existingPayment[\s\S]+already_unlocked/.test(repositoryAccess) && /existing\[0\][\s\S]+already_unlocked/.test(repositoryAccess), 'repository payment retries are idempotent');
   assert(/GuestDownloadModal/.test(html) && /initialize_guest_download/.test(html), 'public repository exposes a guest download payment flow');
+  assert(/!supabase \|\| !tenant\?\.id/.test(html) && /institution_id/.test(html), 'public catalog refuses unscoped tenant reads');
 }
 
 function checkStoragePrivacy() {

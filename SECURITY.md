@@ -28,6 +28,8 @@
   and generated reports should be accessed through policy-controlled reads or
   short-lived signed URLs.
 - Public endpoints must return only controlled public verification/catalog data.
+- Public catalog reads must include the resolved institution identifier; when
+  tenant resolution fails, the browser must not issue an unscoped catalog query.
 - Data classification, retention, access reviews, data subject requests, and
   public/private catalog boundaries are maintained in
   `docs/data-governance-privacy-runbook.md`.

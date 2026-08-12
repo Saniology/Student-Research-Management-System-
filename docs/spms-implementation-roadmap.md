@@ -200,6 +200,9 @@ The UI pause has been merged back into the full product work. After resuming:
   accounts and activated a role-specific sidebar destination for Student,
   Supervisor, Library, and Admin without page errors.
 - The UI smoke verifier covers the notification-center entry point and actions.
+- The public repository keeps its card-shaped skeleton visible while catalog
+  queries are pending and only shows the empty state after those requests
+  settle; the browser suite covers this delayed loading surface.
 - `npm run build`, `npm run verify:ui`, `npm run verify:a11y`,
   `npm run verify:security`, `npm run verify:roles`,
   `npm run verify:interactions`, and `npm run verify:lifecycle` pass with zero
