@@ -53,7 +53,8 @@ assert(/new window\.PaystackPop\(\)[\s\S]*resumeTransaction/.test(source), 'Pays
 assert(/Math\.max\(1,[\s\S]*numericValue/.test(source), 'analytics progress bars remain valid for zero-record institutions');
 assert(/eq\(['\"]transaction_type['\"]\s*,\s*['\"]clearance_fee['\"]\)/.test(source), 'student payment evidence is scoped to clearance fees');
 assert(/clearance_receipts['\"]\)\.select\(['\"]\*['\"]\)/.test(source), 'student workspace restores issued receipts after reload');
-assert(/\['published','cleared'\]\.includes\(project\?\.status\)/.test(source), 'students can issue receipts after library publication');
+assert(/\[\s*['"]published['"]\s*,\s*['"]cleared['"]\s*\]\.includes\(project\?\.status\)/.test(source), 'students can issue receipts after library publication');
+assert(/downloadReceiptPdf/.test(source) && /Download receipt PDF/.test(source), 'students can download issued clearance receipts');
 assert(/pendingVerification/.test(source) && /Retry verification/.test(source) && /localStorage/.test(source), 'students can retry failed payment verification without a second charge');
 
 console.log('');

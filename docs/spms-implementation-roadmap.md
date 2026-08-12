@@ -108,6 +108,8 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 
 - Student dashboard now collects title, abstract, degree, and PDF.
 - Student dashboard shows workflow status and only reveals receipt after publication/clearance.
+- Students can download an issued clearance receipt as a portable PDF containing
+  the payment reference and public verification code.
 - Students can replace a revision-requested PDF and resubmit through `project-workflow` without paying the clearance fee again.
 - Supervisor dashboard can load real assigned `projects`, securely preview private thesis PDFs with short-lived signed links, and call approval/revision actions.
 - Library dashboard can load approved projects and publish them to the public catalog.
@@ -216,8 +218,8 @@ The UI pause has been merged back into the full product work. After resuming:
   account and performs published-project validation before any payment call;
   no payment or database fixture was created by this smoke check.
 - Browser coverage runs 15 tests: 10 local role tests pass, including the
-  public guest checkout modal, and 5 seeded Supabase tests remain intentionally
-  skipped until a dedicated non-production project is supplied.
+  public guest checkout modal. The 5 seeded Supabase tests are an optional
+  owner-only check and are deferred for now.
 - The local Vite app responds at `http://127.0.0.1:5510/`, and the live KASU
   deployment evidence above remains valid.
 
@@ -228,5 +230,10 @@ not unimplemented SPMS application workflows.
 
 - Real provider-side email domain authentication and deliverability monitoring with institution DNS access.
 - Provider-specific production DNS credentials and hosting target values for each institution.
-- Full Playwright role automation against seeded Supabase test data; `scripts/seed-e2e-data.js` and the expanded seeded suite now provide the dedicated project dataset path, but the owner still needs to run it against a dedicated test project and retain the authenticated evidence.
 - Production hosting, institution DNS, email provider credentials, monitoring endpoints, and rollback evidence for each tenant.
+
+## Deferred Optional Verification
+
+- Seeded Playwright role automation remains available through
+  `scripts/seed-e2e-data.js` and the opt-in seeded suite. It is not required for
+  local development or the current application handover.

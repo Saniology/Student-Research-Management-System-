@@ -19,6 +19,52 @@ const previewAction = previewParams.get('preview_action') || '';
 
 function formatNaira(kobo = 0) { return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(kobo) / 100); }
 function displayDate(value) { return value ? new Date(value).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+function escapePdfText(value) { return String(value ?? '').replace(/[^\x20-\x7e]/g, '?').replace(/[\\()]/g, '\\$&'); }
+function downloadReceiptPdf(receipt, project, payment, profile) {
+  if (!receipt) return;
+  const lines = [
+    'KASU SPMS - DIGITAL CLEARANCE RECEIPT',
+    '',
+    `Verification code: ${receipt.verification_code || 'Not available'}`,
+    `Student: ${receipt.profiles?.full_name || profile?.full_name || 'Student'}`,
+    `Matric: ${receipt.profiles?.matric || profile?.matric || 'Not available'}`,
+    `Project: ${project?.title || 'Research project'}`,
+    `Payment reference: ${payment?.paystack_reference || 'Not available'}`,
+    `Amount: ${payment ? formatNaira(payment.amount) : 'Not available'}`,
+    `Issued: ${displayDate(receipt.issued_at)}`,
+    '',
+    'Verify this receipt from the public SPMS verification form using the code above.',
+  ];
+  const streamParts = [`BT /F1 18 Tf 72 720 Td (${escapePdfText(lines[0])}) Tj`, '/F1 11 Tf'];
+  lines.slice(1).forEach(line => streamParts.push(`0 -24 Td (${escapePdfText(line)}) Tj`));
+  streamParts.push('ET');
+  const stream = streamParts.join('\n');
+  const byteLength = value => new TextEncoder().encode(value).length;
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    `<< /Length ${byteLength(stream)} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(byteLength(pdf));
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = byteLength(pdf);
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index <= objects.length; index += 1) pdf += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  const blob = new Blob([new TextEncoder().encode(pdf)], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${String(receipt.verification_code || 'kasu-spms-receipt').replace(/[^a-z0-9_-]+/gi, '-')}.pdf`;
+  link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 const DEFAULT_MAX_PDF_BYTES = 100 * 1024 * 1024;
 function resumePaystackPayment(payment, handlers) {
   if (typeof window.PaystackPop !== 'function') throw new Error('Paystack could not load. Refresh the page and try again.');
@@ -344,7 +390,7 @@ function StudentWorkspace({ profile, session, preview, onToast }) {
   const [loading, setLoading] = useState(!preview);
   const [form, setForm] = useState({ title: 'Web-Based E-Voting System', degree: 'BSc', abstract: 'A final-year project workflow preview for supervisor review, library publication, payment clearance, and repository verification.' });
   const [file, setFile] = useState(null);
-  const [receipt, setReceipt] = useState(null);
+  const [receipt, setReceipt] = useState(preview && previewAction === 'show_receipt' ? { verification_code: 'SPMS-PREVIEW-RECEIPT', issued_at: new Date().toISOString(), profiles: { full_name: profile?.full_name, matric: profile?.matric } } : null);
   const [receiptQrUrl, setReceiptQrUrl] = useState('');
   const [clearanceFee, setClearanceFee] = useState(200000);
   const [maxPdfBytes, setMaxPdfBytes] = useState(DEFAULT_MAX_PDF_BYTES);
@@ -447,7 +493,55 @@ function StudentWorkspace({ profile, session, preview, onToast }) {
     catch (error) { onToast(error.message); }
   };
   if (loading) return <PageSkeleton role="student" />;
-  return <Workspace role="student" title="Your clearance workspace" subtitle="Submit once, follow every review stage, and keep your official receipt close." sidebar={[[GraduationCap,'My workspace',activeSection === 'student-overview',() => navigate('student-overview')],[FileText,'Submission',activeSection === 'student-submission',() => navigate('student-submission')],[CircleDollarSign,'Payments',activeSection === 'student-payments',() => navigate('student-payments')],[ShieldCheck,'Receipt',activeSection === 'student-receipt',() => navigate('student-receipt')]]}><div id="student-overview" className="workspace-section"><StudentProfileCard profile={profile} /><MetricCards items={[["Workflow status", project ? project.status.replaceAll('_',' ') : pendingVerification ? 'Payment verification pending' : 'Not started', FileCheck2],["Clearance fee", formatNaira(clearanceFee), CircleDollarSign],["Submission", project ? 'Received' : pendingVerification ? 'Verification pending' : 'Awaiting upload', FileText],["Receipt", project?.status === 'cleared' || receipt ? 'Ready' : 'After clearance', Archive]]} /></div><div className="workspace-grid"><section className="surface span-two workspace-section" id="student-submission"><div className="surface-head"><div><h2>Submission details</h2><p>Capture the metadata your supervisor and library will verify.</p></div>{project && <StatusChip status={project.status} />}</div>{project?.status === 'revision_requested' && <div className="revision-banner"><strong>Revision Required</strong><span>Upload the corrected PDF and resubmit without paying the clearance fee again.</span></div>}{pendingVerification && <div className="pending-payment-banner"><div><strong>Payment verification pending</strong><span>Your PDF is safely uploaded. Retry verification with the same Paystack reference; you will not be charged again.</span></div><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />{submitting ? 'Retrying...' : 'Retry verification'}</button></div>}<form className="form-grid" onSubmit={submit}><div className="field full"><label htmlFor="project-title-input">Project title</label><input id="project-title-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div><div className="field"><label htmlFor="project-degree-input">Degree</label><select id="project-degree-input" value={form.degree} onChange={e => setForm({ ...form, degree: e.target.value })}><option>BSc</option><option>PGD</option><option>MSc</option><option>PhD</option></select></div><div className="field"><label htmlFor="thesis-pdf-input">Thesis PDF</label><input id="thesis-pdf-input" type="file" accept="application/pdf,.pdf" onChange={e => { const selected = e.target.files?.[0] || null; setFile(selected); const error = validateThesisFile(selected, maxPdfBytes); if (error) onToast(error); }} /><span className="helper">PDF only. Maximum {Math.round(maxPdfBytes / (1024 * 1024))} MB.</span></div><div className="field full"><label htmlFor="project-abstract-input">Abstract</label><textarea id="project-abstract-input" value={form.abstract} onChange={e => setForm({ ...form, abstract: e.target.value })} /><span className="helper">Minimum 50 characters. This abstract becomes part of the public catalog after library approval.</span></div><div className="modal-actions field full"><button className="button button-primary" id="pay-btn" disabled={submitting || Boolean(pendingVerification) || Boolean(project && ['published','cleared'].includes(project.status))}>{project?.status === 'revision_requested' && payment ? <><RefreshCw size={15} />{submitting ? 'Submitting revision...' : 'Upload Revision & Resubmit'}</> : payment ? <><Check size={15} />Submission successful</> : pendingVerification ? <><RefreshCw size={15} />Payment verification pending</> : <><CircleDollarSign size={15} />{submitting ? 'Opening secure checkout...' : 'Pay & submit thesis'}</>}</button></div></form></section><section className="surface workspace-section"><div className="surface-head"><div><h2>Current status</h2><p>Live workflow checkpoints.</p></div><LockKeyhole size={17} color="#065f46" /></div>{project ? <div className="status-panel"><h3>{project.title}</h3><StatusChip status={project.status} /><div className="progress-track"><div className="progress-fill" style={{ width: `${['submitted','supervisor_review','revision_requested'].includes(project.status) ? 34 : project.status === 'supervisor_approved' ? 62 : project.status === 'library_review' ? 80 : 100}%` }} /></div>{project.revision_note && <p className="helper"><strong>Supervisor note:</strong> {project.revision_note}</p>}</div> : pendingVerification ? <div className="status-panel"><h3>Awaiting payment confirmation</h3><p className="helper">The uploaded PDF remains private while the server verifies the successful Paystack payment.</p><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />Retry verification</button></div> : <EmptyState icon={FileText} title="No submission yet" copy="Complete the form to start your clearance journey." />}</section><section className="surface workspace-section" id="student-payments"><div id="student-receipt" className="workspace-anchor" aria-hidden="true" /><div className="surface-head"><div><h2>Payment evidence</h2><p>Every successful payment is tied to your account.</p></div><CircleDollarSign size={17} color="#065f46" /></div>{payment ? <div className="receipt" id="receipt-section"><h3>{previewAction === 'show_receipt' || receipt || project?.status === 'cleared' ? 'Digital Clearance Receipt' : 'Payment captured'}</h3><dl><dt>Reference</dt><dd>{payment.paystack_reference}</dd><dt>Amount</dt><dd>{formatNaira(payment.amount)}</dd><dt>Date</dt><dd>{displayDate(payment.paid_at)}</dd></dl>{receiptQrUrl && <div className="qr-preview"><img src={receiptQrUrl} alt="Clearance receipt verification QR code" /><span className="helper">Scan to verify this clearance receipt.</span></div>}{(previewAction === 'show_receipt' || ['published','cleared'].includes(project?.status)) && <button className="button button-primary" style={{ marginTop: '1rem' }} onClick={generateReceipt}>{receipt ? 'Receipt issued' : 'Issue digital receipt'}</button>}</div> : pendingVerification ? <div className="status-panel"><h3>Payment recorded, verification pending</h3><p className="helper">No second payment is required. The same reference will be retried against the uploaded PDF.</p><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />Retry verification</button></div> : <EmptyState icon={CircleDollarSign} title="No payment yet" copy="The fee is initialized securely on the server when you submit." />}</section></div></Workspace>;
+  return <Workspace
+    role="student"
+    title="Your clearance workspace"
+    subtitle="Submit once, follow every review stage, and keep your official receipt close."
+    sidebar={[
+      [GraduationCap, 'My workspace', activeSection === 'student-overview', () => navigate('student-overview')],
+      [FileText, 'Submission', activeSection === 'student-submission', () => navigate('student-submission')],
+      [CircleDollarSign, 'Payments', activeSection === 'student-payments', () => navigate('student-payments')],
+      [ShieldCheck, 'Receipt', activeSection === 'student-receipt', () => navigate('student-receipt')],
+    ]}
+  >
+    <div id="student-overview" className="workspace-section">
+      <StudentProfileCard profile={profile} />
+      <MetricCards items={[
+        ['Workflow status', project ? project.status.replaceAll('_', ' ') : pendingVerification ? 'Payment verification pending' : 'Not started', FileCheck2],
+        ['Clearance fee', formatNaira(clearanceFee), CircleDollarSign],
+        ['Submission', project ? 'Received' : pendingVerification ? 'Verification pending' : 'Awaiting upload', FileText],
+        ['Receipt', project?.status === 'cleared' || receipt ? 'Ready' : 'After clearance', Archive],
+      ]} />
+    </div>
+    <div className="workspace-grid">
+      <section className="surface span-two workspace-section" id="student-submission">
+        <div className="surface-head"><div><h2>Submission details</h2><p>Capture the metadata your supervisor and library will verify.</p></div>{project && <StatusChip status={project.status} />}</div>
+        {project?.status === 'revision_requested' && <div className="revision-banner"><strong>Revision Required</strong><span>Upload the corrected PDF and resubmit without paying the clearance fee again.</span></div>}
+        {pendingVerification && <div className="pending-payment-banner"><div><strong>Payment verification pending</strong><span>Your PDF is safely uploaded. Retry verification with the same Paystack reference; you will not be charged again.</span></div><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />{submitting ? 'Retrying...' : 'Retry verification'}</button></div>}
+        <form className="form-grid" onSubmit={submit}>
+          <div className="field full"><label htmlFor="project-title-input">Project title</label><input id="project-title-input" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
+          <div className="field"><label htmlFor="project-degree-input">Degree</label><select id="project-degree-input" value={form.degree} onChange={e => setForm({ ...form, degree: e.target.value })}><option>BSc</option><option>PGD</option><option>MSc</option><option>PhD</option></select></div>
+          <div className="field"><label htmlFor="thesis-pdf-input">Thesis PDF</label><input id="thesis-pdf-input" type="file" accept="application/pdf,.pdf" onChange={e => { const selected = e.target.files?.[0] || null; setFile(selected); const error = validateThesisFile(selected, maxPdfBytes); if (error) onToast(error); }} /><span className="helper">PDF only. Maximum {Math.round(maxPdfBytes / (1024 * 1024))} MB.</span></div>
+          <div className="field full"><label htmlFor="project-abstract-input">Abstract</label><textarea id="project-abstract-input" value={form.abstract} onChange={e => setForm({ ...form, abstract: e.target.value })} /><span className="helper">Minimum 50 characters. This abstract becomes part of the public catalog after library approval.</span></div>
+          <div className="modal-actions field full"><button className="button button-primary" id="pay-btn" disabled={submitting || Boolean(pendingVerification) || Boolean(project && ['published', 'cleared'].includes(project.status))}>{project?.status === 'revision_requested' && payment ? <><RefreshCw size={15} />{submitting ? 'Submitting revision...' : 'Upload Revision & Resubmit'}</> : payment ? <><Check size={15} />Submission successful</> : pendingVerification ? <><RefreshCw size={15} />Payment verification pending</> : <><CircleDollarSign size={15} />{submitting ? 'Opening secure checkout...' : 'Pay & submit thesis'}</>}</button></div>
+        </form>
+      </section>
+      <section className="surface workspace-section">
+        <div className="surface-head"><div><h2>Current status</h2><p>Live workflow checkpoints.</p></div><LockKeyhole size={17} color="#065f46" /></div>
+        {project ? <div className="status-panel"><h3>{project.title}</h3><StatusChip status={project.status} /><div className="progress-track"><div className="progress-fill" style={{ width: `${['submitted', 'supervisor_review', 'revision_requested'].includes(project.status) ? 34 : project.status === 'supervisor_approved' ? 62 : project.status === 'library_review' ? 80 : 100}%` }} /></div>{project.revision_note && <p className="helper"><strong>Supervisor note:</strong> {project.revision_note}</p>}</div> : pendingVerification ? <div className="status-panel"><h3>Awaiting payment confirmation</h3><p className="helper">The uploaded PDF remains private while the server verifies the successful Paystack payment.</p><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />Retry verification</button></div> : <EmptyState icon={FileText} title="No submission yet" copy="Complete the form to start your clearance journey." />}
+      </section>
+      <section className="surface workspace-section" id="student-payments">
+        <div id="student-receipt" className="workspace-anchor" aria-hidden="true" />
+        <div className="surface-head"><div><h2>Payment evidence</h2><p>Every successful payment is tied to your account.</p></div><CircleDollarSign size={17} color="#065f46" /></div>
+        {payment ? <div className="receipt" id="receipt-section">
+          <h3>{previewAction === 'show_receipt' || receipt || project?.status === 'cleared' ? 'Digital Clearance Receipt' : 'Payment captured'}</h3>
+          <dl><dt>Reference</dt><dd>{payment.paystack_reference}</dd><dt>Amount</dt><dd>{formatNaira(payment.amount)}</dd><dt>Date</dt><dd>{displayDate(payment.paid_at)}</dd></dl>
+          {receiptQrUrl && <div className="qr-preview"><img src={receiptQrUrl} alt="Clearance receipt verification QR code" /><span className="helper">Scan to verify this clearance receipt.</span></div>}
+          {(previewAction === 'show_receipt' || ['published', 'cleared'].includes(project?.status)) && (receipt ? <button className="button button-primary" style={{ marginTop: '1rem' }} onClick={() => downloadReceiptPdf(receipt, project, payment, profile)}><Download size={15} />Download receipt PDF</button> : <button className="button button-primary" style={{ marginTop: '1rem' }} onClick={generateReceipt}>Issue digital receipt</button>)}
+        </div> : pendingVerification ? <div className="status-panel"><h3>Payment recorded, verification pending</h3><p className="helper">No second payment is required. The same reference will be retried against the uploaded PDF.</p><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />Retry verification</button></div> : <EmptyState icon={CircleDollarSign} title="No payment yet" copy="The fee is initialized securely on the server when you submit." />}
+      </section>
+    </div>
+  </Workspace>;
 }
 
 function TeacherWorkspace({ profile, session, preview, onToast }) {

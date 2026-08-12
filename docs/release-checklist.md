@@ -20,6 +20,8 @@ Use this checklist before a production handover or institutional demo.
 - Start the local server and run `npm run verify:render`.
 - With the local server still running, run `npm run verify:roles`.
 - With the local server still running, run `npm run verify:interactions` and `npm run verify:playwright`.
+- Seeded Supabase Playwright checks are optional owner-only evidence and may be
+  deferred when no dedicated non-production project is available.
 - Run `npm run verify:security`.
 - Run `npm run verify:workflow`.
 - Confirm the public repository shows its shaped skeleton while catalog data is
@@ -112,6 +114,8 @@ Use this checklist before a production handover or institutional demo.
   supervisor review modal, library catalog modal, and admin reports section.
 - Student: sign up or sign in, upload project metadata and PDF, initialize
   payment, see workflow status.
+- Student: issue the clearance receipt after library publication and download
+  the receipt PDF; confirm its verification code matches the public verifier.
 - Supervisor: load assigned projects, approve one, request revision on one.
 - Library: publish an approved project with shelf number and QR payload.
 - Admin: review dashboard metrics, payment table, settings, reports, analytics,

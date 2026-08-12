@@ -1,3 +1,4 @@
+const fs = require('fs');
 const { test, expect } = require('@playwright/test');
 
 const fixturePrefix = process.env.SPMS_E2E_FIXTURE_PREFIX || 'SPMS E2E Fixture';
@@ -37,6 +38,13 @@ test.describe('SPMS role workflows', () => {
     await expect(page.getByText('Digital Clearance Receipt', { exact: true })).toBeVisible();
     await expect(page.getByText('SPMS-PREVIEW-STUDENT', { exact: true })).toBeVisible();
     await expect(page.locator('#receipt-section')).toBeVisible();
+    const downloadPromise = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Download receipt PDF' }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('SPMS-PREVIEW-RECEIPT.pdf');
+    const downloadedPath = await download.path();
+    expect(downloadedPath).toBeTruthy();
+    expect(fs.readFileSync(downloadedPath).subarray(0, 8).toString()).toBe('%PDF-1.4');
   });
 
   test('student can reach the no-fee revision resubmission state', async ({ page }) => {
