@@ -41,6 +41,11 @@ Deno.serve(async (req) => {
     const record = sisRecord || (await lookupRegistry(supabaseUrl, serviceRoleKey, institution.id, matric));
     if (!record) return jsonResponse({ error: "That matric number is not in the student registry" }, 404);
 
+    const existingAccounts = await lookupExistingAccounts(supabaseUrl, serviceRoleKey, matric, email);
+    if (existingAccounts.length) {
+      return jsonResponse({ error: "A student account already exists for this matric number or email. Sign in instead." }, 409);
+    }
+
     return jsonResponse({
       success: true,
       source: sisRecord ? "sis" : "registry",
@@ -83,6 +88,14 @@ async function lookupRegistry(supabaseUrl: string, serviceRoleKey: string, insti
     `/students_registry?institution_id=eq.${encodeURIComponent(institutionId)}&matric=eq.${encodeURIComponent(matric)}&select=matric,full_name,department,department_id,course_id,supervisor_email,degree,avatar_url`,
   );
   return records[0] || null;
+}
+
+async function lookupExistingAccounts(supabaseUrl: string, serviceRoleKey: string, matric: string, email: string) {
+  return await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/profiles?or=(matric.eq.${encodeURIComponent(matric)},email.eq.${encodeURIComponent(email)})&select=id&limit=1`,
+  );
 }
 
 async function supabaseRest(supabaseUrl: string, serviceRoleKey: string, path: string) {

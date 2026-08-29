@@ -136,7 +136,8 @@ test.describe('SPMS seeded Supabase role smoke', () => {
       }
       if (role === 'teacher') {
         await expect(page.getByText(`${fixturePrefix} Supervisor Review`, { exact: true })).toBeVisible({ timeout: 30_000 });
-        await page.getByRole('button', { name: 'Review' }).first().click();
+        const reviewRow = page.locator('tr').filter({ hasText: `${fixturePrefix} Supervisor Review` });
+        await reviewRow.getByRole('button', { name: 'Review' }).click();
         await expect(page.locator('iframe.pdf-frame')).toBeVisible({ timeout: 30_000 });
       }
       if (role === 'library') {
