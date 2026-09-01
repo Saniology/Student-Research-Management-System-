@@ -36,7 +36,7 @@ const scenarios = [
   },
   {
     name: 'supervisor review modal',
-    role: 'teacher',
+    role: 'supervisor',
     action: 'open_review',
     checks: [
       'data-role-preview="teacher"',

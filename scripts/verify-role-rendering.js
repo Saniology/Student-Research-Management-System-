@@ -21,7 +21,7 @@ const roles = [
     viewport: { width: 1280, height: 920, minBytes: 60000 },
   },
   {
-    name: 'teacher',
+    name: 'supervisor',
     action: 'open_review',
     checks: ['data-role-preview="teacher"', 'Supervisor review queue', 'Assigned students', 'Review'],
     viewport: { width: 1280, height: 920, minBytes: 60000 },

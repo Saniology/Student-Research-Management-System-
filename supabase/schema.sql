@@ -222,7 +222,7 @@ SELECT public.create_demo_user(
 
 SELECT public.create_demo_user(
   'a0000000-0000-4000-8000-000000000002',
-  'teacher@kasu.edu.ng',
+  'supervisor@kasu.edu.ng',
   'password',
   'teacher',
   'Dr. Sani Musa',

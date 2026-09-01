@@ -33,4 +33,3 @@ DROP TRIGGER IF EXISTS profiles_identity_fields_guard ON public.profiles;
 CREATE TRIGGER profiles_identity_fields_guard
   BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.prevent_profile_identity_changes();
-

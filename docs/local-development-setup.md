@@ -74,7 +74,7 @@ The default suite uses local role-preview routes and does not require Supabase
 login. To run the optional seeded-account smoke tests against a test Supabase
 environment, set `SPMS_E2E_MODE=seeded`, `SPMS_E2E_URL`, and the four role email
 and password pairs (`SPMS_E2E_STUDENT_EMAIL`, `SPMS_E2E_STUDENT_PASSWORD`, and
-the corresponding `TEACHER`, `LIBRARY`, and `ADMIN` variables). Keep those
+the corresponding `SUPERVISOR`, `LIBRARY`, and `ADMIN` variables). Keep those
 values in a local environment file and never commit them.
 
 ### Optional Real-Record E2E Fixtures
@@ -368,7 +368,7 @@ npm run verify:interactions
 This captures desktop and mobile screenshots with Chrome/Chromium, then opens
 local-only role previews for student, supervisor, library, and admin dashboards.
 The role previews are available only from local hosts through
-`?preview_role=student`, `?preview_role=teacher`, `?preview_role=library`, or
+`?preview_role=student`, `?preview_role=supervisor`, `?preview_role=library`, or
 `?preview_role=admin`.
 `npm run verify:interactions` also opens local preview workflow states such as
 the supervisor review modal, library catalog modal, student receipt state, and

@@ -240,7 +240,7 @@ async function main() {
   if (!institution) throw new Error(`Tenant ${tenantSlug} was not found. Apply spms-core.sql first.`);
   const emails = {
     student: process.env.SPMS_E2E_STUDENT_EMAIL || 'student@kasu.edu.ng',
-    teacher: process.env.SPMS_E2E_TEACHER_EMAIL || 'teacher@kasu.edu.ng',
+    teacher: process.env.SPMS_E2E_SUPERVISOR_EMAIL || 'supervisor@kasu.edu.ng',
     library: process.env.SPMS_E2E_LIBRARY_EMAIL || 'library@kasu.edu.ng',
     admin: process.env.SPMS_E2E_ADMIN_EMAIL || 'admin@kasu.edu.ng',
   };

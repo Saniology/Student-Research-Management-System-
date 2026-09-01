@@ -14,7 +14,7 @@ For security expectations and vulnerability handling, see `SECURITY.md`.
 
 ## Current Production Foundation
 
-- Supabase Auth with role-based profiles: `student`, `teacher`, `library`, `admin`.
+- Supabase Auth with role-based profiles: `student`, `supervisor`, `library`, `admin` (the supervisor role is stored internally as `teacher` for database compatibility).
 - Student PDF upload to the private `thesis-pdfs` bucket.
 - Paystack clearance payment flow.
 - `verify-paystack` Edge Function for server-side payment verification.
@@ -126,7 +126,7 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
 - Admin settings can configure institution/provider revenue share percentages, Paystack split codes, and subaccount codes.
 - Clearance and repository payments are initialized server-side before the browser resumes Paystack checkout.
 - Successful clearance verification automatically assigns a project to the least-loaded supervisor in the student's department/institution; projects without an eligible supervisor remain `submitted` and notify admins for assignment.
-- Admins can resolve the no-match path from Supervisor Management by assigning an eligible teacher through the protected `assign_supervisor` workflow action.
+- Admins can resolve the no-match path from Supervisor Management by assigning an eligible supervisor through the protected `assign_supervisor` workflow action.
 - Library publishing and clearance receipts now render QR codes tied to the verification endpoint.
 - QR codes prefer server-rendered SVG assets from `verification-lookup`, with browser rendering as fallback.
 - Public repository includes a receipt verification form.
@@ -175,7 +175,7 @@ supabase functions deploy verify-paystack project-workflow repository-access stu
   pair; authenticated repository payments remain tied to the account and never
   expose original storage paths.
 - The four documented demo accounts authenticate successfully against the hosted
-  project and reach their student, teacher, library, and admin workspaces.
+  project and reach their student, supervisor, library, and admin workspaces.
 - A live KASU thesis record has completed clearance payment, supervisor
   approval, library publication, receipt issuance, QR verification, and
   catalog registration. It is retained as payment/workflow evidence.

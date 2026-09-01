@@ -597,7 +597,7 @@ UPDATE students_registry sr
 SET institution_id = b.institution_id,
     department_id = b.department_id,
     course_id = COALESCE(sr.course_id, b.course_id),
-    supervisor_email = COALESCE(sr.supervisor_email, 'teacher@kasu.edu.ng'),
+    supervisor_email = COALESCE(sr.supervisor_email, 'supervisor@kasu.edu.ng'),
     degree = COALESCE(sr.degree, 'BSc')
 FROM registry_department_backfill b
 WHERE sr.matric = b.matric;

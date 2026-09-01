@@ -12,9 +12,9 @@ import './styles.css';
 
 const previewParams = new URLSearchParams(window.location.search);
 const isLocalHost = hostname => ['localhost', '127.0.0.1', '0.0.0.0'].includes(hostname);
-const isRolePreviewAllowed = () => isLocalHost(window.location.hostname) && ['student', 'teacher', 'library', 'admin'].includes(previewParams.get('preview_role'));
+const isRolePreviewAllowed = () => isLocalHost(window.location.hostname) && ['student', 'teacher', 'supervisor', 'library', 'admin'].includes(previewParams.get('preview_role'));
 const isPublicPreviewAllowed = () => isLocalHost(window.location.hostname) && previewParams.get('preview_surface') === 'public';
-const previewRole = isRolePreviewAllowed() ? previewParams.get('preview_role') : '';
+const previewRole = isRolePreviewAllowed() ? (previewParams.get('preview_role') === 'supervisor' ? 'teacher' : previewParams.get('preview_role')) : '';
 const previewPublic = isPublicPreviewAllowed() && !previewRole;
 const previewAction = previewParams.get('preview_action') || '';
 
@@ -126,7 +126,7 @@ export default function App() {
     const bootstrap = async () => {
       if (previewRole || previewPublic) {
         setTenant(fallbackTenant);
-        if (previewRole) setProfile({ id: `preview-${previewRole}-user`, role: previewRole, full_name: previewRole === 'teacher' ? 'Dr. Sani Musa' : previewRole === 'admin' ? 'SPMS Administrator' : previewRole === 'library' ? 'Library Officer' : 'Musa Abdullahi', matric: 'KASU/SCI/20/123', department: 'Computer Science', email: `${previewRole}.preview@kasu.edu.ng` });
+        if (previewRole) setProfile({ id: `preview-${previewRole}-user`, role: previewRole, full_name: previewRole === 'teacher' ? 'Dr. Sani Musa' : previewRole === 'admin' ? 'SPMS Administrator' : previewRole === 'library' ? 'Library Officer' : 'Musa Abdullahi', matric: 'KASU/SCI/20/123', department: 'Computer Science', email: `${previewRole === 'teacher' ? 'supervisor' : previewRole}.preview@kasu.edu.ng` });
         setBooting(false);
         return;
       }
@@ -461,7 +461,7 @@ function StudentWorkspace({ profile, session, preview, onToast, onProfileUpdate 
   const [file, setFile] = useState(null);
   const [receipt, setReceipt] = useState(preview && previewAction === 'show_receipt' ? { verification_code: 'SPMS-PREVIEW-RECEIPT', issued_at: new Date().toISOString(), profiles: { full_name: profile?.full_name, matric: profile?.matric } } : null);
   const [receiptQrUrl, setReceiptQrUrl] = useState('');
-  const [supervisor, setSupervisor] = useState(preview ? { full_name: 'Dr. Sani Musa', email: 'teacher@kasu.edu.ng', phone: '+234 803 000 0000', department: 'Computer Science' } : null);
+  const [supervisor, setSupervisor] = useState(preview ? { full_name: 'Dr. Sani Musa', email: 'supervisor@kasu.edu.ng', phone: '+234 803 000 0000', department: 'Computer Science' } : null);
   const [clearanceFee, setClearanceFee] = useState(200000);
   const [maxPdfBytes, setMaxPdfBytes] = useState(DEFAULT_MAX_PDF_BYTES);
   const [submitting, setSubmitting] = useState(false);

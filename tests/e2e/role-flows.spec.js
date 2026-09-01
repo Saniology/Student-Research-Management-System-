@@ -111,7 +111,7 @@ test.describe('SPMS role workflows', () => {
 
 const seededRoles = [
   ['student', 'SPMS_E2E_STUDENT_EMAIL'],
-  ['teacher', 'SPMS_E2E_TEACHER_EMAIL'],
+  ['supervisor', 'SPMS_E2E_SUPERVISOR_EMAIL'],
   ['library', 'SPMS_E2E_LIBRARY_EMAIL'],
   ['admin', 'SPMS_E2E_ADMIN_EMAIL'],
 ];
@@ -130,11 +130,11 @@ test.describe('SPMS seeded Supabase role smoke', () => {
       await page.locator('#auth-email').fill(email);
       await page.locator('#auth-password').fill(password);
       await page.getByRole('button', { name: 'Sign in' }).click();
-      await expect(page.getByRole('heading', { name: role === 'teacher' ? 'Supervisor review queue' : role === 'library' ? 'Library verification desk' : role === 'admin' ? 'Analytics hub' : 'Your clearance workspace' })).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByRole('heading', { name: role === 'supervisor' ? 'Supervisor review queue' : role === 'library' ? 'Library verification desk' : role === 'admin' ? 'Analytics hub' : 'Your clearance workspace' })).toBeVisible({ timeout: 30_000 });
       if (role === 'student') {
         await expect(page.locator('#project-title-input')).toHaveValue(`${fixturePrefix} Supervisor Review`, { timeout: 30_000 });
       }
-      if (role === 'teacher') {
+      if (role === 'supervisor') {
         await expect(page.getByText(`${fixturePrefix} Supervisor Review`, { exact: true })).toBeVisible({ timeout: 30_000 });
         const reviewRow = page.locator('tr').filter({ hasText: `${fixturePrefix} Supervisor Review` });
         await reviewRow.getByRole('button', { name: 'Review' }).click();
