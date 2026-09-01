@@ -222,7 +222,7 @@ export default function App() {
   return <AppShell tenant={tenant} role={role} onHome={goHome} onLogin={openLogin} onLogout={logout} notificationCount={notifications.length} onNotifications={openNotificationCenter}>
     {view === 'landing' && <Landing tenant={tenant} session={session} profile={profile} localPreview={previewPublic} onLogin={openLogin} onWorkspace={() => role ? enterWorkspace(role) : openLogin()} onDownload={handleDownload} configError={!config.valid && !previewRole && !previewPublic} />}
     {view === 'student' && <StudentWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} onProfileUpdate={setProfile} />}
-    {view === 'teacher' && <TeacherWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} onProfileUpdate={setProfile} />}
+    {view === 'teacher' && <TeacherWorkspace profile={{ ...profile, _contactEditor: { session, preview: Boolean(previewRole), onProfileUpdate: setProfile, onToast: notify } }} session={session} preview={Boolean(previewRole)} onToast={notify} onProfileUpdate={setProfile} />}
     {view === 'library' && <LibraryWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'admin' && <AdminWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     <GuestDownloadModal project={guestDownloadProject} onClose={() => setGuestDownloadProject(null)} onSignIn={() => { setGuestDownloadProject(null); setAuthMode('login'); setAuthOpen(true); }} onCreateAccount={() => { setGuestDownloadProject(null); setAuthMode('signup'); setAuthOpen(true); }} />
@@ -394,9 +394,65 @@ function Workspace({ role, title, subtitle, children, sidebar = [] }) {
 function MetricCards({ items }) { return <div className="metric-grid">{items.map(([label,value,Icon]) => <div className="metric-card" key={label}><div className="metric-icon"><Icon size={16} /></div><small>{label}</small><strong>{value}</strong></div>)}</div>; }
 function StudentProfileCard({ profile }) { const name = profile?.full_name || 'Student'; const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'S'; return <section className="student-profile-card"><div className="student-profile-avatar">{profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : initials}</div><div className="student-profile-copy"><p className="eyebrow">Official student profile</p><h2>{name}</h2><div className="student-profile-meta"><span>{profile?.matric || 'Matric pending'}</span><span>{profile?.department || 'Department pending'}</span><span>{profile?.degree || 'Degree pending'}</span></div></div><span className="tag"><LockKeyhole size={12} />Registry verified</span></section>; }
 function ContactDetails({ person, roleLabel = 'Supervisor' }) { return <div className="contact-details"><div className="contact-detail"><Mail size={14} /><span>{person?.email || 'Email not provided'}</span></div><div className="contact-detail"><Phone size={14} /><span>{person?.phone || 'Phone not provided'}</span></div><div className="contact-detail"><GraduationCap size={14} /><span>{person?.department || 'Department not assigned'}</span></div><small>{roleLabel}</small></div>; }
-function SupervisorContactCard({ supervisor, missingCopy = 'No supervisor has been assigned yet. An administrator must assign one before your review can begin.', heading }) { return <section className={`surface supervisor-contact-card ${supervisor ? '' : 'is-missing'}`}><div className="surface-head"><div><p className="eyebrow">Academic support</p><h2>{supervisor ? (heading || 'Your assigned supervisor') : 'Supervisor assignment required'}</h2><p>{supervisor ? 'Keep these official contact details available for questions and follow-up.' : missingCopy}</p></div><UserCheck size={18} color={supervisor ? '#065f46' : '#b45309'} /></div>{supervisor ? <div className="supervisor-contact-body"><ProfileAvatar name={supervisor.full_name} src={supervisor.avatar_url} size="avatar-medium" /><div><h3>{supervisor.full_name || 'Assigned supervisor'}</h3><ContactDetails person={supervisor} /></div></div> : <div className="assignment-warning"><UserCheck size={16} /><span>Pending admin assignment</span></div>}</section>; }
+function SupervisorContactCard({ supervisor, missingCopy = 'No supervisor has been assigned yet. An administrator must assign one before your review can begin.', heading }) { const contactEditor = supervisor?._contactEditor; const title = heading || (supervisor?.role === 'teacher' ? 'Your supervisor profile' : 'Your assigned supervisor'); return <><section className={`surface supervisor-contact-card ${supervisor ? '' : 'is-missing'}`}><div className="surface-head"><div><p className="eyebrow">Academic support</p><h2>{supervisor ? title : 'Supervisor assignment required'}</h2><p>{supervisor ? 'Keep these official contact details available for questions and follow-up.' : missingCopy}</p></div><UserCheck size={18} color={supervisor ? '#065f46' : '#b45309'} /></div>{supervisor ? <div className="supervisor-contact-body"><ProfileAvatar name={supervisor.full_name} src={supervisor.avatar_url} size="avatar-medium" /><div><h3>{supervisor.full_name || 'Assigned supervisor'}</h3><ContactDetails person={supervisor} /></div></div> : <div className="assignment-warning"><UserCheck size={16} /><span>Pending admin assignment</span></div>}</section>{contactEditor && <ProfileContactEditor profile={supervisor} {...contactEditor} />}</>; }
 
-function StudentWorkspace({ profile, session, preview, onToast }) {
+function ProfileContactEditor({ profile, session, preview, onProfileUpdate, onToast }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ email: profile?.email || '', phone: profile?.phone || '' });
+  useEffect(() => {
+    if (open) setForm({ email: profile?.email || '', phone: profile?.phone || '' });
+  }, [open, profile]);
+  const save = async event => {
+    event.preventDefault();
+    const email = form.email.trim().toLowerCase();
+    const phone = form.phone.trim();
+    if (!email) { onToast('Enter a valid email address.'); return; }
+    setSaving(true);
+    try {
+      if (preview) {
+        onProfileUpdate({ ...profile, email, phone });
+        setOpen(false);
+        onToast('Preview contact details updated.');
+        return;
+      }
+      if (!supabase || !session?.user?.id) throw new Error('Your session is not ready. Sign in again and retry.');
+      let effectiveEmail = email;
+      let emailConfirmationPending = false;
+      if (email !== String(profile?.email || '').trim().toLowerCase()) {
+        const { data: authData, error: authError } = await supabase.auth.updateUser({ email });
+        if (authError) throw authError;
+        effectiveEmail = authData.user?.email || email;
+        emailConfirmationPending = effectiveEmail.toLowerCase() !== email;
+      }
+      const { data, error } = await supabase.from('profiles').update({ email: effectiveEmail, phone: phone || null }).eq('id', session.user.id).select('*').single();
+      if (error) throw error;
+      onProfileUpdate(data || { ...profile, email: effectiveEmail, phone: phone || null });
+      setOpen(false);
+      onToast(emailConfirmationPending ? 'Contact details saved. Confirm the new email address to finish changing it.' : 'Contact details updated.');
+    } catch (error) {
+      onToast(error.message || 'Contact details could not be updated.');
+    } finally {
+      setSaving(false);
+    }
+  };
+  return <>
+    <section className="surface profile-contact-editor">
+      <div className="surface-head"><div><p className="eyebrow">Contact details</p><h2>Keep your contact details current</h2><p>Your full name and academic identity are managed by the institution.</p></div><PencilLine size={18} color="#065f46" /></div>
+      <div className="profile-contact-summary"><ContactDetails person={profile} roleLabel={profile?.role === 'teacher' ? 'Supervisor account' : 'Student account'} /><button className="button button-primary button-small" type="button" onClick={() => setOpen(true)}><PencilLine size={14} />Edit contact info</button></div>
+    </section>
+    <Modal open={open} onClose={() => !saving && setOpen(false)} eyebrow="Profile settings" title="Edit contact info">
+      <form className="form-grid" onSubmit={save}>
+        <div className="field full"><label htmlFor="profile-full-name">Full name</label><input id="profile-full-name" value={profile?.full_name || ''} disabled readOnly /><span className="helper">Your name is verified and cannot be edited here.</span></div>
+        <div className="field full"><label htmlFor="profile-email">Email address</label><input id="profile-email" type="email" required value={form.email} onChange={event => setForm({ ...form, email: event.target.value })} /></div>
+        <div className="field full"><label htmlFor="profile-phone">Phone number</label><input id="profile-phone" type="tel" value={form.phone} onChange={event => setForm({ ...form, phone: event.target.value })} placeholder="0803 000 0000" /></div>
+        <div className="modal-actions full"><button className="button button-ghost" type="button" disabled={saving} onClick={() => setOpen(false)}>Cancel</button><button className="button button-primary" disabled={saving}>{saving ? 'Saving...' : 'Save contact info'}</button></div>
+      </form>
+    </Modal>
+  </>;
+}
+
+function StudentWorkspace({ profile, session, preview, onToast, onProfileUpdate }) {
   const revisionPreview = preview && previewAction === 'show_revision';
   const [project, setProject] = useState(revisionPreview ? { id: 'preview-project', title: 'Web-Based E-Voting System', degree: 'BSc', abstract: 'A final-year project workflow preview for supervisor review, library publication, payment clearance, and repository verification.', status: 'revision_requested', revision_note: 'Please replace the PDF with the corrected version and resubmit.' } : preview ? { id: 'preview-project', title: 'Web-Based E-Voting System', degree: 'BSc', abstract: 'A final-year project workflow preview for supervisor review, library publication, payment clearance, and repository verification.', status: 'published' } : null);
   const [payment, setPayment] = useState(preview ? { amount: 200000, paystack_reference: 'SPMS-PREVIEW-STUDENT', paid_at: new Date().toISOString() } : null);
@@ -522,6 +578,7 @@ function StudentWorkspace({ profile, session, preview, onToast }) {
     <div id="student-overview" className="workspace-section">
       <StudentProfileCard profile={profile} />
       <SupervisorContactCard supervisor={supervisor} />
+      <ProfileContactEditor profile={profile} session={session} preview={preview} onProfileUpdate={onProfileUpdate} onToast={onToast} />
       <MetricCards items={[
         ['Workflow status', project ? project.status.replaceAll('_', ' ') : pendingVerification ? 'Payment verification pending' : 'Not started', FileCheck2],
         ['Clearance fee', formatNaira(clearanceFee), CircleDollarSign],
@@ -560,7 +617,7 @@ function StudentWorkspace({ profile, session, preview, onToast }) {
   </Workspace>;
 }
 
-function TeacherWorkspace({ profile, session, preview, onToast }) {
+function TeacherWorkspace({ profile, session, preview, onToast, onProfileUpdate }) {
   const [projects, setProjects] = useState(preview ? demoReviewProjects : []);
   const [students, setStudents] = useState(preview ? [{ id: 'preview-student', full_name: 'Musa Abdullahi', matric: 'KASU/SCI/20/123', email: 'student@kasu.edu.ng', phone: '+234 801 000 0000', department: 'Computer Science' }] : []);
   const [loading, setLoading] = useState(!preview);
