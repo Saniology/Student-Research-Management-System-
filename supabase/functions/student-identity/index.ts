@@ -13,6 +13,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const matric = normalizeString(body.matric).toUpperCase();
     const email = normalizeString(body.email).toLowerCase();
+    const requestedName = normalizeString(body.full_name);
+    const requestedDepartment = normalizeString(body.department);
     const tenantSlug = normalizeString(body.tenant_slug) || "kasu";
     if (!matric || !email || !/^\S+@\S+\.\S+$/.test(email)) {
       return jsonResponse({ error: "A valid matric number and school email are required" }, 400);
@@ -37,27 +39,31 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: `Use your school email (${allowedDomains.join(" or ")})` }, 403);
     }
 
-    const sisRecord = await lookupSis(matric, email);
-    const record = sisRecord || (await lookupRegistry(supabaseUrl, serviceRoleKey, institution.id, matric));
-    if (!record) return jsonResponse({ error: "That matric number is not in the student registry" }, 404);
-
     const existingAccounts = await lookupExistingAccounts(supabaseUrl, serviceRoleKey, matric, email);
     if (existingAccounts.length) {
       return jsonResponse({ error: "A student account already exists for this matric number or email. Sign in instead." }, 409);
     }
 
+    const sisRecord = await lookupSis(matric, email);
+    const registry = sisRecord || (await lookupRegistry(supabaseUrl, serviceRoleKey, institution.id, matric));
+    const fullName = requestedName || normalizeString(registry?.full_name);
+    const department = requestedDepartment || normalizeString(registry?.department);
+    if (!fullName || !department) {
+      return jsonResponse({ error: "Full name and department are required for student registration" }, 400);
+    }
+
     return jsonResponse({
       success: true,
-      source: sisRecord ? "sis" : "registry",
+      source: sisRecord ? "sis" : registry ? "registry" : "self_reported",
       student: {
         matric,
-        full_name: normalizeString(record.full_name),
-        department: normalizeString(record.department),
-        department_id: normalizeString(record.department_id),
-        course_id: normalizeString(record.course_id),
-        supervisor_email: normalizeString(record.supervisor_email),
-        degree: normalizeString(record.degree),
-        avatar_url: normalizeString(record.avatar_url),
+        full_name: fullName,
+        department,
+        department_id: normalizeString(registry?.department_id),
+        course_id: normalizeString(registry?.course_id),
+        supervisor_email: normalizeString(registry?.supervisor_email),
+        degree: normalizeString(registry?.degree) || "BSc",
+        avatar_url: normalizeString(registry?.avatar_url),
       },
     });
   } catch (error) {

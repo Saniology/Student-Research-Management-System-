@@ -19,6 +19,7 @@
         "npm:@supabase/supabase-js@^2.112.2",
         "npm:@vitejs/plugin-react@^6.0.5",
         "npm:lucide-react@^1.30.0",
+        "npm:qrcode-generator@2.0.4",
         "npm:react-dom@^19.2.8",
         "npm:react@^19.2.8",
         "npm:vite@^8.2.1"

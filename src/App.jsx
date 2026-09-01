@@ -327,7 +327,7 @@ function GuestDownloadModal({ project, onClose, onSignIn, onCreateAccount }) {
 }
 
 function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToast }) {
-  const [form, setForm] = useState({ email: '', password: '', matric: '' });
+  const [form, setForm] = useState({ email: '', password: '', matric: '', full_name: '', department: '' });
   const [busy, setBusy] = useState(false);
   const submit = async event => {
     event.preventDefault();
@@ -341,7 +341,10 @@ function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToa
         const allowedDomains = Array.isArray(tenant?.allowed_domains) ? tenant.allowed_domains : [];
         const schoolDomains = allowedDomains.filter(item => item && !item.includes('.local'));
         if (schoolDomains.length && !schoolDomains.some(item => domain === item.toLowerCase())) throw new Error(`Use your school email (${schoolDomains.join(' or ')}).`);
-        const identity = await invoke('student-identity', { matric, email, tenant_slug: tenant?.slug || 'kasu' });
+        const fullName = form.full_name.trim();
+        const department = form.department.trim();
+        if (!fullName || !department) throw new Error('Enter your full name and department to create your student account.');
+        const identity = await invoke('student-identity', { matric, email, full_name: fullName, department, tenant_slug: tenant?.slug || 'kasu' });
         const registry = identity.student;
         const { data, error } = await supabase.auth.signUp({ email, password: form.password, options: { data: { full_name: registry.full_name, matric: registry.matric, department: registry.department, department_id: registry.department_id, course_id: registry.course_id, supervisor_email: registry.supervisor_email, degree: registry.degree, avatar_url: registry.avatar_url, role: 'student', tenant_slug: tenant?.slug || 'kasu' } } });
         if (error) {
@@ -349,11 +352,14 @@ function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToa
           throw error;
         }
         if (data.user?.identities && data.user.identities.length === 0) throw new Error('An account with this email already exists. Sign in instead.');
-        if (!data.session) { onToast('Account created. Check your email to confirm access.'); onClose(); return; }
+        if (!data.session) { onToast('Account created. Check your email to confirm access before signing in.'); onClose(); return; }
         onSuccess(data.session, await loadProfile(data.user.id));
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password });
-        if (error) throw error;
+        if (error) {
+          if (/email not confirmed/i.test(error.message || '')) throw new Error('Confirm your email address before signing in.');
+          throw error;
+        }
         onSuccess(data.session, await loadProfile(data.user.id));
       }
     } catch (error) { onToast(error.message); } finally { setBusy(false); }
@@ -361,8 +367,8 @@ function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToa
   const isLogin = mode === 'login';
   return <Modal open={open} onClose={onClose} eyebrow="Secure access" title={isLogin ? 'Login to Portal' : 'Create Account'} variant="auth">
     <form className="auth-form" onSubmit={submit}>
-      <p className="auth-description">{isLogin ? 'Use your institutional account to continue to your role-based research workspace.' : 'Enter your matric number to verify enrollment, then create your secure student account.'}</p>
-      {!isLogin && <div className="field"><label htmlFor="auth-matric">Matric number</label><input id="auth-matric" required value={form.matric} onChange={e => setForm({ ...form, matric: e.target.value })} placeholder="KASU/SCI/20/123" /></div>}
+      <p className="auth-description">{isLogin ? 'Use your institutional account to continue to your role-based research workspace.' : 'Enter your details to create a student account. Your department can be assigned or updated by an administrator.'}</p>
+      {!isLogin && <><div className="field"><label htmlFor="auth-matric">Matric number</label><input id="auth-matric" required value={form.matric} onChange={e => setForm({ ...form, matric: e.target.value })} placeholder="Your matric number" /></div><div className="field"><label htmlFor="auth-full-name">Full name</label><input id="auth-full-name" required value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} placeholder="Enter your full name" /></div><div className="field"><label htmlFor="auth-department">Department</label><input id="auth-department" required value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} placeholder="Enter your department" /></div></>}
       <div className="field"><label htmlFor="auth-email">Email address</label><input id="auth-email" type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="student@kasu.edu.ng" /></div>
       <div className="field"><label htmlFor="auth-password">Password</label><input id="auth-password" type="password" minLength="6" required value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder={isLogin ? 'Enter your password' : 'Minimum 6 characters'} /></div>
       <button className="button button-primary auth-submit" disabled={busy}>{isLogin ? <ArrowRight size={16} /> : <UserPlus size={16} />}{busy ? 'Working...' : isLogin ? 'Sign In' : 'Create Account'}</button>

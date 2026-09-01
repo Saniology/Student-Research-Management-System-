@@ -5,6 +5,26 @@
 # Optional: supabase secrets set RESEND_API_KEY=re_... REPORT_FROM_EMAIL=reports@example.edu
 # Deploy:   supabase functions deploy verify-paystack project-workflow repository-access student-identity verification-lookup public-config scheduled-reports health-check --use-api
 
+[auth.email]
+# Development and pilot accounts can sign in immediately after signup.
+enable_signup = true
+enable_confirmations = false
+max_frequency = "1m"
+otp_length = 8
+
+[auth]
+# Keep password-based email authentication and registration available locally.
+enable_signup = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = []
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[storage.vector]
+enabled = false
+
 [functions.verify-paystack]
 # JWT is validated inside the function via auth.getUser().
 # Gateway JWT verification blocks browser CORS preflight (OPTIONS) requests.
