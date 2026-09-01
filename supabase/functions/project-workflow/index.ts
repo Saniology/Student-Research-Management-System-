@@ -55,6 +55,14 @@ Deno.serve(async (req) => {
       return await handleAssignSupervisor(supabaseUrl, supabaseServiceKey, actor, body);
     }
 
+    if (action === "create_supervisor") {
+      return await handleCreateSupervisor(supabaseUrl, supabaseServiceKey, actor, body);
+    }
+
+    if (action === "assign_student_supervisor") {
+      return await handleAssignStudentSupervisor(supabaseUrl, supabaseServiceKey, actor, body);
+    }
+
     if (action === "library_verify") {
       return await handleLibraryVerify(supabaseUrl, supabaseServiceKey, actor, body);
     }
@@ -158,6 +166,162 @@ async function handleAssignSupervisor(
   });
 
   return jsonResponse({ success: true, project: updated, supervisor });
+}
+
+async function handleCreateSupervisor(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  actor: Profile,
+  body: Record<string, unknown>,
+) {
+  if (actor.role !== "admin") return jsonResponse({ error: "Only admins can create supervisors" }, 403);
+
+  const fullName = requireString(body.full_name, "full_name");
+  const email = requireString(body.email, "email").toLowerCase();
+  const phone = optionalString(body.phone);
+  const department = optionalString(body.department);
+  const departmentId = optionalString(body.department_id);
+  const password = requireString(body.password, "password");
+  if (!/^\S+@\S+\.\S+$/.test(email)) return jsonResponse({ error: "Enter a valid supervisor email" }, 400);
+  if (password.length < 6) return jsonResponse({ error: "Supervisor password must be at least 6 characters" }, 400);
+
+  const [institution] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/institutions?id=eq.${encodeURIComponent(actor.institution_id || "")}&select=id,slug`,
+  );
+  if (!institution) return jsonResponse({ error: "Admin institution was not found" }, 404);
+
+  const authResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+    method: "POST",
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        role: "teacher",
+        full_name: fullName,
+        department,
+        department_id: departmentId,
+        phone,
+        tenant_slug: institution.slug,
+      },
+    }),
+  });
+  if (!authResponse.ok) {
+    const message = await getErrorMessage(authResponse);
+    if (/already|exists|duplicate/i.test(message)) return jsonResponse({ error: "A user with this email already exists" }, 409);
+    return jsonResponse({ error: message }, authResponse.status);
+  }
+
+  const createdUser = await authResponse.json();
+  const [supervisor] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/profiles?id=eq.${encodeURIComponent(createdUser.id)}&select=id,full_name,email,phone,department,department_id,institution_id,role`,
+    {
+      method: "PATCH",
+      body: {
+        email,
+        full_name: fullName,
+        phone,
+        department,
+        department_id: departmentId,
+        institution_id: actor.institution_id,
+        role: "teacher",
+        updated_at: new Date().toISOString(),
+      },
+    },
+  );
+
+  if (!supervisor) return jsonResponse({ error: "Supervisor account was created but its profile could not be prepared" }, 500);
+  await supabaseRest(supabaseUrl, serviceRoleKey, "/audit_logs", {
+    method: "POST",
+    body: {
+      actor_id: actor.id,
+      action: "supervisor_created",
+      entity_type: "profile",
+      entity_id: supervisor.id,
+      metadata: { email, department, department_id: departmentId },
+    },
+  });
+
+  return jsonResponse({ success: true, supervisor });
+}
+
+async function handleAssignStudentSupervisor(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  actor: Profile,
+  body: Record<string, unknown>,
+) {
+  if (actor.role !== "admin") return jsonResponse({ error: "Only admins can assign students" }, 403);
+  const studentId = requireString(body.student_id, "student_id");
+  const supervisorId = requireString(body.supervisor_id, "supervisor_id");
+
+  const [student] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/profiles?id=eq.${encodeURIComponent(studentId)}&role=eq.student&select=id,full_name,email,matric,department,institution_id,supervisor_id`,
+  );
+  const [supervisor] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/profiles?id=eq.${encodeURIComponent(supervisorId)}&role=eq.teacher&select=id,full_name,email,phone,department,institution_id`,
+  );
+  if (!student) return jsonResponse({ error: "Student was not found" }, 404);
+  if (!supervisor) return jsonResponse({ error: "Supervisor was not found" }, 404);
+  if (student.institution_id !== actor.institution_id || supervisor.institution_id !== actor.institution_id) {
+    return jsonResponse({ error: "Student and supervisor must belong to the same institution" }, 400);
+  }
+
+  const [updatedStudent] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/profiles?id=eq.${encodeURIComponent(studentId)}&select=id,full_name,email,matric,department,institution_id,supervisor_id`,
+    { method: "PATCH", body: { supervisor_id: supervisor.id, updated_at: new Date().toISOString() } },
+  );
+  const activeProjects = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?student_id=eq.${encodeURIComponent(studentId)}&status=not.in.(cleared,rejected)&select=id,status`,
+  );
+  const updatedProjects = await Promise.all(activeProjects.map((project: { id: string; status: string }) =>
+    supabaseRest(supabaseUrl, serviceRoleKey, `/projects?id=eq.${encodeURIComponent(project.id)}&select=id,supervisor_id,status`, {
+      method: "PATCH",
+      body: {
+        supervisor_id: supervisor.id,
+        status: project.status === "submitted" ? "supervisor_review" : project.status,
+        updated_at: new Date().toISOString(),
+      },
+    }).then((rows) => rows[0]),
+  ));
+
+  await supabaseRest(supabaseUrl, serviceRoleKey, "/audit_logs", {
+    method: "POST",
+    body: {
+      actor_id: actor.id,
+      action: "student_supervisor_assigned",
+      entity_type: "profile",
+      entity_id: student.id,
+      metadata: { student_id: student.id, supervisor_id: supervisor.id, previous_supervisor_id: student.supervisor_id || null },
+    },
+  });
+  await notifyUsers(supabaseUrl, serviceRoleKey, {
+    recipientIds: compactIds([student.id, supervisor.id]),
+    actorId: actor.id,
+    institutionId: actor.institution_id || null,
+    title: "Supervisor assignment updated",
+    message: `${student.full_name || "Student"} is now assigned to ${supervisor.full_name || "a supervisor"}.`,
+    metadata: { student_id: student.id, supervisor_id: supervisor.id },
+  });
+
+  return jsonResponse({ success: true, student: updatedStudent, supervisor, projects: updatedProjects });
 }
 
 async function handleSupervisorDecision(
