@@ -221,8 +221,8 @@ export default function App() {
   if (booting) return <><AppShell tenant={tenant} onHome={goHome} onLogin={openLogin}><PageSkeleton role="landing" /></AppShell></>;
   return <AppShell tenant={tenant} role={role} onHome={goHome} onLogin={openLogin} onLogout={logout} notificationCount={notifications.length} onNotifications={openNotificationCenter}>
     {view === 'landing' && <Landing tenant={tenant} session={session} profile={profile} localPreview={previewPublic} onLogin={openLogin} onWorkspace={() => role ? enterWorkspace(role) : openLogin()} onDownload={handleDownload} configError={!config.valid && !previewRole && !previewPublic} />}
-    {view === 'student' && <StudentWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
-    {view === 'teacher' && <TeacherWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
+    {view === 'student' && <StudentWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} onProfileUpdate={setProfile} />}
+    {view === 'teacher' && <TeacherWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} onProfileUpdate={setProfile} />}
     {view === 'library' && <LibraryWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     {view === 'admin' && <AdminWorkspace profile={profile} session={session} preview={Boolean(previewRole)} onToast={notify} />}
     <GuestDownloadModal project={guestDownloadProject} onClose={() => setGuestDownloadProject(null)} onSignIn={() => { setGuestDownloadProject(null); setAuthMode('login'); setAuthOpen(true); }} onCreateAccount={() => { setGuestDownloadProject(null); setAuthMode('signup'); setAuthOpen(true); }} />
