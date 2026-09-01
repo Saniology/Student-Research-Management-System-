@@ -1073,7 +1073,11 @@ CREATE POLICY "Admins read repository download files"
 -- Convenience analytics view for admin dashboard
 -- ---------------------------------------------------------------------------
 
-CREATE OR REPLACE VIEW admin_overview AS
+-- The view has changed shape over time. Dropping it first makes this full
+-- upgrade script rerunnable when an older view has a different column order.
+DROP VIEW IF EXISTS public.admin_overview;
+
+CREATE VIEW public.admin_overview AS
 SELECT
   (SELECT COUNT(*) FROM profiles WHERE role = 'student' AND institution_id = public.current_institution_id()) AS total_students,
   (SELECT COUNT(*) FROM profiles WHERE role = 'teacher' AND institution_id = public.current_institution_id()) AS total_supervisors,
