@@ -101,6 +101,17 @@ test.describe('SPMS role workflows', () => {
     }
   });
 
+  test('student overview opens payment evidence in a modal', async ({ page }) => {
+    await openPreview(page, 'student');
+    await page.getByRole('button', { name: 'View payment evidence', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText('SPMS-PREVIEW-STUDENT');
+    await expect(dialog.getByRole('button', { name: 'Open full payment history' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
+  });
+
   test('supervisor sidebar navigates to review history', async ({ page }) => {
     await openPreview(page, 'teacher');
     await page.getByRole('button', { name: 'Review history', exact: true }).click();
