@@ -21,6 +21,7 @@ assert(/workspaceSectionTarget/.test(source) && /scrollToWorkspaceSection/.test(
 assert(/Notification center/.test(source) && /Mark all as read/.test(source) && /onNotifications=\{openNotificationCenter\}/.test(source), 'notification center opens from the authenticated shell');
 assert(/AuthModal/.test(source) && /signInWithPassword/.test(source), 'authentication workflow exists');
 assert(/PasswordField/.test(source) && /toggleLabel/.test(source) && /visible [?] <EyeOff/.test(source) && /: <Eye/.test(source), 'password fields have a show and hide toggle');
+assert(/DepartmentPicker/.test(source) && /from\('departments'\)/.test(source) && /role="combobox"/.test(source) && /filteredDepartments/.test(source), 'signup department uses a searchable live directory picker');
 assert(/id="new-supervisor-name" required/.test(source) && /id="new-supervisor-email" type="email" required/.test(source) && /id="new-supervisor-department".*required/.test(source) && /new-supervisor-password/.test(source), 'supervisor name, email, department, and password are required');
 assert(/project-title-input|project-title/.test(source) && /thesis-pdf-input/.test(source), 'student submission controls exist');
 assert(/student-overview/.test(source) && /student-submission/.test(source) && /student-payments/.test(source) && /student-receipt/.test(source) && /ProfileInformationModal/.test(source), 'student dashboard has separate sidebar pages and a profile modal');

@@ -34,6 +34,17 @@ test.describe('SPMS role workflows', () => {
     await expect(page.getByRole('dialog').getByRole('button', { name: 'Create account' })).toBeVisible();
   });
 
+  test('signup department picker searches and selects an available department', async ({ page }) => {
+    await openPublicPreview(page);
+    await page.getByRole('button', { name: 'Create account', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Create an account', exact: true }).click();
+    const department = page.getByRole('combobox', { name: 'Department' });
+    await department.fill('micro');
+    await expect(page.getByRole('option', { name: 'Microbiology', exact: true })).toBeVisible();
+    await page.getByRole('option', { name: 'Microbiology', exact: true }).click();
+    await expect(department).toHaveValue('Microbiology');
+  });
+
   test('student can reach the clearance receipt state', async ({ page }) => {
     await openPreview(page, 'student', 'show_receipt');
     await expect(page.getByText('Digital Clearance Receipt', { exact: true })).toBeVisible();

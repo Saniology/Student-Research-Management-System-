@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Archive, ArrowRight, Bell, BookOpen, Check, CheckCircle2, CircleDollarSign, Download, Eye, EyeOff, FileCheck2, FileText, GraduationCap, Library, LockKeyhole, Mail, PencilLine, Phone, Plus, QrCode, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, UserCheck, UserCircle, UserPlus, Users, XCircle } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Archive, ArrowRight, Bell, BookOpen, Check, CheckCircle2, ChevronDown, CircleDollarSign, Download, Eye, EyeOff, FileCheck2, FileText, GraduationCap, Library, LockKeyhole, Mail, PencilLine, Phone, Plus, QrCode, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, UserCheck, UserCircle, UserPlus, Users, XCircle } from 'lucide-react';
 import qrcode from 'qrcode-generator';
 import { AppShell, EmptyState, SearchBox, SectionHeader } from './components/AppShell';
 import { Modal } from './components/Modal';
@@ -326,9 +326,124 @@ function GuestDownloadModal({ project, onClose, onSignIn, onCreateAccount }) {
   </Modal>;
 }
 
+const previewDepartments = [
+  { id: 'preview-computer-science', name: 'Computer Science' },
+  { id: 'preview-microbiology', name: 'Microbiology' },
+  { id: 'preview-mass-communication', name: 'Mass Communication' },
+  { id: 'preview-accounting', name: 'Accounting' },
+];
+
+function DepartmentPicker({ departments, loading, value, onSelect }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const pickerRef = useRef(null);
+  const filteredDepartments = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return departments;
+    return departments.filter(department => department.name.toLowerCase().includes(normalizedQuery));
+  }, [departments, query]);
+
+  useEffect(() => {
+    const closePicker = event => {
+      if (!pickerRef.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', closePicker);
+    return () => document.removeEventListener('pointerdown', closePicker);
+  }, []);
+
+  const selectDepartment = department => {
+    onSelect(department);
+    setQuery(department.name);
+    setOpen(false);
+  };
+
+  const handleChange = event => {
+    setQuery(event.target.value);
+    setOpen(true);
+    if (value) onSelect(null);
+  };
+
+  const handleKeyDown = event => {
+    if (event.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
+    if (event.key === 'Enter' && open && filteredDepartments[0]) {
+      event.preventDefault();
+      selectDepartment(filteredDepartments[0]);
+    }
+  };
+
+  return <div className="field department-picker" ref={pickerRef}>
+    <label htmlFor="auth-department">Department</label>
+    <div className="department-combobox">
+      <div className="department-search-wrap">
+        <Search size={16} aria-hidden="true" />
+        <input
+          id="auth-department"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls="auth-department-options"
+          aria-autocomplete="list"
+          aria-required="true"
+          value={open ? query : value}
+          onFocus={() => { setQuery(''); setOpen(true); }}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          placeholder="Search departments"
+          autoComplete="off"
+        />
+        <button className="department-picker-toggle" type="button" onClick={() => { setOpen(current => !current); setQuery(''); }} aria-label="Show departments" title="Show departments"><ChevronDown size={16} /></button>
+      </div>
+      {open && <div className="department-options" id="auth-department-options" role="listbox" aria-label="Available departments">
+        {loading && <div className="department-option-status">Loading departments...</div>}
+        {!loading && filteredDepartments.map(department => <button className="department-option" type="button" role="option" aria-selected={value === department.name} key={department.id} onClick={() => selectDepartment(department)}>{department.name}</button>)}
+        {!loading && !filteredDepartments.length && <div className="department-option-status">No matching department found.</div>}
+      </div>}
+    </div>
+    <span className="helper">Search and select your department from the institution directory.</span>
+  </div>;
+}
+
 function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToast }) {
   const [form, setForm] = useState({ email: '', password: '', matric: '', full_name: '', department: '' });
+  const [departmentId, setDepartmentId] = useState('');
+  const [departments, setDepartments] = useState([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (mode !== 'signup') return undefined;
+    let active = true;
+    if (!tenant?.id) {
+      setDepartments(previewDepartments);
+      setDepartmentsLoading(false);
+      return undefined;
+    }
+    setDepartmentsLoading(true);
+    setDepartments([]);
+    supabase.from('departments').select('id,name').eq('institution_id', tenant.id).order('name')
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) throw error;
+        setDepartments(data || []);
+      })
+      .catch(error => {
+        if (!active) return;
+        setDepartments([]);
+        onToast(error.message || 'Departments could not be loaded.');
+      })
+      .finally(() => { if (active) setDepartmentsLoading(false); });
+    return () => { active = false; };
+  }, [mode, tenant?.id, onToast]);
+
+  useEffect(() => {
+    if (mode === 'login') {
+      setDepartmentId('');
+      setForm(current => ({ ...current, department: '' }));
+    }
+  }, [mode]);
+
   const submit = async event => {
     event.preventDefault();
     if (!supabase) { onToast('Supabase is not configured for this browser.'); return; }
@@ -343,8 +458,8 @@ function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToa
         if (schoolDomains.length && !schoolDomains.some(item => domain === item.toLowerCase())) throw new Error(`Use your school email (${schoolDomains.join(' or ')}).`);
         const fullName = form.full_name.trim();
         const department = form.department.trim();
-        if (!fullName || !department) throw new Error('Enter your full name and department to create your student account.');
-        const identity = await invoke('student-identity', { matric, email, full_name: fullName, department, tenant_slug: tenant?.slug || 'kasu' });
+        if (!fullName || !department || !departmentId) throw new Error('Enter your full name and select a department to create your student account.');
+        const identity = await invoke('student-identity', { matric, email, full_name: fullName, department, department_id: departmentId, tenant_slug: tenant?.slug || 'kasu' });
         const registry = identity.student;
         const { data, error } = await supabase.auth.signUp({ email, password: form.password, options: { data: { full_name: registry.full_name, matric: registry.matric, department: registry.department, department_id: registry.department_id, course_id: registry.course_id, supervisor_email: registry.supervisor_email, degree: registry.degree, avatar_url: registry.avatar_url, role: 'student', tenant_slug: tenant?.slug || 'kasu' } } });
         if (error) {
@@ -368,7 +483,7 @@ function AuthModal({ tenant, open, mode, onClose, onModeChange, onSuccess, onToa
   return <Modal open={open} onClose={onClose} eyebrow="Secure access" title={isLogin ? 'Login to Portal' : 'Create Account'} variant="auth">
     <form className="auth-form" onSubmit={submit}>
       <p className="auth-description">{isLogin ? 'Use your institutional account to continue to your role-based research workspace.' : 'Enter your details to create a student account. Your department can be assigned or updated by an administrator.'}</p>
-      {!isLogin && <><div className="field"><label htmlFor="auth-matric">Matric number</label><input id="auth-matric" required value={form.matric} onChange={e => setForm({ ...form, matric: e.target.value })} placeholder="Your matric number" /></div><div className="field"><label htmlFor="auth-full-name">Full name</label><input id="auth-full-name" required value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} placeholder="Enter your full name" /></div><div className="field"><label htmlFor="auth-department">Department</label><input id="auth-department" required value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} placeholder="Enter your department" /></div></>}
+      {!isLogin && <><div className="field"><label htmlFor="auth-matric">Matric number</label><input id="auth-matric" required value={form.matric} onChange={e => setForm({ ...form, matric: e.target.value })} placeholder="Your matric number" /></div><div className="field"><label htmlFor="auth-full-name">Full name</label><input id="auth-full-name" required value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} placeholder="Enter your full name" /></div><DepartmentPicker departments={departments} loading={departmentsLoading} value={form.department} onSelect={department => { setForm(current => ({ ...current, department: department?.name || '' })); setDepartmentId(department?.id || ''); }} /></>}
       <div className="field"><label htmlFor="auth-email">Email address</label><input id="auth-email" type="email" required value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="student@kasu.edu.ng" /></div>
       <PasswordField id="auth-password" label="Password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} minLength="6" required autoComplete={isLogin ? 'current-password' : 'new-password'} placeholder={isLogin ? 'Enter your password' : 'Minimum 6 characters'} />
       <button className="button button-primary auth-submit" disabled={busy}>{isLogin ? <ArrowRight size={16} /> : <UserPlus size={16} />}{busy ? 'Working...' : isLogin ? 'Sign In' : 'Create Account'}</button>
