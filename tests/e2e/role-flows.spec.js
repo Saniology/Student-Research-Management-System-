@@ -119,8 +119,10 @@ test.describe('SPMS role workflows', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('SPMS-PREVIEW-STUDENT');
     await expect(dialog.getByRole('button', { name: 'Open full payment history' })).toBeVisible();
-    await dialog.getByRole('button', { name: 'Close' }).click();
+    await dialog.getByRole('button', { name: 'Open full payment history' }).click();
     await expect(dialog).toBeHidden();
+    await expect(page.locator('#student-payments')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Payments', exact: true })).toHaveClass(/active/);
   });
 
   test('supervisor sidebar navigates to review history', async ({ page }) => {

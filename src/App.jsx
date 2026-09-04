@@ -387,7 +387,9 @@ function workspaceSectionTarget(role, label) {
   return targets[role]?.[label] || null;
 }
 function Workspace({ role, title, subtitle, children, sidebar = [], profile, session, preview, onProfileUpdate, onToast }) {
-  const [activeLabel, setActiveLabel] = useState(sidebar.find(item => item[2])?.[1] || '');
+  const currentSidebarLabel = sidebar.find(item => item[2])?.[1] || '';
+  const [activeLabel, setActiveLabel] = useState(currentSidebarLabel);
+  useEffect(() => setActiveLabel(currentSidebarLabel), [currentSidebarLabel]);
   const navigate = ([, label, , onClick]) => { setActiveLabel(label); if (onClick) onClick(); else scrollToWorkspaceSection(workspaceSectionTarget(role, label)); };
   return <div className="workspace-shell"><aside className="sidebar"><div className="sidebar-head"><span className="sidebar-mark"><ShieldCheck size={18} /></span><div><strong>{role === 'teacher' ? 'Supervisor' : role[0].toUpperCase() + role.slice(1)} panel</strong><small>Operations center</small></div></div><nav className="sidebar-nav">{sidebar.map(item => { const [Icon,label] = item; const active = activeLabel === label; return <button type="button" className={active ? 'active' : ''} key={label} onClick={() => navigate(item)} aria-current={active ? 'page' : undefined}><Icon size={16} />{label}</button>; })}</nav>{profile && onProfileUpdate && <ProfileInformationModal profile={profile} session={session} preview={preview} onProfileUpdate={onProfileUpdate} onToast={onToast} />}</aside><section className="workspace-main blueprint"><div className="workspace-head"><div><p className="eyebrow">{role === 'teacher' ? 'Review workspace' : 'Operations workspace'}</p><h1>{title}</h1><p>{subtitle}</p></div></div>{children}</section></div>;
 }
