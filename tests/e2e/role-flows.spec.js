@@ -98,6 +98,16 @@ test.describe('SPMS role workflows', () => {
     await expect(page.getByRole('button', { name: 'Review history', exact: true })).toHaveClass(/active/);
   });
 
+  test('supervisor sidebar switches between focused workspace pages', async ({ page }) => {
+    await openPreview(page, 'teacher');
+    for (const [label, target] of [['Overview', '#teacher-overview'], ['Assigned projects', '#teacher-projects'], ['Assigned students', '#teacher-students'], ['Review history', '#teacher-history'], ['Supervisor profile', '#teacher-profile']]) {
+      const button = page.getByRole('button', { name: label, exact: true });
+      await button.click();
+      await expect(page.locator(target)).toBeVisible();
+      await expect(button).toHaveClass(/active/);
+    }
+  });
+
   test('library sidebar navigates across each desk', async ({ page }) => {
     await openPreview(page, 'library');
     for (const [label, target] of [['Verification queue', '#library-queue'], ['Public catalogue', '#library-catalogue'], ['QR labels', '#library-qr'], ['Archive', '#library-archive']]) {

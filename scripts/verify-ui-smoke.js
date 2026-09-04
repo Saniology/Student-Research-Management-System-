@@ -24,8 +24,10 @@ assert(/project-title-input|project-title/.test(source) && /thesis-pdf-input/.te
 assert(/student_resubmit/.test(source) && /Upload Revision/.test(source), 'student revision workflow exists');
 assert(/supervisor_decision/.test(source) && /Approve Project/.test(source), 'supervisor decision controls exist');
 assert(/createSignedUrl|signedPdfUrl/.test(source) && /Private PDF preview/.test(source), 'supervisor private PDF preview exists');
+assert(/Assigned projects/.test(source) && /Assigned students/.test(source) && /Review history/.test(source) && /Supervisor profile/.test(source), 'supervisor dashboard has separate sidebar pages');
 assert(/library_verify/.test(source) && /library_publish/.test(source) && /Verify metadata/.test(source), 'library metadata verification and publishing controls exist');
 assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source), 'admin assignment controls exist');
+assert(/Supervisor directory/.test(source) && /Student coverage/.test(source) && /Assignment queue/.test(source), 'admin supervisor workflows have separate sidebar pages');
 assert(/AdminLivePanel/.test(source) && /admin_overview/.test(source), 'admin dashboard reads live overview data');
 assert(/clearance_receipts[\s\S]*profiles!clearance_receipts_student_id_fkey\(full_name,matric\)/.test(source), 'admin receipt evidence includes the student identity');
 assert(/profiles!payments_student_id_fkey!inner\(institution_id\)/.test(source) && /eq\(['"]profiles\.institution_id['"]/.test(source), 'admin payment evidence is explicitly tenant scoped');
