@@ -21,11 +21,11 @@ assert(/workspaceSectionTarget/.test(source) && /scrollToWorkspaceSection/.test(
 assert(/Notification center/.test(source) && /Mark all as read/.test(source) && /onNotifications=\{openNotificationCenter\}/.test(source), 'notification center opens from the authenticated shell');
 assert(/AuthModal/.test(source) && /signInWithPassword/.test(source), 'authentication workflow exists');
 assert(/project-title-input|project-title/.test(source) && /thesis-pdf-input/.test(source), 'student submission controls exist');
-assert(/student-overview/.test(source) && /student-submission/.test(source) && /student-payments/.test(source) && /student-receipt/.test(source) && /student-profile/.test(source), 'student dashboard has separate sidebar pages');
+assert(/student-overview/.test(source) && /student-submission/.test(source) && /student-payments/.test(source) && /student-receipt/.test(source) && /ProfileInformationModal/.test(source), 'student dashboard has separate sidebar pages and a profile modal');
 assert(/student_resubmit/.test(source) && /Upload Revision/.test(source), 'student revision workflow exists');
 assert(/supervisor_decision/.test(source) && /Approve Project/.test(source), 'supervisor decision controls exist');
 assert(/createSignedUrl|signedPdfUrl/.test(source) && /Private PDF preview/.test(source), 'supervisor private PDF preview exists');
-assert(/Assigned projects/.test(source) && /Assigned students/.test(source) && /Review history/.test(source) && /Supervisor profile/.test(source), 'supervisor dashboard has separate sidebar pages');
+assert(/Assigned projects/.test(source) && /Assigned students/.test(source) && /Review history/.test(source) && /ProfileInformationModal/.test(source), 'supervisor dashboard has separate sidebar pages and a profile modal');
 assert(/library_verify/.test(source) && /library_publish/.test(source) && /Verify metadata/.test(source), 'library metadata verification and publishing controls exist');
 assert(/library-queue/.test(source) && /library-catalogue/.test(source) && /library-qr/.test(source) && /library-archive/.test(source), 'library desk has separate sidebar pages');
 assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source), 'admin assignment controls exist');

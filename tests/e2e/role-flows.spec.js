@@ -93,12 +93,23 @@ test.describe('SPMS role workflows', () => {
 
   test('student sidebar switches between focused workspace pages', async ({ page }) => {
     await openPreview(page, 'student');
-    for (const [label, target] of [['Overview', '#student-overview'], ['Submission', '#student-submission'], ['Payments', '#student-payments'], ['Receipt', '#student-receipt'], ['Profile', '#student-profile']]) {
+    for (const [label, target] of [['Overview', '#student-overview'], ['Submission', '#student-submission'], ['Payments', '#student-payments'], ['Receipt', '#student-receipt']]) {
       const button = page.getByRole('button', { name: label, exact: true });
       await button.click();
       await expect(page.locator(target)).toBeVisible();
       await expect(button).toHaveClass(/active/);
     }
+  });
+
+  test('student profile opens from the sidebar and edits contact details in a modal', async ({ page }) => {
+    await openPreview(page, 'student');
+    await page.getByRole('button', { name: 'Open student profile', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText('Musa Abdullahi');
+    await expect(dialog).toContainText('KASU/SCI/20/123');
+    await dialog.getByRole('button', { name: 'Edit contact info' }).click();
+    await expect(dialog.getByLabel('Full name')).toBeDisabled();
+    await expect(dialog.getByRole('button', { name: 'Save contact info' })).toBeVisible();
   });
 
   test('student overview opens payment evidence in a modal', async ({ page }) => {
@@ -121,12 +132,22 @@ test.describe('SPMS role workflows', () => {
 
   test('supervisor sidebar switches between focused workspace pages', async ({ page }) => {
     await openPreview(page, 'teacher');
-    for (const [label, target] of [['Overview', '#teacher-overview'], ['Assigned projects', '#teacher-projects'], ['Assigned students', '#teacher-students'], ['Review history', '#teacher-history'], ['Supervisor profile', '#teacher-profile']]) {
+    for (const [label, target] of [['Overview', '#teacher-overview'], ['Assigned projects', '#teacher-projects'], ['Assigned students', '#teacher-students'], ['Review history', '#teacher-history']]) {
       const button = page.getByRole('button', { name: label, exact: true });
       await button.click();
       await expect(page.locator(target)).toBeVisible();
       await expect(button).toHaveClass(/active/);
     }
+  });
+
+  test('supervisor profile opens from the sidebar and edits contact details in a modal', async ({ page }) => {
+    await openPreview(page, 'teacher');
+    await page.getByRole('button', { name: 'Open supervisor profile', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText('Dr. Sani Musa');
+    await dialog.getByRole('button', { name: 'Edit contact info' }).click();
+    await expect(dialog.getByLabel('Full name')).toBeDisabled();
+    await expect(dialog.getByRole('button', { name: 'Save contact info' })).toBeVisible();
   });
 
   test('library sidebar navigates across each desk', async ({ page }) => {
