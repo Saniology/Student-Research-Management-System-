@@ -1,0 +1,100 @@
+name: Verify SPMS
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-spms-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Show browser version
+        run: google-chrome --version || chromium-browser --version || chromium --version
+
+      - name: Start Vite app for browser checks
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5510 > /tmp/spms-vite.log 2>&1 &
+          for attempt in {1..30}; do curl --fail --silent http://127.0.0.1:5510/ > /dev/null && exit 0; sleep 1; done
+          cat /tmp/spms-vite.log
+          exit 1
+
+      - name: Verify browser config
+        run: npm run verify:config
+
+      - name: Verify accessibility
+        run: npm run verify:a11y
+
+      - name: Verify UI contracts
+        run: npm run verify:ui
+
+      - name: Verify security contracts
+        run: npm run verify:security
+
+      - name: Verify rendered UI
+        run: npm run verify:render
+
+      - name: Verify role rendering
+        run: npm run verify:roles
+
+      - name: Verify role interactions
+        run: npm run verify:interactions
+
+      - name: Verify Playwright role workflows
+        run: SPMS_REUSE_SERVER=true npm run verify:playwright
+
+      - name: Verify database schema
+        run: npm run verify:db
+
+      - name: Verify disaster recovery handover
+        run: npm run verify:dr
+
+      - name: Verify data governance handover
+        run: npm run verify:governance
+
+      - name: Verify Edge Function contracts
+        run: npm run verify:edge
+
+      - name: Verify email deliverability handover
+        run: npm run verify:email
+
+      - name: Verify monitoring handover
+        run: npm run verify:monitor
+
+      - name: Verify workflow contracts
+        run: npm run verify:workflow
+
+      - name: Verify release readiness
+        run: npm run verify:release
+
+      - name: Verify lifecycle
+        run: npm run verify:lifecycle

@@ -1,1 +1,7 @@
 supabase/.temp/
+.deno/
+.env
+.env.local
+.env.*.local
+playwright-report/
+test-results/

@@ -1,8 +1,60 @@
 # Deploy: supabase link --project-ref tejkksgyqltudpfuzjdo
 # Secrets:  supabase secrets set PAYSTACK_SECRET_KEY=sk_test_...
-# Deploy:   supabase functions deploy verify-paystack
+# Optional: supabase secrets set REPORT_CRON_SECRET=long_random_value
+# Optional: supabase secrets set HEALTH_CHECK_SECRET=long_random_value
+# Optional: supabase secrets set RESEND_API_KEY=re_... REPORT_FROM_EMAIL=reports@example.edu
+# Deploy:   supabase functions deploy verify-paystack project-workflow repository-access student-identity verification-lookup public-config scheduled-reports health-check --use-api
+
+[auth.email]
+# Development and pilot accounts can sign in immediately after signup.
+enable_signup = true
+enable_confirmations = false
+max_frequency = "1m"
+otp_length = 8
+
+[auth]
+# Keep password-based email authentication and registration available locally.
+enable_signup = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = []
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[storage.vector]
+enabled = false
 
 [functions.verify-paystack]
 # JWT is validated inside the function via auth.getUser().
 # Gateway JWT verification blocks browser CORS preflight (OPTIONS) requests.
+verify_jwt = false
+
+[functions.project-workflow]
+# JWT is validated inside the function via auth.getUser().
+verify_jwt = false
+
+[functions.repository-access]
+# Registered actions use auth.getUser(); the two guest actions use strict
+# Paystack/email attribution before issuing a watermarked signed URL.
+verify_jwt = false
+
+[functions.student-identity]
+# Signup identity is checked inside the function against SIS or the private registry.
+verify_jwt = false
+
+[functions.public-config]
+# The browser receives safe fee/upload settings; server-only payment split fields stay private.
+verify_jwt = false
+
+[functions.verification-lookup]
+# Public verification endpoint for QR scans. It returns controlled verification data only.
+verify_jwt = false
+
+[functions.scheduled-reports]
+# Admins are validated inside the function. Cron jobs can use REPORT_CRON_SECRET.
+verify_jwt = false
+
+[functions.health-check]
+# Public status is safe; detailed checks can require HEALTH_CHECK_SECRET.
 verify_jwt = false
