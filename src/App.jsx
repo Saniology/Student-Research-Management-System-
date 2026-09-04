@@ -1015,6 +1015,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
     const scheduleQuery = supabase.from('report_schedules').select('*').eq('institution_id', activeInstitutionId).order('created_at', { ascending: false });
     const reportQuery = supabase.from('generated_reports').select('*').eq('institution_id', activeInstitutionId).order('generated_at', { ascending: false }).limit(20);
     const studentsQuery = supabase.from('profiles').select('id,full_name,email,matric,department,department_id,created_at').eq('institution_id', activeInstitutionId).eq('role', 'student').order('created_at', { ascending: false }).limit(100);
+    const studentPaymentQuery = supabase.from('payments').select('student_id,profiles!payments_student_id_fkey!inner(institution_id)').eq('profiles.institution_id', activeInstitutionId).eq('status', 'success').eq('transaction_type', 'clearance_fee').limit(10000);
     const projectQuery = supabase.from('projects').select('id,title,status,degree,created_at,updated_at,profiles!projects_student_id_fkey(full_name,matric),departments(name)').eq('institution_id', activeInstitutionId).order('created_at', { ascending: false }).limit(100);
     const receiptQuery = supabase.from('clearance_receipts').select('id,project_id,student_id,verification_code,qr_payload,issued_at,projects(title),profiles!clearance_receipts_student_id_fkey(full_name,matric)').eq('projects.institution_id', activeInstitutionId).order('issued_at', { ascending: false }).limit(100);
     const departmentQuery = supabase.from('departments').select('id,name,code,faculty_id,faculties(name)').eq('institution_id', activeInstitutionId).order('name');
@@ -1022,13 +1023,14 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
     const facultyQuery = supabase.from('faculties').select('id,name,college_id,colleges(name)').eq('institution_id', activeInstitutionId).order('name');
     const collegeQuery = supabase.from('colleges').select('id,name').eq('institution_id', activeInstitutionId).order('name');
     try {
-      const [overviewResult, studentsResult, projectResult, paymentResult, guestOrderResult, receiptResult, departmentResult, courseResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult] = await Promise.all([
+      const [overviewResult, studentsResult, projectResult, paymentResult, studentPaymentResult, guestOrderResult, receiptResult, departmentResult, courseResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult] = await Promise.all([
         supabase.from('admin_overview').select('*').maybeSingle(),
         studentsQuery,
         projectQuery,
         // Payments inherit tenant scoping through the student profile RLS policy;
         // the table itself intentionally has no duplicated institution column.
         supabase.from('payments').select('id,project_id,amount,currency,status,transaction_type,paystack_reference,created_at,paid_at,payer_id,profiles!payments_student_id_fkey!inner(institution_id)').eq('profiles.institution_id', activeInstitutionId).order('created_at', { ascending: false }).limit(100),
+        studentPaymentQuery,
         supabase.from('guest_download_orders').select('id,amount,currency,status,paystack_reference,created_at,unlocked_at,email,project_id,metadata').eq('institution_id', activeInstitutionId).order('created_at', { ascending: false }).limit(100),
         receiptQuery,
         departmentQuery,
@@ -1040,14 +1042,15 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
         scheduleQuery,
         reportQuery,
       ]);
-      const failedQuery = [overviewResult, studentsResult, projectResult, paymentResult, guestOrderResult, receiptResult, departmentResult, courseResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult].find(result => result?.error);
+      const failedQuery = [overviewResult, studentsResult, projectResult, paymentResult, studentPaymentResult, guestOrderResult, receiptResult, departmentResult, courseResult, facultyResult, collegeResult, institutionResult, configResult, schedulesResult, reportResult].find(result => result?.error);
       if (failedQuery?.error) throw failedQuery.error;
       const reportRows = await Promise.all((reportResult.data || []).map(async item => {
         const signed = await supabase.storage.from('reports').createSignedUrl(item.file_path, 900);
         return signed.error ? item : { ...item, download_url: signed.data?.signedUrl || '' };
       }));
       setOverview(overviewResult.data || null);
-      setStudents(studentsResult.data || []);
+      const paidStudentIds = new Set((studentPaymentResult.data || []).map(item => item.student_id));
+      setStudents((studentsResult.data || []).map(item => ({ ...item, payment_status: paidStudentIds.has(item.id) ? 'paid' : 'unpaid' })));
       setProjects(projectResult.data || []);
       setPayments(paymentResult.data || []);
       setGuestOrders(guestOrderResult.data || []);
@@ -1132,7 +1135,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
   return <Workspace role="admin" title="Analytics hub" subtitle="Live operations for academic clearance, finance, and institutional governance." sidebar={nav.map(([Icon, label, id]) => [Icon, label, section === id, () => setSection(id)])}>
     <MetricCards items={metrics} />
     {section === 'dashboard' && <div className="workspace-grid"><AnalyticsCard title="Workflow funnel" copy="Current project counts across every clearance stage." values={workflowValues} /><AnalyticsCard title="Revenue split" copy="Successful Paystack transactions reconciled by configured share." values={[["Institution share", institutionShare], ["SPMS provider share", 100 - institutionShare], ["Successful transactions", successfulPayments.length + successfulGuestOrders.length]]} accent /><AnalyticsCard title="Monthly revenue" copy="Latest recorded payment volume." values={[["This month", [...successfulPayments, ...successfulGuestOrders].filter(item => item.created_at && new Date(item.created_at).getMonth() === new Date().getMonth()).reduce((total, item) => total + Number(item.amount || 0), 0) / 100], ["All time", revenue / 100]]} accent /><AnalyticsCard title="Publication progress" copy="Approved catalog records and cleared receipts." values={[["Published", overview?.published_projects || projects.filter(item => item.status === 'published').length], ["Cleared", projects.filter(item => item.status === 'cleared').length]]} /></div>}
-    {section === 'students' && <section className="surface"><SectionHeader eyebrow="Student directory" title="Registered students" copy="Searchable student records connected to project ownership and department mapping." /><DataTable columns={['Name', 'Matric', 'Email', 'Department', 'Joined']} rows={students.map(item => [item.full_name || 'Unnamed student', item.matric || '—', item.email || '—', item.department || 'Unassigned', displayDate(item.created_at)])} empty="No student profiles found." /></section>}
+    {section === 'students' && <section className="surface"><SectionHeader eyebrow="Student directory" title="Registered students" copy="Searchable student records connected to project ownership, payment status, and department mapping." /><DataTable columns={['Name', 'Matric', 'Email', 'Department', 'Clearance payment', 'Joined']} rows={students.map(item => [item.full_name || 'Unnamed student', item.matric || '—', item.email || '—', item.department || 'Unassigned', <span className={`tag ${item.payment_status === 'paid' ? '' : 'tag-warning'}`} key={`${item.id}-payment`}>{item.payment_status === 'paid' ? 'Paid' : 'Payment pending'}</span>, displayDate(item.created_at)])} empty="No student profiles found." /></section>}
     {['supervisor-directory', 'supervisor-coverage', 'supervisor-queue'].includes(section) && <AdminSupervisorQueue profile={profile} onToast={onToast} page={section.replace('supervisor-', '')} />}
     {section === 'departments' && <HierarchyManager colleges={colleges} faculties={faculties} departments={departments} courses={courses} newCollege={newCollege} setNewCollege={setNewCollege} newFaculty={newFaculty} setNewFaculty={setNewFaculty} newDepartment={newDepartment} setNewDepartment={setNewDepartment} newCourse={newCourse} setNewCourse={setNewCourse} addHierarchy={addHierarchy} />}
     {section === 'uploads' && <section className="surface"><SectionHeader eyebrow="Project register" title="All thesis uploads" copy="Monitor status, student ownership, academic level, and submission timestamps." /><DataTable columns={['Project', 'Student', 'Degree', 'Status', 'Submitted']} rows={projects.map(item => [item.title, item.profiles?.full_name || 'Student', item.degree || '—', <StatusChip status={item.status} key={`${item.id}-status`} />, displayDate(item.created_at)])} empty="No project uploads found." /></section>}
@@ -1163,7 +1166,7 @@ function AdminSupervisorQueue({ profile, onToast, page, preview = false }) {
     if (preview) {
       setQueue([{ id: 'preview-project', title: 'Web-Based E-Voting System', student_id: 'preview-student', author: 'Musa Abdullahi', matric: 'KASU/SCI/20/123', dept: 'Computer Science' }]);
       setSupervisors([{ id: 'preview-supervisor', full_name: 'Dr. Sani Musa', email: 'supervisor@kasu.edu.ng', phone: '+234 803 000 0000', department: 'Computer Science' }]);
-      setStudents([{ id: 'preview-student', full_name: 'Musa Abdullahi', email: 'student@kasu.edu.ng', phone: '+234 801 000 0000', matric: 'KASU/SCI/20/123', department: 'Computer Science', supervisor_id: null }]);
+      setStudents([{ id: 'preview-student', full_name: 'Musa Abdullahi', email: 'student@kasu.edu.ng', phone: '+234 801 000 0000', matric: 'KASU/SCI/20/123', department: 'Computer Science', supervisor_id: null, payment_status: 'unpaid' }]);
       setDepartments([{ id: 'preview-department', name: 'Computer Science' }]);
       setLoading(false);
       return;
@@ -1174,13 +1177,15 @@ function AdminSupervisorQueue({ profile, onToast, page, preview = false }) {
     const supervisorsQuery = supabase.from('profiles').select('id,full_name,email,phone,department,department_id,avatar_url').eq('institution_id', profile.institution_id).eq('role', 'teacher').order('full_name');
     const studentsQuery = supabase.from('profiles').select('id,full_name,email,phone,matric,department,supervisor_id,avatar_url').eq('institution_id', profile.institution_id).eq('role', 'student').order('full_name');
     const departmentsQuery = supabase.from('departments').select('id,name').eq('institution_id', profile.institution_id).order('name');
+    const studentPaymentQuery = supabase.from('payments').select('student_id,profiles!payments_student_id_fkey!inner(institution_id)').eq('profiles.institution_id', profile.institution_id).eq('status', 'success').eq('transaction_type', 'clearance_fee').limit(10000);
     try {
-      const [projectsResult, supervisorsResult, studentsResult, departmentsResult] = await Promise.all([projectsQuery, supervisorsQuery, studentsQuery, departmentsQuery]);
-      const failed = [projectsResult, supervisorsResult, studentsResult, departmentsResult].find(result => result.error);
+      const [projectsResult, supervisorsResult, studentsResult, departmentsResult, studentPaymentResult] = await Promise.all([projectsQuery, supervisorsQuery, studentsQuery, departmentsQuery, studentPaymentQuery]);
+      const failed = [projectsResult, supervisorsResult, studentsResult, departmentsResult, studentPaymentResult].find(result => result.error);
       if (failed?.error) throw failed.error;
-      setQueue((projectsResult.data || []).map(item => ({ ...item, author: item.profiles?.full_name, matric: item.profiles?.matric, dept: item.profiles?.department })));
+      const paidStudentIds = new Set((studentPaymentResult.data || []).map(item => item.student_id));
+      setQueue((projectsResult.data || []).map(item => ({ ...item, author: item.profiles?.full_name, matric: item.profiles?.matric, dept: item.profiles?.department, payment_status: paidStudentIds.has(item.student_id) ? 'paid' : 'unpaid' })));
       setSupervisors(supervisorsResult.data || []);
-      setStudents(studentsResult.data || []);
+      setStudents((studentsResult.data || []).map(item => ({ ...item, payment_status: paidStudentIds.has(item.id) ? 'paid' : 'unpaid' })));
       setDepartments(departmentsResult.data || []);
     } catch (error) { setQueue([]); setSupervisors([]); setStudents([]); onToast(error.message || 'Supervisor management could not be loaded.'); }
     finally { setLoading(false); }
@@ -1234,7 +1239,7 @@ function AdminSupervisorQueue({ profile, onToast, page, preview = false }) {
   </section>;
 }
 
-function StudentAssignmentRow({ student, supervisors, onAssign }) { const [selected, setSelected] = useState(student.supervisor_id || ''); const changed = selected && selected !== student.supervisor_id; return <div className={`contact-directory-item ${student.supervisor_id ? '' : 'needs-assignment'}`}><div className="identity-cell"><ProfileAvatar name={student.full_name} src={student.avatar_url} /><div><strong>{student.full_name || 'Unnamed student'}</strong><span className="helper">{student.matric || 'Matric pending'} · {student.department || 'Department pending'}</span><span className="helper">{student.email || 'Email not provided'} · {student.phone || 'Phone not provided'}</span></div></div><div className="assignment-control"><span className={student.supervisor_id ? 'tag' : 'tag tag-warning'}>{student.supervisor_id ? 'Assigned' : 'Needs assignment'}</span><select className="glass-input" aria-label={`Supervisor for ${student.full_name || 'student'}`} value={selected} onChange={event => setSelected(event.target.value)}><option value="">Select supervisor</option>{supervisors.map(person => <option value={person.id} key={person.id}>{person.full_name} · {person.department || 'Institution-wide'}</option>)}</select><button className="button button-primary button-small" disabled={!changed} onClick={() => onAssign(student.id, selected)}><UserCheck size={14} />{student.supervisor_id ? 'Reassign' : 'Assign'}</button></div></div>; }
+function StudentAssignmentRow({ student, supervisors, onAssign }) { const [selected, setSelected] = useState(student.supervisor_id || ''); const changed = selected && selected !== student.supervisor_id; const paid = student.payment_status === 'paid'; return <div className={`contact-directory-item ${student.supervisor_id ? '' : 'needs-assignment'} ${paid ? '' : 'payment-pending'}`}><div className="identity-cell"><ProfileAvatar name={student.full_name} src={student.avatar_url} /><div><strong>{student.full_name || 'Unnamed student'}</strong><span className="helper">{student.matric || 'Matric pending'} · {student.department || 'Department pending'}</span><span className="helper">{student.email || 'Email not provided'} · {student.phone || 'Phone not provided'}</span></div></div><div className="assignment-control"><span className={student.supervisor_id ? 'tag' : 'tag tag-warning'}>{student.supervisor_id ? 'Assigned' : 'Needs assignment'}</span><span className={`tag ${paid ? '' : 'tag-warning'}`}>{paid ? 'Paid' : 'Payment pending'}</span><select className="glass-input" aria-label={`Supervisor for ${student.full_name || 'student'}`} value={selected} onChange={event => setSelected(event.target.value)}><option value="">Select supervisor</option>{supervisors.map(person => <option value={person.id} key={person.id}>{person.full_name} · {person.department || 'Institution-wide'}</option>)}</select><button className="button button-primary button-small" title={paid ? 'Assign supervisor' : 'Complete clearance payment before assigning'} disabled={!changed || !paid} onClick={() => onAssign(student.id, selected)}><UserCheck size={14} />{paid ? (student.supervisor_id ? 'Reassign' : 'Assign') : 'Payment required'}</button>{!paid && <span className="assignment-payment-warning">Supervisor assignment is blocked until payment succeeds.</span>}</div></div>; }
 
 function SupervisorManagementPage({ page, supervisors, students, queue, departments, unassignedStudents, createOpen, setCreateOpen, assignOpen, setAssignOpen, supervisorForm, setSupervisorForm, saving, createSupervisor, assignStudent, assignProject }) {
   const isDirectory = page === 'directory';

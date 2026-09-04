@@ -95,6 +95,14 @@ test.describe('SPMS role workflows', () => {
     await expect(page.getByRole('button', { name: /Assign/ })).toBeVisible();
   });
 
+  test('admin sees unpaid students and cannot assign them a supervisor', async ({ page }) => {
+    await openPreview(page, 'admin');
+    await page.getByRole('button', { name: 'Student coverage', exact: true }).click();
+    await expect(page.getByText('Payment pending', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Payment required', exact: true })).toBeDisabled();
+    await expect(page.getByText('Supervisor assignment is blocked until payment succeeds.', { exact: true })).toBeVisible();
+  });
+
   test('student sidebar navigates to submission controls', async ({ page }) => {
     await openPreview(page, 'student');
     await page.getByRole('button', { name: 'Submission', exact: true }).click();

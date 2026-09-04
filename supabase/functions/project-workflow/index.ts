@@ -111,6 +111,19 @@ async function handleAssignSupervisor(
     return jsonResponse({ error: "Supervisor must belong to the same institution" }, 400);
   }
 
+  if (!await hasPaidClearanceFee(supabaseUrl, serviceRoleKey, project.student_id)) {
+    await notifyUsers(supabaseUrl, serviceRoleKey, {
+      recipientIds: [supervisor.id],
+      actorId: actor.id,
+      institutionId: project.institution_id || actor.institution_id || null,
+      projectId,
+      title: "Assignment blocked: payment pending",
+      message: `${project.title} cannot be assigned for review until the student completes the clearance payment.`,
+      metadata: { status: "payment_pending", student_id: project.student_id, supervisor_id: supervisor.id },
+    });
+    return jsonResponse({ error: "This student has not completed the clearance payment. Supervisor assignment is blocked.", code: "PAYMENT_REQUIRED", payment_status: "unpaid" }, 409);
+  }
+
   const nextStatus = project.status === "submitted" ? "supervisor_review" : project.status;
   const [updated] = await supabaseRest(
     supabaseUrl,
@@ -280,6 +293,18 @@ async function handleAssignStudentSupervisor(
     return jsonResponse({ error: "Student and supervisor must belong to the same institution" }, 400);
   }
 
+  if (!await hasPaidClearanceFee(supabaseUrl, serviceRoleKey, student.id)) {
+    await notifyUsers(supabaseUrl, serviceRoleKey, {
+      recipientIds: [supervisor.id],
+      actorId: actor.id,
+      institutionId: actor.institution_id || null,
+      title: "Assignment blocked: payment pending",
+      message: `${student.full_name || "This student"} cannot be assigned to you until the clearance payment is completed.`,
+      metadata: { status: "payment_pending", student_id: student.id, supervisor_id: supervisor.id },
+    });
+    return jsonResponse({ error: "This student has not completed the clearance payment. Supervisor assignment is blocked.", code: "PAYMENT_REQUIRED", payment_status: "unpaid" }, 409);
+  }
+
   const [updatedStudent] = await supabaseRest(
     supabaseUrl,
     serviceRoleKey,
@@ -341,6 +366,10 @@ async function handleSupervisorDecision(
 
   if (actor.role !== "admin" && project.supervisor_id !== actor.id) {
     return jsonResponse({ error: "Only the assigned supervisor can review this project" }, 403);
+  }
+
+  if (!await hasPaidClearanceFee(supabaseUrl, serviceRoleKey, project.student_id)) {
+    return jsonResponse({ error: "This student has not completed the clearance payment. Supervisor review is blocked.", code: "PAYMENT_REQUIRED", payment_status: "unpaid" }, 409);
   }
 
   if (!["submitted", "supervisor_review", "revision_requested"].includes(project.status)) {
@@ -793,6 +822,15 @@ async function getProject(supabaseUrl: string, serviceRoleKey: string, projectId
     serviceRoleKey,
     `/projects?id=eq.${encodeURIComponent(projectId)}&select=*,departments(name),courses(name)`,
   );
+}
+
+async function hasPaidClearanceFee(supabaseUrl: string, serviceRoleKey: string, studentId: string) {
+  const payments = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/payments?student_id=eq.${encodeURIComponent(studentId)}&status=eq.success&transaction_type=eq.clearance_fee&select=id&limit=1`,
+  );
+  return payments.length > 0;
 }
 
 async function upsertPublicCatalog(

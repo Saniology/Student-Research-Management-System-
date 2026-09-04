@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const files = ['index.html', 'src/App.jsx', 'src/styles.css', 'src/components/AppShell.jsx', 'src/components/Skeleton.jsx', 'src/components/Modal.jsx', 'src/components/StatusChip.jsx', 'src/lib/supabase.js', 'src/lib/contracts.js'];
+const files = ['index.html', 'src/App.jsx', 'src/styles.css', 'src/components/AppShell.jsx', 'src/components/Skeleton.jsx', 'src/components/Modal.jsx', 'src/components/StatusChip.jsx', 'src/lib/supabase.js', 'src/lib/contracts.js', 'supabase/functions/project-workflow/index.ts', 'supabase/migrations/202609041000_supervisor_assignment_payment_gate.sql'];
 const source = files.map(file => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
 const failures = [];
 
@@ -32,6 +32,8 @@ assert(/Assigned projects/.test(source) && /Assigned students/.test(source) && /
 assert(/library_verify/.test(source) && /library_publish/.test(source) && /Verify metadata/.test(source), 'library metadata verification and publishing controls exist');
 assert(/library-queue/.test(source) && /library-catalogue/.test(source) && /library-qr/.test(source) && /library-archive/.test(source), 'library desk has separate sidebar pages');
 assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source), 'admin assignment controls exist');
+assert(/payment_status/.test(source) && /Payment pending/.test(source) && /Payment required/.test(source), 'admin assignment coverage shows student payment status and blocks unpaid students');
+assert(/hasPaidClearanceFee/.test(source) && /PAYMENT_REQUIRED/.test(source) && /Assignment blocked: payment pending/.test(source), 'server assignment workflow gates unpaid students and notifies the selected supervisor');
 assert(/Supervisor directory/.test(source) && /Student coverage/.test(source) && /Assignment queue/.test(source), 'admin supervisor workflows have separate sidebar pages');
 assert(/AdminLivePanel/.test(source) && /admin_overview/.test(source), 'admin dashboard reads live overview data');
 assert(/clearance_receipts[\s\S]*profiles!clearance_receipts_student_id_fkey\(full_name,matric\)/.test(source), 'admin receipt evidence includes the student identity');
