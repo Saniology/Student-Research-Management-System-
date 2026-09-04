@@ -186,3 +186,5 @@ main { min-height: calc(100vh - 76px); }
 .supervisor-profile-compact h3 { margin: .1rem 0 .2rem; }
 .supervisor-preferences { margin-top: 1.2rem; }
 @media (max-width: 620px) { .supervisor-focus-item { align-items: stretch; flex-direction: column; }.supervisor-focus-item .card-actions { align-items: stretch; flex-wrap: wrap; }.supervisor-focus-item .card-actions .button { flex: 1; } }
+.student-overview-grid { align-items: stretch; }.student-focus-panel { display: flex; flex-direction: column; min-height: 260px; }.student-inline-action { width: fit-content; margin-top: auto; }.student-focus-panel .status-panel { margin-top: .25rem; }.student-overview-grid .supervisor-contact-card { height: 100%; margin-bottom: 0; }
+@media (max-width: 620px) { .student-overview-grid { grid-template-columns: 1fr; } }
