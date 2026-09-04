@@ -108,7 +108,7 @@ test.describe('SPMS role workflows', () => {
     await expect(dialog).toContainText('Musa Abdullahi');
     await expect(dialog).toContainText('KASU/SCI/20/123');
     await dialog.getByRole('button', { name: 'Edit contact info' }).click();
-    await expect(dialog.getByLabel('Full name')).toBeDisabled();
+    await expect(dialog.getByRole('textbox', { name: 'Full name' })).toBeDisabled();
     await expect(dialog.getByRole('button', { name: 'Save contact info' })).toBeVisible();
   });
 
@@ -148,7 +148,7 @@ test.describe('SPMS role workflows', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText('Dr. Sani Musa');
     await dialog.getByRole('button', { name: 'Edit contact info' }).click();
-    await expect(dialog.getByLabel('Full name')).toBeDisabled();
+    await expect(dialog.getByRole('textbox', { name: 'Full name' })).toBeDisabled();
     await expect(dialog.getByRole('button', { name: 'Save contact info' })).toBeVisible();
   });
 
