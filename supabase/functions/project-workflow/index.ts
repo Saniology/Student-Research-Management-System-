@@ -358,6 +358,7 @@ async function handleSupervisorDecision(
   const projectId = requireString(body.project_id, "project_id");
   const decision = requireString(body.decision, "decision");
   const comment = optionalString(body.comment);
+  const annotations = normalizeAnnotations(body.annotations);
 
   const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
   if (!project) return jsonResponse({ error: "Project not found" }, 404);
@@ -403,11 +404,14 @@ async function handleSupervisorDecision(
     },
   );
 
+  const versionNumber = await getLatestVersionNumber(supabaseUrl, serviceRoleKey, projectId);
   await writeReviewAndAudit(supabaseUrl, serviceRoleKey, {
     actorId: actor.id,
     projectId,
     action: reviewAction,
     comment,
+    annotations,
+    versionNumber,
     fromStatus: project.status,
     toStatus,
     auditAction: `project_${reviewAction}`,
@@ -516,6 +520,25 @@ async function handleStudentResubmission(
     },
   );
 
+  const versionNumber = (await getLatestVersionNumber(supabaseUrl, serviceRoleKey, projectId)) + 1;
+  await supabaseRest(supabaseUrl, serviceRoleKey, "/project_versions", {
+    method: "POST",
+    body: {
+      project_id: projectId,
+      version_number: versionNumber,
+      submitted_by: actor.id,
+      file_name: fileName,
+      file_path: filePath,
+      file_size_bytes: fileSizeBytes,
+      mime_type: "application/pdf",
+      title,
+      abstract,
+      degree,
+      source: "resubmission",
+      change_summary: "Student resubmitted a corrected thesis after supervisor feedback.",
+    },
+  });
+
   if (project.submission_id) {
     await supabaseRest(
       supabaseUrl,
@@ -534,6 +557,7 @@ async function handleStudentResubmission(
     projectId,
     action: "submitted",
     comment: "Student resubmitted the revised thesis after supervisor feedback.",
+    versionNumber,
     fromStatus: project.status,
     toStatus: nextStatus,
     auditAction: "project_revision_resubmitted",
@@ -545,8 +569,8 @@ async function handleStudentResubmission(
     institutionId: project.institution_id || null,
     projectId,
     title: "Revision resubmitted",
-    message: `"${title}" has been resubmitted and is ready for supervisor review.`,
-    metadata: { status: nextStatus },
+    message: `"${title}" revision (version ${versionNumber}) has been resubmitted and is ready for supervisor review.`,
+    metadata: { status: nextStatus, submission_type: "resubmission", version_number: versionNumber },
   });
 
   if (!project.supervisor_id) {
@@ -561,7 +585,30 @@ async function handleStudentResubmission(
     });
   }
 
-  return jsonResponse({ success: true, project: updated });
+  return jsonResponse({ success: true, project: updated, version_number: versionNumber, submission_type: "resubmission" });
+}
+
+async function getLatestVersionNumber(supabaseUrl: string, serviceRoleKey: string, projectId: string) {
+  const versions = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/project_versions?project_id=eq.${encodeURIComponent(projectId)}&select=version_number&order=version_number.desc&limit=1`,
+  );
+  return Math.max(0, Number(versions[0]?.version_number) || 0);
+}
+
+function normalizeAnnotations(value: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 100).filter(item => item && typeof item === "object").map(item => {
+    const mark = item as Record<string, unknown>;
+    return {
+      type: "arrow",
+      x1: Math.min(100, Math.max(0, Number(mark.x1) || 0)),
+      y1: Math.min(100, Math.max(0, Number(mark.y1) || 0)),
+      x2: Math.min(100, Math.max(0, Number(mark.x2) || 0)),
+      y2: Math.min(100, Math.max(0, Number(mark.y2) || 0)),
+    };
+  });
 }
 
 async function getMaxPdfSize(supabaseUrl: string, serviceRoleKey: string, institutionId?: string | null) {
@@ -891,6 +938,8 @@ async function writeReviewAndAudit(
     projectId: string;
     action: string;
     comment?: string | null;
+    annotations?: Array<Record<string, unknown>>;
+    versionNumber?: number | null;
     fromStatus?: string | null;
     toStatus?: string | null;
     auditAction: string;
@@ -909,6 +958,8 @@ async function writeReviewAndAudit(
         comment: event.comment || null,
         from_status: event.fromStatus || null,
         to_status: event.toStatus || null,
+        annotations: event.annotations || [],
+        version_number: event.versionNumber || null,
       },
     },
   );
@@ -927,6 +978,7 @@ async function writeReviewAndAudit(
         metadata: {
           from_status: event.fromStatus || null,
           to_status: event.toStatus || null,
+          version_number: event.versionNumber || null,
         },
       },
     },

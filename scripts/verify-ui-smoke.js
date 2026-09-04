@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
-const files = ['index.html', 'src/App.jsx', 'src/styles.css', 'src/components/AppShell.jsx', 'src/components/Skeleton.jsx', 'src/components/Modal.jsx', 'src/components/StatusChip.jsx', 'src/lib/supabase.js', 'src/lib/contracts.js', 'supabase/functions/project-workflow/index.ts', 'supabase/migrations/202609041000_supervisor_assignment_payment_gate.sql'];
+const files = ['index.html', 'src/App.jsx', 'src/styles.css', 'src/components/AppShell.jsx', 'src/components/Skeleton.jsx', 'src/components/Modal.jsx', 'src/components/StatusChip.jsx', 'src/lib/supabase.js', 'src/lib/contracts.js', 'supabase/functions/project-workflow/index.ts', 'supabase/functions/verify-paystack/index.ts', 'supabase/migrations/202609041000_supervisor_assignment_payment_gate.sql', 'supabase/migrations/202609042000_project_review_versions.sql'];
 const source = files.map(file => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
 const failures = [];
 
@@ -73,6 +73,9 @@ assert(/clearance_receipts['\"]\)\.select\(['\"]\*['\"]\)/.test(source), 'studen
 assert(/\[\s*['"]published['"]\s*,\s*['"]cleared['"]\s*\]\.includes\(project\?\.status\)/.test(source), 'students can issue receipts after library publication');
 assert(/downloadReceiptPdf/.test(source) && /Download receipt PDF/.test(source), 'students can download issued clearance receipts');
 assert(/pendingVerification/.test(source) && /Retry verification/.test(source) && /localStorage/.test(source), 'students can retry failed payment verification without a second charge');
+assert(/project_versions/.test(source) && /version_number/.test(source) && /source: ['"]resubmission['"]/.test(source), 'project uploads have immutable numbered versions and explicit resubmissions');
+assert(/annotations/.test(source) && /Draw link \/ arrow/.test(source) && /Open full view/.test(source), 'supervisors can annotate projects in a full review view');
+assert(/Correction[s]? and version history/.test(source) && /Supervisor correction note/.test(source), 'students can view supervisor corrections and version history');
 
 console.log('');
 console.log(`UI smoke verification complete: ${failures.length} failure(s).`);

@@ -224,6 +224,28 @@ Deno.serve(async (req) => {
         },
       );
       createdProjectId = project.id;
+      await supabaseRest(
+        supabaseUrl,
+        supabaseServiceKey,
+        "/project_versions",
+        {
+          method: "POST",
+          body: {
+            project_id: project.id,
+            version_number: 1,
+            submitted_by: user.id,
+            file_name,
+            file_path,
+            file_size_bytes: fileSizeBytes,
+            mime_type: "application/pdf",
+            title: projectTitle,
+            abstract: typeof abstract === "string" && abstract.trim() ? abstract.trim() : null,
+            degree: typeof degree === "string" && degree.trim() ? degree.trim() : null,
+            source: "initial",
+            change_summary: "Initial thesis submission.",
+          },
+        },
+      );
       const split = calculateSplit(transaction.amount, paymentConfig);
 
       const [payment] = await supabaseRest(
@@ -269,6 +291,7 @@ Deno.serve(async (req) => {
             actor_id: user.id,
             action: "submitted",
             comment: "Project submitted after successful clearance fee payment.",
+            version_number: 1,
             to_status: workflowStatus,
           },
         },

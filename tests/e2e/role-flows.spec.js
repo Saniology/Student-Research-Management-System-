@@ -92,7 +92,7 @@ test.describe('SPMS role workflows', () => {
     await expect(page.locator('#admin-supervisors')).toBeVisible();
     await expect(page.getByText('Unassigned Review Queue', { exact: true })).toBeVisible();
     await expect(page.getByText('Web-Based E-Voting System', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Assign/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Assign', exact: true })).toBeVisible();
   });
 
   test('admin sees unpaid students and cannot assign them a supervisor', async ({ page }) => {
@@ -159,6 +159,24 @@ test.describe('SPMS role workflows', () => {
       await expect(page.locator(target)).toBeVisible();
       await expect(button).toHaveClass(/active/);
     }
+  });
+
+  test('supervisor can open full review view and draw a correction link', async ({ page }) => {
+    await openPreview(page, 'teacher', 'open_review');
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Open full view' }).click();
+    await expect(dialog.getByRole('button', { name: 'Exit full view' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Draw link / arrow' }).click();
+    const stage = dialog.locator('.pdf-review-stage');
+    const box = await stage.boundingBox();
+    if (!box) throw new Error('Review stage is not visible');
+    await page.mouse.move(box.x + 40, box.y + 60);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 180, box.y + 130);
+    await page.mouse.up();
+    await expect(dialog.getByText('1 mark', { exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: /Request revision/ }).click();
+    await expect(page.getByText(/visual corrections saved/)).toBeVisible();
   });
 
   test('supervisor profile opens from the sidebar and edits contact details in a modal', async ({ page }) => {
