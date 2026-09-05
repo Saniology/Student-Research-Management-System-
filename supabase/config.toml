@@ -22,9 +22,6 @@ additional_redirect_urls = []
 enroll_enabled = true
 verify_enabled = true
 
-[storage.vector]
-enabled = false
-
 [functions.verify-paystack]
 # JWT is validated inside the function via auth.getUser().
 # Gateway JWT verification blocks browser CORS preflight (OPTIONS) requests.

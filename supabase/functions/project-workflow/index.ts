@@ -601,6 +601,27 @@ function normalizeAnnotations(value: unknown): Array<Record<string, unknown>> {
   if (!Array.isArray(value)) return [];
   return value.slice(0, 100).filter(item => item && typeof item === "object").map(item => {
     const mark = item as Record<string, unknown>;
+    const clamp = (number: unknown, min = 0, max = 1) => Math.min(max, Math.max(min, Number(number) || 0));
+    const position = mark.position as Record<string, unknown> | undefined;
+    const boundingRect = position?.boundingRect as Record<string, unknown> | undefined;
+    if (position && boundingRect && Number(boundingRect.pageNumber) > 0) {
+      const rects = Array.isArray(position.rects) ? position.rects : [];
+      const normalizeRect = (rect: unknown) => {
+        const itemRect = (rect && typeof rect === "object" ? rect : {}) as Record<string, unknown>;
+        return {
+          x1: clamp(itemRect.x1), y1: clamp(itemRect.y1), x2: clamp(itemRect.x2), y2: clamp(itemRect.y2),
+          width: clamp(itemRect.width), height: clamp(itemRect.height), pageNumber: Math.max(1, Math.floor(Number(itemRect.pageNumber) || Number(boundingRect.pageNumber))),
+        };
+      };
+      return {
+        id: typeof mark.id === "string" ? mark.id.slice(0, 120) : crypto.randomUUID(),
+        type: mark.type === "area" ? "area" : "text",
+        annotation_type: ["highlight", "circle", "arrow", "note"].includes(String(mark.annotation_type)) ? mark.annotation_type : "highlight",
+        position: { boundingRect: normalizeRect(boundingRect), rects: rects.slice(0, 40).map(normalizeRect) },
+        content: { text: typeof (mark.content as Record<string, unknown>)?.text === "string" ? String((mark.content as Record<string, unknown>).text).slice(0, 2000) : "" },
+        note: typeof mark.note === "string" ? mark.note.slice(0, 500) : undefined,
+      };
+    }
     return {
       type: "arrow",
       x1: Math.min(100, Math.max(0, Number(mark.x1) || 0)),
