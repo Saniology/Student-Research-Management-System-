@@ -62,6 +62,15 @@ test.describe('SPMS role workflows', () => {
   test('student can reach the no-fee revision resubmission state', async ({ page }) => {
     await openPreview(page, 'student', 'show_revision');
     await expect(page.getByText(/Revision requested/).first()).toBeVisible();
+    await expect(page.getByText('Supervisor feedback is ready', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Overview', exact: true }).click();
+    await expect(page.getByText('What your supervisor marked', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open reviewed document' })).toBeVisible();
+    await page.getByRole('button', { name: 'Open reviewed document' }).click();
+    await expect(page.getByRole('dialog')).toContainText('Read only');
+    await expect(page.getByRole('dialog')).toContainText('Highlighted: "methodology section"');
+    await page.getByRole('button', { name: 'Close document' }).click();
+    await page.getByRole('button', { name: 'Submission', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Upload Revision & Resubmit' })).toBeEnabled();
     await expect(page.getByText(/no second payment/).first()).toBeVisible();
   });

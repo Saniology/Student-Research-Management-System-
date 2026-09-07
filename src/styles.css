@@ -254,6 +254,59 @@ main { min-height: calc(100vh - 76px); }
 .student-annotation-comments { display: grid; gap: .4rem; }
 .student-annotation-comment { display: flex; align-items: flex-start; gap: .4rem; padding: .55rem .65rem; border: 1px solid #bfdbfe; border-radius: 7px; color: #1e3a8a; background: #eff6ff; font-size: .7rem; line-height: 1.45; }
 .student-annotation-comment svg { flex: 0 0 auto; margin-top: .05rem; }
+.student-annotation-comment > div { display: grid; min-width: 0; gap: .25rem; }
+.student-annotation-comment strong { color: #1e3a8a; font-size: .7rem; }
+.student-annotation-comment span { display: inline-flex; align-items: flex-start; gap: .3rem; }
+.student-annotation-comment small { color: #60758a; font-size: .62rem; }
+.annotation-kind-chip { display: inline-flex !important; align-items: center; justify-content: center; min-width: 3.2rem; height: 1.4rem; padding: 0 .35rem; color: #2563eb !important; border: 1px solid #bfdbfe; border-radius: 5px; background: #fff; font-size: .55rem !important; font-weight: 900; letter-spacing: .06em; }
+.student-annotation-paper-key { display: flex; align-items: center; gap: .35rem; margin-top: 2.2rem; color: #52637a; font-size: .63rem; }
+.student-annotation-paper-key i { display: inline-block; width: 1.2rem; height: .55rem; margin-left: .35rem; border-radius: 2px; background: rgba(250,204,21,.65); }
+.student-annotation-paper-key i.is-circle { width: .8rem; height: .8rem; border: 2px solid #ef4444; border-radius: 50%; background: transparent; }
+.student-annotation-paper-key i.is-arrow { width: 1.1rem; height: 2px; background: #ef4444; transform: rotate(-20deg); }
+.student-review-status { display: flex; align-items: flex-start; gap: .85rem; margin-bottom: 1.2rem; padding: 1rem 1.1rem; border: 1px solid #bfdbfe; border-radius: 11px; background: linear-gradient(110deg, rgba(239,246,255,.9), rgba(255,255,255,.8)); }
+.student-review-status.is-approved { border-color: #b7e3d2; background: linear-gradient(110deg, rgba(236,253,245,.92), rgba(255,255,255,.8)); }
+.student-review-status.is-revision { border-color: rgba(245,158,11,.35); background: linear-gradient(110deg, rgba(255,247,237,.94), rgba(255,255,255,.8)); }
+.student-review-status-icon { display: grid; place-items: center; width: 2.35rem; height: 2.35rem; flex: 0 0 auto; color: #2563eb; border-radius: 9px; background: #dbeafe; }
+.student-review-status.is-approved .student-review-status-icon { color: #047857; background: #dff8ed; }
+.student-review-status.is-revision .student-review-status-icon { color: #b45309; background: #ffedd5; }
+.student-review-status-copy { display: grid; min-width: 0; flex: 1; gap: .2rem; }
+.student-review-status-copy .eyebrow { margin: 0; }
+.student-review-status-copy h2 { margin: 0; color: var(--primary); font-size: 1rem; }
+.student-review-status-copy p { margin: .1rem 0 .2rem; color: var(--muted); font-size: .74rem; line-height: 1.5; }
+.student-review-status-copy small { color: #718096; font-size: .63rem; font-weight: 700; }
+.student-review-status > .status-chip { margin-left: auto; }
+.student-review-status-note { display: flex; align-items: flex-start; gap: .4rem; margin: .35rem 0; padding: .55rem .65rem; border-left: 3px solid #f59e0b; color: #6b4b0b; background: rgba(255,247,237,.82); font-size: .72rem; line-height: 1.45; }
+.student-review-status-note svg { flex: 0 0 auto; margin-top: .05rem; }
+.student-latest-review { display: grid; gap: .7rem; padding: .9rem; border: 1px solid #dce9e6; border-radius: 9px; background: rgba(248,251,251,.66); }
+.student-latest-review-head, .review-timeline-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.student-latest-review-head > div, .review-timeline-heading > div { display: grid; gap: .2rem; }
+.student-latest-review-head strong, .review-timeline-heading h3 { color: var(--primary); font-size: .85rem; }
+.student-latest-review-head span { color: var(--muted); font-size: .68rem; }
+.review-timeline-heading { margin-top: .3rem; padding-top: .9rem; border-top: 1px solid #dce9e6; }
+.review-timeline-heading h3 { margin: 0; font-size: 1rem; }
+.review-timeline { display: grid; gap: .7rem; }
+.review-timeline-item { position: relative; display: flex; align-items: flex-start; gap: .7rem; padding: .75rem .85rem .75rem 0; border-bottom: 1px solid #edf2f4; }
+.review-timeline-item:last-child { border-bottom: 0; }
+.review-timeline-marker { display: grid; place-items: center; width: 1.8rem; height: 1.8rem; flex: 0 0 auto; color: #2563eb; border: 1px solid #bfdbfe; border-radius: 50%; background: #eff6ff; }
+.review-timeline-item.is-success .review-timeline-marker { color: #047857; border-color: #b7e3d2; background: #ecfdf5; }
+.review-timeline-item.is-attention .review-timeline-marker { color: #b45309; border-color: #fed7aa; background: #fff7ed; }
+.review-timeline-content { display: grid; min-width: 0; flex: 1; gap: .35rem; }
+.review-timeline-top { display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; }
+.review-timeline-top > div { display: grid; min-width: 0; gap: .2rem; }
+.review-timeline-top strong { color: var(--primary); font-size: .76rem; }
+.review-timeline-top span, .review-timeline-content p { color: var(--muted); font-size: .68rem; line-height: 1.45; }
+.review-timeline-content p { margin: 0; }
+.review-timeline-content .tag { width: fit-content; }
+.student-reviewed-document-modal { width: min(1180px, calc(100vw - 1rem)); }
+.student-reviewed-document-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
+.student-reviewed-document-head > div { min-width: 0; flex: 1; }
+.student-reviewed-document-viewer { display: grid; min-height: 0; gap: .55rem; }
+.student-reviewed-document-toolbar { display: flex; align-items: center; justify-content: space-between; gap: .8rem; color: var(--primary); font-size: .7rem; font-weight: 800; }
+.student-reviewed-document-toolbar > span:first-child { display: inline-flex; align-items: center; gap: .35rem; }
+.student-reviewed-document-stage { min-height: min(68vh, 720px); }
+.student-reviewed-document-stage .PdfHighlighter { height: 100%; }
+.student-reviewed-document-stage .pdfViewer { min-height: 100%; padding: 1.2rem 0 2rem; }
+.student-reviewed-document-stage .page { margin: 0 auto 1rem; box-shadow: 0 12px 28px -16px rgba(0,0,0,.75); }
 .student-submission-preview { display: grid; gap: .7rem; padding-top: .25rem; }
 .student-submission-preview summary { display: inline-flex; align-items: center; gap: .4rem; width: fit-content; cursor: pointer; color: var(--primary); font-size: .75rem; font-weight: 800; }
 .student-submission-preview .pdf-frame { min-height: 460px; }
@@ -286,7 +339,9 @@ main { min-height: calc(100vh - 76px); }
 .document-arrow-mark svg { width: 100%; height: 100%; overflow: visible; }
 .document-arrow-mark line { stroke: #dc2626; stroke-width: 4; vector-effect: non-scaling-stroke; }
 .document-arrow-mark marker path { fill: #dc2626; }
+.document-circle-mark { position: absolute; z-index: 4; border: 3px solid #ef4444; border-radius: 50%; background: rgba(239,68,68,.08); box-shadow: 0 0 0 2px rgba(255,255,255,.8); pointer-events: none; }
 .document-comment-badge { position: absolute; z-index: 8; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 2px solid white; border-radius: 50%; color: white; background: #2563eb; box-shadow: 0 5px 12px -6px rgba(15,23,42,.9); cursor: pointer; }
+.document-comment-badge.is-readonly { cursor: help; pointer-events: none; }
 .document-comment-badge:hover { background: #1d4ed8; transform: scale(1.08); }
 .document-context-menu { position: absolute; z-index: 20; min-width: 150px; padding: .3rem; border: 1px solid #cbd8dd; border-radius: 8px; background: white; box-shadow: 0 16px 30px -18px rgba(15,23,42,.8); }
 .document-context-menu button { display: flex; align-items: center; gap: .45rem; width: 100%; padding: .55rem .65rem; border: 0; border-radius: 6px; color: #102a43; background: transparent; font-size: .72rem; font-weight: 800; text-align: left; }

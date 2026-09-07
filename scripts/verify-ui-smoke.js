@@ -76,7 +76,7 @@ assert(/pendingVerification/.test(source) && /Retry verification/.test(source) &
 assert(/project_versions/.test(source) && /version_number/.test(source) && /source: ['"]resubmission['"]/.test(source), 'project uploads have immutable numbered versions and explicit resubmissions');
 assert(/annotations/.test(source) && /Draw link \/ arrow/.test(source) && /Open full view/.test(source), 'supervisors can annotate projects in a full review view');
 assert(/document-comment-badge/.test(source) && /Add comment/.test(source) && /Delete mark/.test(source) && /Undo/.test(source), 'supervisor annotations support optional per-mark comments, deletion, and undo');
-assert(/Correction[s]? and version history/.test(source) && /Supervisor correction note/.test(source), 'students can view supervisor corrections and version history');
+assert(/Review activity and versions/.test(source) && /Supervisor correction note|Supervisor feedback is ready/.test(source) && /Open reviewed document/.test(source), 'students can view supervisor decisions, corrections, reviewed versions, and history');
 
 console.log('');
 console.log(`UI smoke verification complete: ${failures.length} failure(s).`);
