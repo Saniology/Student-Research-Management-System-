@@ -1,0 +1,29 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@deno/installer-shell-setup@*": "0.3.4"
+  },
+  "jsr": {
+    "@deno/installer-shell-setup@0.3.4": {
+      "integrity": "48665d1a737d487cce6874bc97bba70a5aeffa7053aca3f60df93c6fab8963b4"
+    }
+  },
+  "remote": {
+    "https://esm.sh/pdf-lib@1.17.1": "cf7c5527829cb9bbb3aa20d339c530067441c10eb98880360aea9e77c3c87ff8",
+    "https://esm.sh/qrcode-generator@2.0.4": "d7e31df2baf388323da44a2a10ee44cecd63882da8ac799605e13e7d436e34b2"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@playwright/test@^1.62.1",
+        "npm:@supabase/supabase-js@^2.112.2",
+        "npm:@vitejs/plugin-react@^6.0.5",
+        "npm:lucide-react@^1.30.0",
+        "npm:qrcode-generator@2.0.4",
+        "npm:react-dom@^19.2.8",
+        "npm:react@^19.2.8",
+        "npm:vite@^8.2.1"
+      ]
+    }
+  }
+}
