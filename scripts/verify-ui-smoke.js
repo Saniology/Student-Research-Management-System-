@@ -77,6 +77,7 @@ assert(/project_versions/.test(source) && /version_number/.test(source) && /sour
 assert(/annotations/.test(source) && /Draw link \/ arrow/.test(source) && /Open full view/.test(source), 'supervisors can annotate projects in a full review view');
 assert(/document-comment-badge/.test(source) && /Add comment/.test(source) && /Delete mark/.test(source) && /Undo/.test(source), 'supervisor annotations support optional per-mark comments, deletion, and undo');
 assert(/Review activity and versions/.test(source) && /Supervisor correction note|Supervisor feedback is ready/.test(source) && /Open reviewed document/.test(source), 'students can view supervisor decisions, corrections, reviewed versions, and history');
+assert(/ReadOnlyDocumentReview/.test(source) && /utilsRef=\{\(\) => \{\}\}/.test(source), 'student reviewed PDFs use the required highlighter utility ref');
 
 console.log('');
 console.log(`UI smoke verification complete: ${failures.length} failure(s).`);
