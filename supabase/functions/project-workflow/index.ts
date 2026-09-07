@@ -619,6 +619,7 @@ function normalizeAnnotations(value: unknown): Array<Record<string, unknown>> {
         annotation_type: ["highlight", "circle", "arrow", "note"].includes(String(mark.annotation_type)) ? mark.annotation_type : "highlight",
         position: { boundingRect: normalizeRect(boundingRect), rects: rects.slice(0, 40).map(normalizeRect) },
         content: { text: typeof (mark.content as Record<string, unknown>)?.text === "string" ? String((mark.content as Record<string, unknown>).text).slice(0, 2000) : "" },
+        comment: typeof mark.comment === "string" ? mark.comment.slice(0, 1000) : undefined,
         note: typeof mark.note === "string" ? mark.note.slice(0, 500) : undefined,
       };
     }

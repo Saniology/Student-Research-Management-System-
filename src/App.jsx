@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Archive, ArrowRight, Bell, BookOpen, Check, CheckCircle2, ChevronDown, Circle, CircleDollarSign, Download, Eye, EyeOff, FileCheck2, FileText, GraduationCap, Library, LockKeyhole, Mail, PencilLine, Phone, Plus, QrCode, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, UserCheck, UserCircle, UserPlus, Users, XCircle } from 'lucide-react';
+import { Archive, ArrowRight, Bell, BookOpen, Check, CheckCircle2, ChevronDown, Circle, CircleDollarSign, Download, Eye, EyeOff, FileCheck2, FileText, GraduationCap, Library, LockKeyhole, Mail, MessageCircle, PencilLine, Phone, Plus, QrCode, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, Undo2, UserCheck, UserCircle, UserPlus, Users, XCircle } from 'lucide-react';
 import { AreaHighlight, PdfHighlighter, PdfLoader, TextHighlight, useHighlightContainerContext } from 'react-pdf-highlighter-extended';
 import qrcode from 'qrcode-generator';
 import { AppShell, EmptyState, SearchBox, SectionHeader } from './components/AppShell';
@@ -869,7 +869,8 @@ function ProjectFeedbackPanel({ versions = [], reviews = [] }) {
 }
 
 function ReviewAnnotationPreview({ annotations = [] }) {
-  return <div className="student-annotation-preview"><div className="student-annotation-paper"><span>Supervisor PDF correction marks</span><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Saved supervisor correction arrows">{annotations.map((mark, index) => <line key={index} x1={mark.x1} y1={mark.y1} x2={mark.x2} y2={mark.y2} markerEnd="url(#student-review-arrowhead)" />)}<defs><marker id="student-review-arrowhead" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" /></marker></defs></svg></div><small className="helper">Open the latest submission preview to review these correction marks.</small></div>;
+  const comments = annotations.filter(mark => mark.comment || mark.note);
+  return <div className="student-annotation-preview"><div className="student-annotation-paper"><span>Supervisor PDF correction marks</span><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Saved supervisor correction arrows">{annotations.filter(mark => mark.type === 'arrow' || (!mark.position && mark.x1 !== undefined)).map((mark, index) => <line key={index} x1={mark.x1} y1={mark.y1} x2={mark.x2} y2={mark.y2} markerEnd="url(#student-review-arrowhead)" />)}<defs><marker id="student-review-arrowhead" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" /></marker></defs></svg></div>{comments.length > 0 && <div className="student-annotation-comments">{comments.map((mark, index) => <div className="student-annotation-comment" key={mark.id || index}><MessageCircle size={14} /><span>{mark.comment || mark.note}</span></div>)}</div>}<small className="helper">Open the latest submission preview to review these correction marks and comments.</small></div>;
 }
 
 function StudentPaymentEvidence({ payment, project, receipt, receiptQrUrl, generateReceipt, onReceipt, pendingVerification, retryPendingVerification, submitting }) {
@@ -1001,15 +1002,19 @@ function createAnnotationId() {
 function FullDocumentHighlight() {
   const { highlight, isScrolledTo, highlightBindings } = useHighlightContainerContext();
   const annotationType = highlight.annotation_type || highlight.type;
+  const comment = highlight.comment || highlight.note;
+  const openComment = event => { event.preventDefault(); event.stopPropagation(); highlight.onComment?.(highlight.id, event); };
+  const firstRect = highlight.position.rects?.[0] || highlight.position.boundingRect;
+  const badge = <button className="document-comment-badge" type="button" style={{ left: firstRect.left, top: Math.max(4, firstRect.top - 25) }} onClick={openComment} title={comment || 'Add a comment or delete this mark'} aria-label={comment ? 'Edit highlight comment' : 'Add comment to highlight'}><MessageCircle size={13} /></button>;
   if (annotationType === 'circle') {
-    return <AreaHighlight highlight={highlight} isScrolledTo={isScrolledTo} bounds={highlightBindings.textLayer} style={{ border: '3px solid #ef4444', borderRadius: '50%', background: 'rgba(239,68,68,.08)', boxShadow: '0 0 0 2px rgba(255,255,255,.8)', pointerEvents: 'none' }} />;
+    return <><AreaHighlight highlight={highlight} isScrolledTo={isScrolledTo} bounds={highlightBindings.textLayer} onContextMenu={openComment} style={{ border: '3px solid #ef4444', borderRadius: '50%', background: 'rgba(239,68,68,.08)', boxShadow: '0 0 0 2px rgba(255,255,255,.8)' }} />{badge}</>;
   }
   if (annotationType === 'arrow') {
     const box = highlight.position.boundingRect;
     const markerId = `review-arrow-${highlight.id}`;
-    return <div className="document-arrow-mark" style={{ left: box.left, top: box.top, width: Math.max(box.width, 24), height: Math.max(box.height, 24) }}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Arrow correction"><defs><marker id={markerId} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker></defs><line x1="8" y1="88" x2="92" y2="12" markerEnd={`url(#${markerId})`} /></svg></div>;
+    return <><div className="document-arrow-mark" style={{ left: box.left, top: box.top, width: Math.max(box.width, 24), height: Math.max(box.height, 24) }} onContextMenu={openComment}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Arrow correction"><defs><marker id={markerId} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker></defs><line x1="8" y1="88" x2="92" y2="12" markerEnd={`url(#${markerId})`} /></svg></div>{badge}</>;
   }
-  return <TextHighlight highlight={highlight} isScrolledTo={isScrolledTo} style={{ background: 'rgba(250,204,21,.56)', boxShadow: 'inset 0 -2px 0 #d97706' }} />;
+  return <><TextHighlight highlight={highlight} isScrolledTo={isScrolledTo} onClick={openComment} onContextMenu={openComment} style={{ background: annotationType === 'note' ? 'rgba(59,130,246,.12)' : 'rgba(250,204,21,.56)', boxShadow: annotationType === 'note' ? 'inset 0 -2px 0 #2563eb' : 'inset 0 -2px 0 #d97706' }} />{badge}</>;
 }
 
 function FullDocumentReview({ path, annotations = [], onChange }) {
@@ -1017,19 +1022,49 @@ function FullDocumentReview({ path, annotations = [], onChange }) {
   const [error, setError] = useState('');
   const [tool, setTool] = useState('select');
   const [noteText, setNoteText] = useState('');
+  const [pendingSelection, setPendingSelection] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
+  const [commentEditor, setCommentEditor] = useState(null);
+  const [undoStack, setUndoStack] = useState([]);
+  const stageRef = useRef(null);
   useEffect(() => { let active = true; setUrl(''); setError(''); signedPdfUrl(path).then(value => { if (active) setUrl(value); }).catch(err => { if (active) setError(err.message || 'The private PDF could not be opened.'); }); return () => { active = false; }; }, [path]);
-  const marks = annotations.filter(item => item?.position).map(item => ({ ...item, id: item.id || createAnnotationId(), type: item.annotation_type === 'circle' || item.annotation_type === 'arrow' ? 'area' : 'text' }));
+  useEffect(() => { const closeMenu = () => setContextMenu(null); document.addEventListener('mousedown', closeMenu); return () => document.removeEventListener('mousedown', closeMenu); }, []);
+  const relativePoint = event => { const rect = stageRef.current?.getBoundingClientRect(); return rect ? { x: Math.max(12, event.clientX - rect.left), y: Math.max(12, event.clientY - rect.top) } : { x: 24, y: 24 }; };
+  const updateMarks = next => { setUndoStack(history => [...history, annotations].slice(-30)); onChange(next); };
+  const openMarkComment = (id, event) => { const mark = annotations.find(item => item.id === id); setCommentEditor({ markId: id, x: relativePoint(event), value: mark?.comment || mark?.note || '' }); setContextMenu(null); };
   const saveSelection = selection => {
-    if (!selection || !['highlight', 'circle', 'arrow', 'note'].includes(tool)) return;
+    if (!selection) return;
+    setPendingSelection(selection);
+    if (tool === 'select') return;
+    if (tool === 'note' && !noteText.trim()) { setCommentEditor({ selection, x: { x: 24, y: 24 }, value: '' }); setTool('select'); return; }
     const isText = tool === 'highlight' || tool === 'note';
     const next = { id: createAnnotationId(), type: isText ? 'text' : 'area', annotation_type: tool, position: selection.position, content: selection.content || {} };
-    if (tool === 'note') next.note = noteText.trim() || 'Review note';
-    onChange([...annotations, next]);
+    if (tool === 'note') next.comment = noteText.trim();
+    updateMarks([...annotations, next]);
     setTool('select');
   };
-  const clearMarks = () => onChange([]);
+  const handleContextMenu = event => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (!target?.closest('.textLayer') || !pendingSelection) return;
+    event.preventDefault();
+    setContextMenu({ ...relativePoint(event), selection: pendingSelection });
+    setCommentEditor(null);
+  };
+  const openContextComment = () => { if (!contextMenu) return; setCommentEditor({ selection: contextMenu.selection, x: { x: contextMenu.x, y: contextMenu.y }, value: '' }); setContextMenu(null); };
+  const saveComment = () => {
+    if (!commentEditor) return;
+    const value = commentEditor.value.trim();
+    if (commentEditor.markId) updateMarks(annotations.map(item => item.id === commentEditor.markId ? { ...item, comment: value || undefined, note: undefined } : item));
+    else if (commentEditor.selection && value) updateMarks([...annotations, { id: createAnnotationId(), type: 'text', annotation_type: 'note', position: commentEditor.selection.position, content: commentEditor.selection.content || {}, comment: value }]);
+    setCommentEditor(null);
+  };
+  const removeComment = () => { if (!commentEditor?.markId) return; updateMarks(annotations.map(item => item.id === commentEditor.markId ? { ...item, comment: undefined, note: undefined } : item)); setCommentEditor(null); };
+  const deleteMark = () => { if (!commentEditor?.markId) return; updateMarks(annotations.filter(item => item.id !== commentEditor.markId)); setCommentEditor(null); };
+  const clearMarks = () => updateMarks([]);
+  const undo = () => { if (!undoStack.length) return; const previous = undoStack[undoStack.length - 1]; setUndoStack(history => history.slice(0, -1)); onChange(previous); };
+  const marks = annotations.filter(item => item?.position).map(item => ({ ...item, id: item.id || createAnnotationId(), type: item.annotation_type === 'circle' || item.annotation_type === 'arrow' ? 'area' : 'text', onComment: openMarkComment }));
   if (!url) return <div className="pdf-review-viewer full-document-review"><div className="review-viewer-toolbar"><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage"><div className="review-pdf-placeholder"><FileText size={28} color="#065f46" /><strong>{error ? 'Preview unavailable' : 'Preparing full document view'}</strong><span>{error || 'Creating a short-lived secure PDF preview.'}</span></div></div></div>;
-  return <div className="pdf-review-viewer full-document-review"><div className="document-toolbox" role="toolbar" aria-label="Document annotation tools"><button className={`document-tool ${tool === 'select' ? 'is-active' : ''}`} type="button" onClick={() => setTool('select')} title="Select and scroll"><Eye size={15} />Select</button><button className={`document-tool ${tool === 'highlight' ? 'is-active' : ''}`} type="button" onClick={() => setTool('highlight')} title="Select text to highlight"><PencilLine size={15} />Highlight</button><button className={`document-tool ${tool === 'circle' ? 'is-active' : ''}`} type="button" onClick={() => setTool('circle')} title="Drag around a correction"><Circle size={15} />Circle</button><button className={`document-tool ${tool === 'arrow' ? 'is-active' : ''}`} type="button" onClick={() => setTool('arrow')} title="Drag an arrow to a correction"><ArrowRight size={15} />Arrow</button><label className="document-note-tool"><PencilLine size={15} /><input value={noteText} onChange={event => setNoteText(event.target.value)} placeholder="Optional note" aria-label="Optional note text" /></label><button className="button button-ghost button-small" type="button" disabled={!annotations.length} onClick={clearMarks}><XCircle size={14} />Clear marks</button><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage"><PdfLoader document={url} workerSrc={pdfWorkerSrc} beforeLoad={() => <div className="review-pdf-placeholder"><RefreshCw size={24} className="spin" color="#065f46" /><strong>Rendering document</strong><span>Loading the PDF text layer and review surface.</span></div>} errorMessage={loadError => <div className="review-pdf-placeholder"><FileText size={24} color="#b91c1c" /><strong>PDF could not be rendered</strong><span>{loadError.message}</span></div>} onError={loadError => setError(loadError.message)}>{pdfDocument => <PdfHighlighter pdfDocument={pdfDocument} highlights={marks} pdfScaleValue="page-width" onSelection={saveSelection} enableAreaSelection={() => tool === 'circle' || tool === 'arrow'} selectionTip={<div className="selection-tip">Release to place this mark</div>} textSelectionColor="rgba(250,204,21,.35)" utilsRef={() => {}} style={{ position: 'absolute', inset: 0 }}><FullDocumentHighlight /></PdfHighlighter>}</PdfLoader></div></div>;
+  return <div className="pdf-review-viewer full-document-review"><div className="document-toolbox" role="toolbar" aria-label="Document annotation tools"><button className={`document-tool ${tool === 'select' ? 'is-active' : ''}`} type="button" onClick={() => setTool('select')} title="Select and scroll"><Eye size={15} />Select</button><button className={`document-tool ${tool === 'highlight' ? 'is-active' : ''}`} type="button" onClick={() => setTool('highlight')} title="Select text to highlight"><PencilLine size={15} />Highlight</button><button className={`document-tool ${tool === 'circle' ? 'is-active' : ''}`} type="button" onClick={() => setTool('circle')} title="Drag around a correction"><Circle size={15} />Circle</button><button className={`document-tool ${tool === 'arrow' ? 'is-active' : ''}`} type="button" onClick={() => setTool('arrow')} title="Drag an arrow to a correction"><ArrowRight size={15} />Arrow</button><button className={`document-tool ${tool === 'note' ? 'is-active' : ''}`} type="button" onClick={() => setTool('note')} title="Select text and attach a comment"><MessageCircle size={15} />Comment</button><label className="document-note-tool"><PencilLine size={15} /><input value={noteText} onChange={event => setNoteText(event.target.value)} placeholder="Optional comment" aria-label="Optional comment text" /></label><button className="button button-ghost button-small" type="button" disabled={!undoStack.length} onClick={undo} title="Undo last annotation change"><Undo2 size={14} />Undo</button><button className="button button-ghost button-small" type="button" disabled={!annotations.length} onClick={clearMarks}><XCircle size={14} />Clear all</button><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage" ref={stageRef} onContextMenu={handleContextMenu}><PdfLoader document={url} workerSrc={pdfWorkerSrc} beforeLoad={() => <div className="review-pdf-placeholder"><RefreshCw size={24} className="spin" color="#065f46" /><strong>Rendering document</strong><span>Loading the PDF text layer and review surface.</span></div>} errorMessage={loadError => <div className="review-pdf-placeholder"><FileText size={24} color="#b91c1c" /><strong>PDF could not be rendered</strong><span>{loadError.message}</span></div>} onError={loadError => setError(loadError.message)}>{pdfDocument => <PdfHighlighter pdfDocument={pdfDocument} highlights={marks} pdfScaleValue="page-width" onSelection={saveSelection} enableAreaSelection={() => tool === 'circle' || tool === 'arrow'} selectionTip={<div className="selection-tip">Release to place this mark</div>} textSelectionColor="rgba(250,204,21,.35)" utilsRef={() => {}} style={{ position: 'absolute', inset: 0 }}><FullDocumentHighlight /></PdfHighlighter>}</PdfLoader>{contextMenu && <div className="document-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onMouseDown={event => event.stopPropagation()}><button type="button" onClick={openContextComment}><MessageCircle size={14} />Add comment</button></div>}{commentEditor && <div className="document-comment-editor" style={{ left: commentEditor.x.x, top: commentEditor.x.y }} onMouseDown={event => event.stopPropagation()}><strong>{commentEditor.markId ? 'Comment on this mark' : 'Comment on selected text'}</strong><textarea autoFocus value={commentEditor.value} onChange={event => setCommentEditor({ ...commentEditor, value: event.target.value })} placeholder="Optional correction comment" /><div className="document-comment-editor-actions"><button className="button button-ghost button-small" type="button" onClick={() => setCommentEditor(null)}>Cancel</button>{commentEditor.markId && <button className="button button-danger button-small" type="button" onClick={deleteMark}>Delete mark</button>}{commentEditor.markId && <button className="button button-ghost button-small" type="button" onClick={removeComment}>Remove comment</button>}<button className="button button-primary button-small" type="button" disabled={!commentEditor.value.trim()} onClick={saveComment}>Save comment</button></div></div>}</div></div>;
 }
 
 function SupervisorProjectTable({ projects, canReview, onReview }) {

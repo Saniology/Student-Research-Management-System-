@@ -75,6 +75,7 @@ assert(/downloadReceiptPdf/.test(source) && /Download receipt PDF/.test(source),
 assert(/pendingVerification/.test(source) && /Retry verification/.test(source) && /localStorage/.test(source), 'students can retry failed payment verification without a second charge');
 assert(/project_versions/.test(source) && /version_number/.test(source) && /source: ['"]resubmission['"]/.test(source), 'project uploads have immutable numbered versions and explicit resubmissions');
 assert(/annotations/.test(source) && /Draw link \/ arrow/.test(source) && /Open full view/.test(source), 'supervisors can annotate projects in a full review view');
+assert(/document-comment-badge/.test(source) && /Add comment/.test(source) && /Delete mark/.test(source) && /Undo/.test(source), 'supervisor annotations support optional per-mark comments, deletion, and undo');
 assert(/Correction[s]? and version history/.test(source) && /Supervisor correction note/.test(source), 'students can view supervisor corrections and version history');
 
 console.log('');

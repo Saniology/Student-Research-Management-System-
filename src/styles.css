@@ -251,6 +251,9 @@ main { min-height: calc(100vh - 76px); }
 .student-annotation-paper svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .student-annotation-paper line { stroke: #ef4444; stroke-width: 1.3; vector-effect: non-scaling-stroke; }
 .student-annotation-paper marker path { fill: #ef4444; }
+.student-annotation-comments { display: grid; gap: .4rem; }
+.student-annotation-comment { display: flex; align-items: flex-start; gap: .4rem; padding: .55rem .65rem; border: 1px solid #bfdbfe; border-radius: 7px; color: #1e3a8a; background: #eff6ff; font-size: .7rem; line-height: 1.45; }
+.student-annotation-comment svg { flex: 0 0 auto; margin-top: .05rem; }
 .student-submission-preview { display: grid; gap: .7rem; padding-top: .25rem; }
 .student-submission-preview summary { display: inline-flex; align-items: center; gap: .4rem; width: fit-content; cursor: pointer; color: var(--primary); font-size: .75rem; font-weight: 800; }
 .student-submission-preview .pdf-frame { min-height: 460px; }
@@ -283,6 +286,15 @@ main { min-height: calc(100vh - 76px); }
 .document-arrow-mark svg { width: 100%; height: 100%; overflow: visible; }
 .document-arrow-mark line { stroke: #dc2626; stroke-width: 4; vector-effect: non-scaling-stroke; }
 .document-arrow-mark marker path { fill: #dc2626; }
+.document-comment-badge { position: absolute; z-index: 8; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 2px solid white; border-radius: 50%; color: white; background: #2563eb; box-shadow: 0 5px 12px -6px rgba(15,23,42,.9); cursor: pointer; }
+.document-comment-badge:hover { background: #1d4ed8; transform: scale(1.08); }
+.document-context-menu { position: absolute; z-index: 20; min-width: 150px; padding: .3rem; border: 1px solid #cbd8dd; border-radius: 8px; background: white; box-shadow: 0 16px 30px -18px rgba(15,23,42,.8); }
+.document-context-menu button { display: flex; align-items: center; gap: .45rem; width: 100%; padding: .55rem .65rem; border: 0; border-radius: 6px; color: #102a43; background: transparent; font-size: .72rem; font-weight: 800; text-align: left; }
+.document-context-menu button:hover { color: var(--primary); background: #e8f7f1; }
+.document-comment-editor { position: absolute; z-index: 21; width: min(360px, calc(100% - 24px)); padding: .8rem; border: 1px solid #b8cbd2; border-radius: 10px; background: rgba(255,255,255,.98); box-shadow: 0 20px 42px -20px rgba(15,23,42,.8); }
+.document-comment-editor strong { display: block; margin-bottom: .5rem; color: var(--primary); font-size: .75rem; }
+.document-comment-editor textarea { width: 100%; min-height: 72px; resize: vertical; }
+.document-comment-editor-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: .35rem; margin-top: .55rem; }
 .document-review-footer { display: flex; align-items: end; flex: 0 0 auto; justify-content: space-between; gap: 1rem; }
 .document-review-comment { min-width: 0; flex: 1; }
 .document-review-comment textarea { min-height: 48px; height: 48px; max-height: 48px; }
