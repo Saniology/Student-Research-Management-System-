@@ -1060,7 +1060,7 @@ function FullDocumentHighlight() {
   const comment = highlight.comment || highlight.note;
   const interactive = Boolean(highlight.onComment);
   const openComment = event => { event.preventDefault(); event.stopPropagation(); highlight.onComment?.(highlight.id, event); };
-  const firstRect = highlight.position.rects?.[0] || highlight.position.boundingRect;
+  const firstRect = highlight.position.rects?.[0] || highlight.position.boundingRect || { left: 0, top: 0 };
   const badge = (interactive || comment) ? (interactive ? <button className="document-comment-badge" type="button" style={{ left: firstRect.left, top: Math.max(4, firstRect.top - 25) }} onClick={openComment} title={comment || 'Add a comment or delete this mark'} aria-label={comment ? 'Edit highlight comment' : 'Add comment to highlight'}><MessageCircle size={13} /></button> : <span className="document-comment-badge is-readonly" style={{ left: firstRect.left, top: Math.max(4, firstRect.top - 25) }} title={comment} aria-label="Supervisor comment"><MessageCircle size={13} /></span>) : null;
   if (annotationType === 'circle') {
     const box = highlight.position.boundingRect;
@@ -1069,9 +1069,9 @@ function FullDocumentHighlight() {
   if (annotationType === 'arrow') {
     const box = highlight.position.boundingRect;
     const markerId = `review-arrow-${highlight.id}`;
-    return <><div className="document-arrow-mark" style={{ left: box.left, top: box.top, width: Math.max(box.width, 24), height: Math.max(box.height, 24) }} onContextMenu={openComment}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Arrow correction"><defs><marker id={markerId} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker></defs><line x1="8" y1="88" x2="92" y2="12" markerEnd={`url(#${markerId})`} /></svg></div>{badge}</>;
+    return <><div className="document-arrow-mark" style={{ left: box.left, top: box.top, width: Math.max(box.width, 24), height: Math.max(box.height, 24) }} onContextMenu={interactive ? openComment : undefined}><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Arrow correction"><defs><marker id={markerId} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" /></marker></defs><line x1="8" y1="88" x2="92" y2="12" markerEnd={`url(#${markerId})`} /></svg></div>{badge}</>;
   }
-  return <><TextHighlight highlight={highlight} isScrolledTo={isScrolledTo} onClick={openComment} onContextMenu={openComment} style={{ background: annotationType === 'note' ? 'rgba(59,130,246,.12)' : 'rgba(250,204,21,.56)', boxShadow: annotationType === 'note' ? 'inset 0 -2px 0 #2563eb' : 'inset 0 -2px 0 #d97706' }} />{badge}</>;
+  return <><TextHighlight highlight={highlight} isScrolledTo={isScrolledTo} onClick={interactive ? openComment : undefined} onContextMenu={interactive ? openComment : undefined} style={{ background: annotationType === 'note' ? 'rgba(59,130,246,.12)' : 'rgba(250,204,21,.56)', boxShadow: annotationType === 'note' ? 'inset 0 -2px 0 #2563eb' : 'inset 0 -2px 0 #d97706' }} />{badge}</>;
 }
 
 function ReadOnlyDocumentReview({ path, annotations = [] }) {
