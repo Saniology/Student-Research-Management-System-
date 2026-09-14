@@ -1091,7 +1091,7 @@ function annotationRectToScaled(rect, pageNumber = 1) {
   return { x1: left, y1: top, x2: left + width, y2: top + height, width: 100, height: 100, pageNumber: Number(rect.pageNumber) || pageNumber };
 }
 
-function documentMarks(annotations = [], onComment) {
+function documentMarks(annotations = [], onComment, commentsOnly = false) {
   return annotations.map(item => {
     if (item?.type === 'arrow' && !item.position) {
       const pageNumber = Number(item.pageNumber) || 1;
@@ -1111,7 +1111,7 @@ function documentMarks(annotations = [], onComment) {
       id: item.id || createAnnotationId(),
       type: item.annotation_type === 'circle' || item.annotation_type === 'arrow' ? 'area' : 'text',
       position: { ...position, boundingRect, rects: rects.filter(Boolean) },
-      ...(onComment ? { onComment } : {}),
+      ...(onComment && (!commentsOnly || item.comment || item.note) ? { onComment, ...(commentsOnly ? { readOnly: true } : {}) } : {}),
     };
   }).filter(Boolean);
 }
@@ -1121,9 +1121,10 @@ function FullDocumentHighlight() {
   const annotationType = highlight.annotation_type || highlight.type;
   const comment = highlight.comment || highlight.note;
   const interactive = Boolean(highlight.onComment);
+  const readOnly = Boolean(highlight.readOnly);
   const openComment = event => { event.preventDefault(); event.stopPropagation(); highlight.onComment?.(highlight.id, event); };
   const firstRect = highlight.position.rects?.[0] || highlight.position.boundingRect || { left: 0, top: 0 };
-  const badge = (interactive || comment) ? (interactive ? <button className="document-comment-badge" type="button" style={{ left: firstRect.left, top: Math.max(4, firstRect.top - 25) }} onClick={openComment} title={comment || 'Add a comment or delete this mark'} aria-label={comment ? 'Edit highlight comment' : 'Add comment to highlight'}><MessageCircle size={13} /></button> : <span className="document-comment-badge is-readonly" style={{ left: firstRect.left, top: Math.max(4, firstRect.top - 25) }} title={comment} aria-label="Supervisor comment"><MessageCircle size={13} /></span>) : null;
+  const badge = (interactive || comment) ? <button className={`document-comment-badge ${readOnly ? 'is-readonly' : ''}`} type="button" style={{ left: firstRect.left, top: Math.max(4, firstRect.top - 25) }} onClick={openComment} title={readOnly ? 'View supervisor comment' : (comment || 'Add a comment or delete this mark')} aria-label={readOnly ? 'View supervisor comment' : (comment ? 'Edit highlight comment' : 'Add comment to highlight')}><MessageCircle size={13} /></button> : null;
   if (annotationType === 'circle') {
     const box = highlight.position.boundingRect;
     return <><div className="document-circle-mark" style={{ left: box.left, top: box.top, width: Math.max(box.width, 18), height: Math.max(box.height, 18) }} onContextMenu={interactive ? openComment : undefined} />{badge}</>;
@@ -1194,6 +1195,7 @@ function ReadOnlyDocumentReview({ path, annotations = [] }) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [resolvedAnnotations, setResolvedAnnotations] = useState(annotations);
+  const [commentPopover, setCommentPopover] = useState(null);
   const stageRef = useRef(null);
   useEffect(() => { let active = true; setUrl(''); setError(''); if (!path) return undefined; signedPdfUrl(path).then(value => { if (active) setUrl(value); }).catch(err => { if (active) setError(err.message || 'The reviewed PDF could not be opened.'); }); return () => { active = false; }; }, [path]);
   useEffect(() => {
@@ -1216,9 +1218,22 @@ function ReadOnlyDocumentReview({ path, annotations = [] }) {
     if (observer) observer.observe(stageRef.current, { childList: true, subtree: true });
     return () => { observer?.disconnect(); clearTimeout(timer); };
   }, [annotations, url]);
-  const marks = documentMarks(resolvedAnnotations);
+  const openReadOnlyComment = (id, event) => {
+    const mark = resolvedAnnotations.find(item => item.id === id);
+    const comment = mark?.comment || mark?.note;
+    const stage = stageRef.current?.getBoundingClientRect();
+    const badge = event.currentTarget?.getBoundingClientRect?.();
+    if (!comment || !stage || !badge) return;
+    const popoverWidth = Math.min(320, Math.max(240, stage.width - 24));
+    setCommentPopover({
+      comment,
+      x: Math.min(Math.max(8, badge.right - stage.left + 8), Math.max(8, stage.width - popoverWidth - 8)),
+      y: Math.min(Math.max(8, badge.top - stage.top), Math.max(8, stage.height - 150)),
+    });
+  };
+  const marks = documentMarks(resolvedAnnotations, openReadOnlyComment, true);
   if (!url) return <div className="student-reviewed-document-viewer"><div className="review-pdf-placeholder"><FileText size={28} color="#065f46" /><strong>{error ? 'Reviewed PDF unavailable' : 'Preparing reviewed document'}</strong><span>{error || (path ? 'Creating a short-lived secure PDF preview.' : 'The annotated document will appear here for a real submission.')}</span></div>{annotations.length > 0 && <ReviewAnnotationPreview annotations={annotations} />}</div>;
-  return <div className="student-reviewed-document-viewer"><div className="student-reviewed-document-toolbar"><span><Eye size={14} />Read-only review view</span><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage student-reviewed-document-stage" ref={stageRef}><PdfLoader document={url} workerSrc={pdfWorkerSrc} beforeLoad={() => <div className="review-pdf-placeholder"><RefreshCw size={24} className="spin" color="#065f46" /><strong>Rendering reviewed document</strong><span>Loading the supervisor's marks over the PDF.</span></div>} errorMessage={loadError => <div className="review-pdf-placeholder"><FileText size={24} color="#b91c1c" /><strong>PDF could not be rendered</strong><span>{loadError.message}</span></div>} onError={loadError => setError(loadError.message)}>{pdfDocument => <PdfHighlighter pdfDocument={pdfDocument} highlights={marks} pdfScaleValue="page-width" enableAreaSelection={() => false} utilsRef={() => {}} style={{ position: 'absolute', inset: 0 }}><FullDocumentHighlight /></PdfHighlighter>}</PdfLoader></div></div>;
+  return <div className="student-reviewed-document-viewer"><div className="student-reviewed-document-toolbar"><span><Eye size={14} />Read-only review view</span><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage student-reviewed-document-stage" ref={stageRef}><PdfLoader document={url} workerSrc={pdfWorkerSrc} beforeLoad={() => <div className="review-pdf-placeholder"><RefreshCw size={24} className="spin" color="#065f46" /><strong>Rendering reviewed document</strong><span>Loading the supervisor's marks over the PDF.</span></div>} errorMessage={loadError => <div className="review-pdf-placeholder"><FileText size={24} color="#b91c1c" /><strong>PDF could not be rendered</strong><span>{loadError.message}</span></div>} onError={loadError => setError(loadError.message)}>{pdfDocument => <PdfHighlighter pdfDocument={pdfDocument} highlights={marks} pdfScaleValue="page-width" enableAreaSelection={() => false} utilsRef={() => {}} style={{ position: 'absolute', inset: 0 }}><FullDocumentHighlight /></PdfHighlighter>}</PdfLoader>{commentPopover && <div className="document-comment-popover" style={{ left: commentPopover.x, top: commentPopover.y }} role="status" onMouseDown={event => event.stopPropagation()}><div className="document-comment-popover-head"><strong><MessageCircle size={14} />Supervisor comment</strong><button type="button" onClick={() => setCommentPopover(null)} aria-label="Close supervisor comment"><XCircle size={15} /></button></div><p>{commentPopover.comment}</p><small>Read only. This comment is attached to the marked correction.</small></div>}</div></div>;
 }
 
 function FullDocumentReview({ path, annotations = [], onChange }) {

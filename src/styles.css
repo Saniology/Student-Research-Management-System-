@@ -342,8 +342,15 @@ main { min-height: calc(100vh - 76px); }
 .document-arrow-mark marker path { fill: #dc2626; }
 .document-circle-mark { position: absolute; z-index: 4; border: 3px solid #ef4444; border-radius: 50%; background: rgba(239,68,68,.08); box-shadow: 0 0 0 2px rgba(255,255,255,.8); pointer-events: none; }
 .document-comment-badge { position: absolute; z-index: 8; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 2px solid white; border-radius: 50%; color: white; background: #2563eb; box-shadow: 0 5px 12px -6px rgba(15,23,42,.9); cursor: pointer; }
-.document-comment-badge.is-readonly { cursor: help; pointer-events: none; }
+.document-comment-badge.is-readonly { cursor: pointer; pointer-events: auto; }
 .document-comment-badge:hover { background: #1d4ed8; transform: scale(1.08); }
+.document-comment-popover { position: absolute; z-index: 22; width: min(320px, calc(100% - 24px)); padding: .8rem .9rem; border: 1px solid #b8cbd2; border-radius: 10px; background: rgba(255,255,255,.98); box-shadow: 0 20px 42px -20px rgba(15,23,42,.8); }
+.document-comment-popover-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: var(--primary); }
+.document-comment-popover-head strong { display: inline-flex; align-items: center; gap: .4rem; font-size: .76rem; }
+.document-comment-popover-head button { display: grid; place-items: center; padding: .15rem; border: 0; color: #587089; background: transparent; cursor: pointer; }
+.document-comment-popover-head button:hover { color: var(--primary); }
+.document-comment-popover p { margin: .65rem 0 .45rem; color: #102a43; font-size: .82rem; line-height: 1.55; white-space: pre-wrap; }
+.document-comment-popover small { color: #587089; font-size: .68rem; }
 .document-context-menu { position: absolute; z-index: 20; min-width: 150px; padding: .3rem; border: 1px solid #cbd8dd; border-radius: 8px; background: white; box-shadow: 0 16px 30px -18px rgba(15,23,42,.8); }
 .document-context-menu button { display: flex; align-items: center; gap: .45rem; width: 100%; padding: .55rem .65rem; border: 0; border-radius: 6px; color: #102a43; background: transparent; font-size: .72rem; font-weight: 800; text-align: left; }
 .document-context-menu button:hover { color: var(--primary); background: #e8f7f1; }
