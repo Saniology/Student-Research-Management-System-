@@ -175,6 +175,9 @@ function checkLiveSmokeVerifier() {
 }
 
 contracts.forEach(checkCommonFunctionContract);
+const projectWorkflow = read('supabase/functions/project-workflow/index.ts');
+assert(/react-pdf-highlighter stores scaled coordinates/.test(projectWorkflow), 'project-workflow preserves PDF annotation coordinates');
+assert(/x1:\s*coordinate\(itemRect\.x1\)[\s\S]*width:\s*Math\.max\(0\.01, coordinate\(itemRect\.width\)\)/.test(projectWorkflow), 'project-workflow stores full annotation dimensions');
 const scheduledReports = read('supabase/functions/scheduled-reports/index.ts');
 assert(/"Content-Type":\s*"text\/csv"/.test(scheduledReports), 'scheduled reports upload uses the allowed CSV MIME type');
 assert(!/text\/csv;\s*charset/i.test(scheduledReports), 'scheduled reports upload does not append an unsupported CSV charset');

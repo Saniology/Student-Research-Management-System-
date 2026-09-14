@@ -1078,18 +1078,42 @@ function createAnnotationId() {
   return globalThis.crypto?.randomUUID?.() || `review-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function annotationRectToScaled(rect, pageNumber = 1) {
+  if (!rect) return null;
+  const numeric = value => Number.isFinite(Number(value)) ? Number(value) : 0;
+  if (rect.x1 !== undefined || rect.x2 !== undefined) {
+    return { ...rect, pageNumber: Number(rect.pageNumber) || pageNumber };
+  }
+  const left = numeric(rect.left);
+  const top = numeric(rect.top);
+  const width = Math.max(0.01, numeric(rect.width));
+  const height = Math.max(0.01, numeric(rect.height));
+  return { x1: left, y1: top, x2: left + width, y2: top + height, width: 100, height: 100, pageNumber: Number(rect.pageNumber) || pageNumber };
+}
+
 function documentMarks(annotations = [], onComment) {
-  return annotations.filter(item => item?.position?.boundingRect?.pageNumber).map(item => {
+  return annotations.map(item => {
+    if (item?.type === 'arrow' && !item.position) {
+      const pageNumber = Number(item.pageNumber) || 1;
+      const left = Math.min(Number(item.x1) || 0, Number(item.x2) || 0);
+      const top = Math.min(Number(item.y1) || 0, Number(item.y2) || 0);
+      const right = Math.max(Number(item.x1) || 0, Number(item.x2) || 0);
+      const bottom = Math.max(Number(item.y1) || 0, Number(item.y2) || 0);
+      item = { ...item, annotation_type: 'arrow', type: 'area', position: { boundingRect: { x1: left, y1: top, x2: right, y2: bottom, width: 100, height: 100, pageNumber }, rects: [] } };
+    }
+    if (!item?.position?.boundingRect?.pageNumber) return null;
     const position = item.position;
-    const rects = Array.isArray(position.rects) && position.rects.length ? position.rects : [position.boundingRect];
+    const pageNumber = Number(position.boundingRect.pageNumber) || 1;
+    const boundingRect = annotationRectToScaled(position.boundingRect, pageNumber);
+    const rects = Array.isArray(position.rects) && position.rects.length ? position.rects.map(rect => annotationRectToScaled(rect, pageNumber)) : [boundingRect];
     return {
       ...item,
       id: item.id || createAnnotationId(),
       type: item.annotation_type === 'circle' || item.annotation_type === 'arrow' ? 'area' : 'text',
-      position: { ...position, rects },
+      position: { ...position, boundingRect, rects: rects.filter(Boolean) },
       ...(onComment ? { onComment } : {}),
     };
-  });
+  }).filter(Boolean);
 }
 
 function FullDocumentHighlight() {
@@ -1112,13 +1136,89 @@ function FullDocumentHighlight() {
   return <><TextHighlight highlight={highlight} isScrolledTo={isScrolledTo} onClick={interactive ? openComment : undefined} onContextMenu={interactive ? openComment : undefined} style={{ background: annotationType === 'note' ? 'rgba(59,130,246,.12)' : 'rgba(250,204,21,.56)', boxShadow: annotationType === 'note' ? 'inset 0 -2px 0 #2563eb' : 'inset 0 -2px 0 #d97706' }} />{badge}</>;
 }
 
+function hasUsableScaledPosition(position) {
+  const rect = position?.boundingRect;
+  return rect && ['x1', 'y1', 'x2', 'y2', 'width', 'height'].every(key => Number.isFinite(Number(rect[key]))) && Number(rect.width) > 1 && Number(rect.height) > 1;
+}
+
+function normalizeSearchText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+}
+
+function findTextPosition(text, stage) {
+  const target = normalizeSearchText(text);
+  if (!target || !stage) return null;
+  const pages = [...stage.querySelectorAll('.page')];
+  for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+    const page = pages[pageIndex];
+    const pageRect = page.getBoundingClientRect();
+    const spans = [...page.querySelectorAll('.textLayer span')].map(span => ({ span, text: normalizeSearchText(span.textContent) })).filter(item => item.text);
+    let cursor = 0;
+    const textSpans = spans.map(item => {
+      const start = cursor;
+      cursor += item.text.length + 1;
+      return { ...item, start, end: cursor - 1 };
+    });
+    const combined = textSpans.map(item => item.text).join(' ');
+    const matchStart = combined.indexOf(target);
+    if (matchStart < 0) continue;
+    const matchEnd = matchStart + target.length;
+    const selected = textSpans.filter(item => item.end > matchStart && item.start < matchEnd);
+    const pageNumber = Number(page.dataset.pageNumber || page.getAttribute('data-page-number')) || pageIndex + 1;
+    const rects = selected.map(item => {
+      const rect = item.span.getBoundingClientRect();
+      const left = Math.max(0, rect.left - pageRect.left);
+      const top = Math.max(0, rect.top - pageRect.top);
+      return { x1: left, y1: top, x2: left + rect.width, y2: top + rect.height, width: pageRect.width, height: pageRect.height, pageNumber };
+    }).filter(rect => rect.width > 0 && rect.height > 0);
+    if (!rects.length) continue;
+    const left = Math.min(...rects.map(rect => rect.x1));
+    const top = Math.min(...rects.map(rect => rect.y1));
+    const right = Math.max(...rects.map(rect => rect.x2));
+    const bottom = Math.max(...rects.map(rect => rect.y2));
+    return { boundingRect: { x1: left, y1: top, x2: right, y2: bottom, width: pageRect.width, height: pageRect.height, pageNumber }, rects };
+  }
+  return null;
+}
+
+function recoverStudentAnnotationPositions(annotations, stage) {
+  return annotations.map(annotation => {
+    if (hasUsableScaledPosition(annotation.position)) return annotation;
+    const text = annotation.content?.text;
+    const position = findTextPosition(text, stage);
+    return position ? { ...annotation, type: 'text', annotation_type: annotation.annotation_type || 'highlight', position } : annotation;
+  });
+}
+
 function ReadOnlyDocumentReview({ path, annotations = [] }) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
+  const [resolvedAnnotations, setResolvedAnnotations] = useState(annotations);
+  const stageRef = useRef(null);
   useEffect(() => { let active = true; setUrl(''); setError(''); if (!path) return undefined; signedPdfUrl(path).then(value => { if (active) setUrl(value); }).catch(err => { if (active) setError(err.message || 'The reviewed PDF could not be opened.'); }); return () => { active = false; }; }, [path]);
-  const marks = documentMarks(annotations);
+  useEffect(() => {
+    setResolvedAnnotations(annotations);
+    if (!url) return undefined;
+    let attempts = 0;
+    let timer;
+    const recover = () => {
+      const stage = stageRef.current;
+      if (!stage) return;
+      const next = recoverStudentAnnotationPositions(annotations, stage);
+      setResolvedAnnotations(next);
+      if (!stage.querySelector('.textLayer span') && attempts < 20) {
+        attempts += 1;
+        timer = setTimeout(recover, 150);
+      }
+    };
+    recover();
+    const observer = typeof MutationObserver === 'undefined' || !stageRef.current ? null : new MutationObserver(recover);
+    if (observer) observer.observe(stageRef.current, { childList: true, subtree: true });
+    return () => { observer?.disconnect(); clearTimeout(timer); };
+  }, [annotations, url]);
+  const marks = documentMarks(resolvedAnnotations);
   if (!url) return <div className="student-reviewed-document-viewer"><div className="review-pdf-placeholder"><FileText size={28} color="#065f46" /><strong>{error ? 'Reviewed PDF unavailable' : 'Preparing reviewed document'}</strong><span>{error || (path ? 'Creating a short-lived secure PDF preview.' : 'The annotated document will appear here for a real submission.')}</span></div>{annotations.length > 0 && <ReviewAnnotationPreview annotations={annotations} />}</div>;
-  return <div className="student-reviewed-document-viewer"><div className="student-reviewed-document-toolbar"><span><Eye size={14} />Read-only review view</span><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage student-reviewed-document-stage"><PdfLoader document={url} workerSrc={pdfWorkerSrc} beforeLoad={() => <div className="review-pdf-placeholder"><RefreshCw size={24} className="spin" color="#065f46" /><strong>Rendering reviewed document</strong><span>Loading the supervisor's marks over the PDF.</span></div>} errorMessage={loadError => <div className="review-pdf-placeholder"><FileText size={24} color="#b91c1c" /><strong>PDF could not be rendered</strong><span>{loadError.message}</span></div>} onError={loadError => setError(loadError.message)}>{pdfDocument => <PdfHighlighter pdfDocument={pdfDocument} highlights={marks} pdfScaleValue="page-width" enableAreaSelection={() => false} utilsRef={() => {}} style={{ position: 'absolute', inset: 0 }}><FullDocumentHighlight /></PdfHighlighter>}</PdfLoader></div></div>;
+  return <div className="student-reviewed-document-viewer"><div className="student-reviewed-document-toolbar"><span><Eye size={14} />Read-only review view</span><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage student-reviewed-document-stage" ref={stageRef}><PdfLoader document={url} workerSrc={pdfWorkerSrc} beforeLoad={() => <div className="review-pdf-placeholder"><RefreshCw size={24} className="spin" color="#065f46" /><strong>Rendering reviewed document</strong><span>Loading the supervisor's marks over the PDF.</span></div>} errorMessage={loadError => <div className="review-pdf-placeholder"><FileText size={24} color="#b91c1c" /><strong>PDF could not be rendered</strong><span>{loadError.message}</span></div>} onError={loadError => setError(loadError.message)}>{pdfDocument => <PdfHighlighter pdfDocument={pdfDocument} highlights={marks} pdfScaleValue="page-width" enableAreaSelection={() => false} utilsRef={() => {}} style={{ position: 'absolute', inset: 0 }}><FullDocumentHighlight /></PdfHighlighter>}</PdfLoader></div></div>;
 }
 
 function FullDocumentReview({ path, annotations = [], onChange }) {
