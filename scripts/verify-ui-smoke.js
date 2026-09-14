@@ -30,6 +30,7 @@ assert(/supervisor_decision/.test(source) && /Approve Project/.test(source), 'su
 assert(/const canReview = status => \['submitted', 'supervisor_review'\]\.includes\(status\)/.test(source), 'revision requests leave the supervisor queue until resubmission');
 assert(/createSignedUrl|signedPdfUrl/.test(source) && /Private PDF preview/.test(source), 'supervisor private PDF preview exists');
 assert(/Assigned projects/.test(source) && /Assigned students/.test(source) && /Review history/.test(source) && /ProfileInformationModal/.test(source), 'supervisor dashboard has separate sidebar pages and a profile modal');
+assert(/View project/.test(source) && /readOnly = Boolean\(selected && !canReview/.test(source) && /Read-only project view/.test(source), 'supervisors can view completed projects without editing them');
 assert(/library_verify/.test(source) && /library_publish/.test(source) && /Verify metadata/.test(source), 'library metadata verification and publishing controls exist');
 assert(/library-queue/.test(source) && /library-catalogue/.test(source) && /library-qr/.test(source) && /library-archive/.test(source), 'library desk has separate sidebar pages');
 assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source), 'admin assignment controls exist');

@@ -359,6 +359,9 @@ main { min-height: calc(100vh - 76px); }
 .document-comment-editor textarea { width: 100%; min-height: 72px; resize: vertical; }
 .document-comment-editor-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: .35rem; margin-top: .55rem; }
 .document-review-footer { display: flex; align-items: end; flex: 0 0 auto; justify-content: space-between; gap: 1rem; }
+.review-readonly-comment { margin-top: 1rem; padding: .8rem .9rem; border: 1px solid #c9dce1; border-left: 3px solid var(--accent); border-radius: 8px; background: rgba(248,251,251,.9); }
+.review-readonly-comment strong { display: block; color: var(--primary); font-size: .74rem; }
+.review-readonly-comment p { margin: .45rem 0 0; color: #52637a; font-size: .78rem; line-height: 1.55; white-space: pre-wrap; }
 .document-review-comment { min-width: 0; flex: 1; }
 .document-review-comment textarea { min-height: 48px; height: 48px; max-height: 48px; }
 .document-review-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: .5rem; }
