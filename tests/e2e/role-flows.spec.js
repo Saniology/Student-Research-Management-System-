@@ -86,7 +86,8 @@ test.describe('SPMS role workflows', () => {
     await openPreview(page, 'library', 'open_catalog_record');
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.locator('#lib-comment-input')).toHaveValue('Preview catalog note for automated library interaction coverage.');
-    await expect(page.getByRole('button', { name: /Generate QR & Publish/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Save metadata', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Verify metadata', exact: true })).toBeVisible();
   });
 
   test('admin can open scheduled reporting controls', async ({ page }) => {

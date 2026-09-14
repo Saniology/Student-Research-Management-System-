@@ -32,8 +32,8 @@ const edgeContracts = [
   {
     functionName: 'project-workflow',
     file: files.projectWorkflow,
-    frontendActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_verify', 'library_publish', 'issue_receipt'],
-    handlerActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_verify', 'library_publish', 'issue_receipt'],
+    frontendActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_update_metadata', 'library_verify', 'library_publish', 'issue_receipt'],
+    handlerActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_update_metadata', 'library_verify', 'library_publish', 'issue_receipt'],
     requiredFields: ['project_id', 'decision', 'supervisor_id', 'file_path', 'file_name', 'course_id', 'shelf_number', 'verification_code'],
   },
   {

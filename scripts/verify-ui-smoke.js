@@ -31,7 +31,7 @@ assert(/const canReview = status => \['submitted', 'supervisor_review'\]\.includ
 assert(/createSignedUrl|signedPdfUrl/.test(source) && /Private PDF preview/.test(source), 'supervisor private PDF preview exists');
 assert(/Assigned projects/.test(source) && /Assigned students/.test(source) && /Review history/.test(source) && /ProfileInformationModal/.test(source), 'supervisor dashboard has separate sidebar pages and a profile modal');
 assert(/View project/.test(source) && /readOnly = Boolean\(selected && !canReview/.test(source) && /Read-only project view/.test(source), 'supervisors can view completed projects without editing them');
-assert(/library_verify/.test(source) && /library_publish/.test(source) && /Verify metadata/.test(source), 'library metadata verification and publishing controls exist');
+assert(/library_update_metadata/.test(source) && /library_verify/.test(source) && /library_publish/.test(source) && /Save metadata/.test(source) && /Verify metadata/.test(source), 'library metadata editing, verification, and publishing controls exist');
 assert(/library-queue/.test(source) && /library-catalogue/.test(source) && /library-qr/.test(source) && /library-archive/.test(source), 'library desk has separate sidebar pages');
 assert(/assign_supervisor/.test(source) && /Unassigned Review Queue/.test(source), 'admin assignment controls exist');
 assert(/payment_status/.test(source) && /Payment pending/.test(source) && /Payment required/.test(source), 'admin assignment coverage shows student payment status and blocks unpaid students');
@@ -51,6 +51,8 @@ assert(/GuestDownloadModal/.test(source) && /Account required/.test(source) && /
 assert(/receiptQrCommands/.test(source) && /qrcode-generator/.test(source), 'receipt PDF embeds a QR verification graphic');
 assert(/departmentScope/.test(source) && /department_name/.test(source), 'student repository browsing is department scoped');
 assert(/queueQuery/.test(source) && /queueStatus/.test(source), 'library queue has search and status filters');
+assert(/queueDepartment/.test(source) && /queueCourse/.test(source) && /queueDegree/.test(source) && /queueDate/.test(source), 'library queue has academic and date filters');
+assert(/issue_receipt/.test(source) && /Issue clearance receipt/.test(source) && /library-checklist/.test(source), 'library publication hands off to receipt clearance with a computed checklist');
 assert(/ProfileAvatar/.test(source) && /avatar_url/.test(source), 'staff review surfaces show student identity context');
 assert(/project\.project_id \? \{ \.\.\.project, id: project\.project_id \}/.test(source), 'public repository downloads use the underlying project identifier');
 assert(/public_catalog/.test(source) && /department_name/.test(source) && !/public_catalog.*author_name/.test(source), 'public repository reads the anonymized catalog schema');

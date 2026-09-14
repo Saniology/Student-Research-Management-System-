@@ -164,7 +164,7 @@ function checkProductCapabilities() {
   assertContains('supabase/spms-core.sql', /allowed_domains/, 'tenant domain mapping exists');
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS report_schedules/, 'scheduled report schema exists');
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS generated_reports/, 'generated report archive schema exists');
-  assertContains('supabase/spms-core.sql', /CREATE OR REPLACE VIEW admin_overview/, 'admin overview view exists');
+  assertContains('supabase/spms-core.sql', /(?:CREATE OR REPLACE VIEW|CREATE VIEW) admin_overview/, 'admin overview view exists');
   assertContains('supabase/spms-core.sql', /CREATE TABLE IF NOT EXISTS courses/, 'academic course schema exists');
   assertNotContains('supabase/spms-core.sql', /JOIN\s+departments[^\n]+(p|sr)\.department/, 'tenant department backfill avoids invalid UPDATE join aliases');
 

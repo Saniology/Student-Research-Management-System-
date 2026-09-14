@@ -55,7 +55,8 @@ const scenarios = [
       'data-role-preview-action="open_catalog_record"',
       'role="dialog" aria-modal="true"',
       'Preview catalog note for automated library interaction coverage.',
-      'Generate QR &amp; Publish',
+      'Save metadata',
+      'Verify metadata',
     ],
   },
   {
