@@ -373,7 +373,7 @@ async function handleSupervisorDecision(
     return jsonResponse({ error: "This student has not completed the clearance payment. Supervisor review is blocked.", code: "PAYMENT_REQUIRED", payment_status: "unpaid" }, 409);
   }
 
-  if (!["submitted", "supervisor_review", "revision_requested"].includes(project.status)) {
+  if (!["submitted", "supervisor_review"].includes(project.status)) {
     return jsonResponse({ error: `Project is not in supervisor review. Current status: ${project.status}` }, 409);
   }
 
@@ -605,7 +605,12 @@ function normalizeAnnotations(value: unknown): Array<Record<string, unknown>> {
   if (!Array.isArray(value)) return [];
   return value.slice(0, 100).filter(item => item && typeof item === "object").map(item => {
     const mark = item as Record<string, unknown>;
-    const clamp = (number: unknown, min = 0, max = 1) => Math.min(max, Math.max(min, Number(number) || 0));
+    // react-pdf-highlighter stores scaled coordinates in page pixels. Keep the
+    // page dimensions intact so the same marks can be rendered after reload.
+    const coordinate = (value: unknown, fallback = 0) => {
+      const number = Number(value);
+      return Number.isFinite(number) ? Math.min(100000, Math.max(0, number)) : fallback;
+    };
     const position = mark.position as Record<string, unknown> | undefined;
     const boundingRect = position?.boundingRect as Record<string, unknown> | undefined;
     if (position && boundingRect && Number(boundingRect.pageNumber) > 0) {
@@ -613,8 +618,11 @@ function normalizeAnnotations(value: unknown): Array<Record<string, unknown>> {
       const normalizeRect = (rect: unknown) => {
         const itemRect = (rect && typeof rect === "object" ? rect : {}) as Record<string, unknown>;
         return {
-          x1: clamp(itemRect.x1), y1: clamp(itemRect.y1), x2: clamp(itemRect.x2), y2: clamp(itemRect.y2),
-          width: clamp(itemRect.width), height: clamp(itemRect.height), pageNumber: Math.max(1, Math.floor(Number(itemRect.pageNumber) || Number(boundingRect.pageNumber))),
+          x1: coordinate(itemRect.x1), y1: coordinate(itemRect.y1),
+          x2: coordinate(itemRect.x2), y2: coordinate(itemRect.y2),
+          width: Math.max(0.01, coordinate(itemRect.width)),
+          height: Math.max(0.01, coordinate(itemRect.height)),
+          pageNumber: Math.max(1, Math.floor(Number(itemRect.pageNumber) || Number(boundingRect.pageNumber))),
         };
       };
       return {

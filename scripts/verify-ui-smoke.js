@@ -27,6 +27,7 @@ assert(/project-title-input|project-title/.test(source) && /thesis-pdf-input/.te
 assert(/student-overview/.test(source) && /student-submission/.test(source) && /student-payments/.test(source) && /student-receipt/.test(source) && /ProfileInformationModal/.test(source), 'student dashboard has separate sidebar pages and a profile modal');
 assert(/student_resubmit/.test(source) && /Upload Revision/.test(source), 'student revision workflow exists');
 assert(/supervisor_decision/.test(source) && /Approve Project/.test(source), 'supervisor decision controls exist');
+assert(/const canReview = status => \['submitted', 'supervisor_review'\]\.includes\(status\)/.test(source), 'revision requests leave the supervisor queue until resubmission');
 assert(/createSignedUrl|signedPdfUrl/.test(source) && /Private PDF preview/.test(source), 'supervisor private PDF preview exists');
 assert(/Assigned projects/.test(source) && /Assigned students/.test(source) && /Review history/.test(source) && /ProfileInformationModal/.test(source), 'supervisor dashboard has separate sidebar pages and a profile modal');
 assert(/library_verify/.test(source) && /library_publish/.test(source) && /Verify metadata/.test(source), 'library metadata verification and publishing controls exist');
