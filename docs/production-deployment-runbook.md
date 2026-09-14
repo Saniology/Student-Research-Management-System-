@@ -53,10 +53,10 @@ Keep service role keys, Paystack secret keys, and email provider tokens out of
 browser code and out of Git.
 
 Use `.env.production.example` as the owner-only template for local deployment
-environment variables. Copy it to `.env.production.local` and fill real values
-there.
+environment variables, then place the real values in the repository `.env`
+file. The deploy script also accepts `.env.production.local` as a fallback.
 
-The deploy script automatically loads `.env.production.local`. It uses a global
+The deploy script automatically loads `.env` first. It uses a global
 `supabase` CLI when installed, otherwise it falls back to `npx --yes supabase`.
 Set `SUPABASE_CLI` only when you need a custom command path.
 

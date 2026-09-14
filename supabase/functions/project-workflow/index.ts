@@ -380,12 +380,16 @@ async function handleSupervisorDecision(
   let toStatus = "supervisor_approved";
   let reviewAction = "approved";
   let revisionNote = null;
+  let reviewComment = comment;
 
   if (decision === "request_revision") {
-    if (!comment) return jsonResponse({ error: "Revision requests require a comment" }, 400);
+    if (!comment && annotations.length === 0) {
+      return jsonResponse({ error: "Revision requests require a correction comment or at least one document mark" }, 400);
+    }
+    reviewComment = comment || "Please review the marked corrections in the document before resubmitting.";
     toStatus = "revision_requested";
     reviewAction = "revision_requested";
-    revisionNote = comment;
+    revisionNote = reviewComment;
   } else if (decision !== "approve") {
     return jsonResponse({ error: "decision must be approve or request_revision" }, 400);
   }
@@ -409,7 +413,7 @@ async function handleSupervisorDecision(
     actorId: actor.id,
     projectId,
     action: reviewAction,
-    comment,
+    comment: reviewComment,
     annotations,
     versionNumber,
     fromStatus: project.status,
@@ -425,7 +429,7 @@ async function handleSupervisorDecision(
       projectId,
       title: "Revision requested",
       message: `${actor.full_name || "Your supervisor"} requested revisions for "${project.title}".`,
-      metadata: { status: toStatus, comment },
+      metadata: { status: toStatus, comment: reviewComment },
     });
   } else {
     await notifyUsers(supabaseUrl, serviceRoleKey, {

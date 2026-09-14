@@ -6,9 +6,9 @@ developer machine.
 For production deployment, tenant domains, and owner handover checks, see
 `docs/production-deployment-runbook.md`.
 
-For owner deployment variables, copy `.env.production.example` to
-`.env.production.local` and fill real secrets locally. Do not commit real `.env`
-files.
+For owner deployment variables, fill the repository `.env` file with real
+secrets locally. Do not commit real `.env` files. The deployment script also
+accepts `.env.production.local` as a fallback when `.env` is absent.
 
 ## What Your Colleague Needs
 
@@ -164,8 +164,8 @@ npx supabase secrets set SIS_API_URL=https://sis.example.edu SIS_API_TOKEN=repla
 bash supabase/deploy-verify-paystack.sh
 ```
 
-The deploy script loads owner-only values from `.env.production.local`, uses a
-global `supabase` CLI when one is installed, and otherwise falls back to
+The deploy script loads owner-only values from `.env` first, uses a global
+`supabase` CLI when one is installed, and otherwise falls back to
 `npx --yes supabase`.
 
 The owner must also apply the SQL files in this order when setting up or

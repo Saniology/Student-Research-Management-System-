@@ -1,18 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_REF="tejkksgyqltudpfuzjdo"
+DEFAULT_PROJECT_REF="tejkksgyqltudpfuzjdo"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$ROOT_DIR"
 
-if [[ -f ".env.production.local" ]]; then
-  echo "Loading owner deployment env from .env.production.local..."
+if [[ -f ".env" ]]; then
+  echo "Loading deployment env from .env..."
+  set -a
+  # shellcheck disable=SC1091
+  source ".env"
+  set +a
+elif [[ -f ".env.production.local" ]]; then
+  echo "Loading deployment env from .env.production.local..."
   set -a
   # shellcheck disable=SC1091
   source ".env.production.local"
   set +a
 fi
+
+PROJECT_REF="${SUPABASE_PROJECT_REF:-$DEFAULT_PROJECT_REF}"
 
 if [[ -n "${SUPABASE_CLI:-}" ]]; then
   read -r -a SUPABASE_CMD <<< "$SUPABASE_CLI"

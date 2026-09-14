@@ -915,7 +915,7 @@ function annotationLabel(mark) {
 
 function ReviewAnnotationPreview({ annotations = [] }) {
   const arrows = annotations.filter(mark => mark.type === 'arrow' || (!mark.position && mark.x1 !== undefined));
-  return <div className="student-annotation-preview"><div className="student-annotation-paper"><span>Supervisor correction map</span><div className="student-annotation-paper-key"><i className="is-highlight" />Highlighted text<i className="is-circle" />Circled area<i className="is-arrow" />Arrow</div><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Saved supervisor correction arrows">{arrows.map((mark, index) => <line key={index} x1={mark.x1} y1={mark.y1} x2={mark.x2} y2={mark.y2} markerEnd="url(#student-review-arrowhead)" />)}<defs><marker id="student-review-arrowhead" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" /></marker></defs></svg></div>{annotations.length > 0 && <div className="student-annotation-comments">{annotations.map((mark, index) => <div className="student-annotation-comment" key={mark.id || index}><span className="annotation-kind-chip">{mark.annotation_type === 'highlight' || mark.type === 'text' ? 'TEXT' : (mark.annotation_type || mark.type || 'MARK').toUpperCase()}</span><div><strong>{annotationLabel(mark)}</strong>{(mark.comment || mark.note) && <span><MessageCircle size={13} />{mark.comment || mark.note}</span>}{mark.position?.pageNumber && <small>Page {mark.position.pageNumber}</small>}</div></div>)}</div>}<small className="helper">Comments are optional. Open a reviewed document to see these marks over the PDF.</small></div>;
+  return <div className="student-annotation-preview"><div className="student-annotation-paper"><span>Supervisor correction map</span><div className="student-annotation-paper-key"><i className="is-highlight" />Highlighted text<i className="is-circle" />Circled area<i className="is-arrow" />Arrow</div><svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Saved supervisor correction arrows">{arrows.map((mark, index) => <line key={index} x1={mark.x1} y1={mark.y1} x2={mark.x2} y2={mark.y2} markerEnd="url(#student-review-arrowhead)" />)}<defs><marker id="student-review-arrowhead" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" /></marker></defs></svg></div>{annotations.length > 0 && <div className="student-annotation-comments">{annotations.map((mark, index) => <div className="student-annotation-comment" key={mark.id || index}><span className="annotation-kind-chip">{mark.annotation_type === 'highlight' || mark.type === 'text' ? 'TEXT' : (mark.annotation_type || mark.type || 'MARK').toUpperCase()}</span><div><strong>{annotationLabel(mark)}</strong>{(mark.comment || mark.note) && <span><MessageCircle size={13} />{mark.comment || mark.note}</span>}{(mark.position?.boundingRect?.pageNumber || mark.position?.pageNumber) && <small>Page {mark.position.boundingRect?.pageNumber || mark.position.pageNumber}</small>}</div></div>)}</div>}<small className="helper">Comments are optional. Open a reviewed document to see these marks over the PDF.</small></div>;
 }
 
 function StudentReviewedDocumentModal({ selected, onClose }) {
@@ -957,8 +957,11 @@ function TeacherWorkspace({ profile, session, preview, onToast, onProfileUpdate 
       const loadedProjects = projectsResult.data || [];
       const versionsResult = loadedProjects.length ? await supabase.from('project_versions').select('id,project_id,version_number,file_name,title,abstract,degree,source,change_summary,created_at').in('project_id', loadedProjects.map(item => item.id)).order('version_number', { ascending: true }) : { data: [], error: null };
       if (versionsResult.error) throw versionsResult.error;
+      const reviewsResult = loadedProjects.length ? await supabase.from('project_reviews').select('id,project_id,action,annotations,version_number,created_at').in('project_id', loadedProjects.map(item => item.id)).order('created_at', { ascending: false }) : { data: [], error: null };
+      if (reviewsResult.error) throw reviewsResult.error;
       const versionMap = (versionsResult.data || []).reduce((map, version) => ({ ...map, [version.project_id]: [...(map[version.project_id] || []), version] }), {});
-      setProjects(loadedProjects.map(item => ({ ...item, author: item.profiles?.full_name, matric: item.profiles?.matric, dept: item.profiles?.department, versions: versionMap[item.id] || [], isDemo: false }))); setStudents(studentsResult.data || []);
+      const latestReviewMap = (reviewsResult.data || []).reduce((map, review) => map[review.project_id] ? map : ({ ...map, [review.project_id]: review }), {});
+      setProjects(loadedProjects.map(item => ({ ...item, author: item.profiles?.full_name, matric: item.profiles?.matric, dept: item.profiles?.department, versions: versionMap[item.id] || [], review_annotations: latestReviewMap[item.id]?.annotations || [], isDemo: false }))); setStudents(studentsResult.data || []);
     }).catch(error => { setProjects([]); setStudents([]); onToast(error.message || 'Supervisor queue could not be loaded.'); }).finally(() => setLoading(false));
     return undefined;
   }, [onToast, preview, session, profile]);
@@ -967,7 +970,26 @@ function TeacherWorkspace({ profile, session, preview, onToast, onProfileUpdate 
     if (!selected) return;
     if (preview || selected.isDemo) { onToast(decision === 'approve' ? 'Preview project approved.' : 'Preview revision request and visual corrections saved.'); setSelected(null); return; }
     if (!canReview(selected.status)) { setSelected(null); onToast('This project has already moved past supervisor review. Refresh the queue to see the latest status.'); return; }
-    try { await invoke('project-workflow', { action: 'supervisor_decision', project_id: selected.id, decision, comment, annotations }); setProjects(items => items.map(item => item.id === selected.id ? { ...item, status: decision === 'approve' ? 'supervisor_approved' : 'revision_requested', review_annotations: annotations } : item)); setSelected(null); onToast(decision === 'approve' ? 'Project approved and routed to the library.' : 'Revision request and corrections sent to the student.'); } catch (error) { const statusMatch = error.message?.match(/Current status:\s*([a-z_]+)/i); if (statusMatch) { const latestStatus = statusMatch[1].toLowerCase(); setProjects(items => items.map(item => item.id === selected.id ? { ...item, status: latestStatus } : item)); } setSelected(null); onToast(statusMatch ? 'This project has already moved past supervisor review. The queue was refreshed.' : error.message); }
+    if (decision === 'request_revision' && !comment.trim() && annotations.length === 0) { onToast('Add a correction note or mark the document before requesting a revision.'); return; }
+    const decisionComment = decision === 'request_revision' && !comment.trim() && annotations.length > 0
+      ? 'Please review the marked corrections in the document before resubmitting.'
+      : comment;
+    try {
+      await invoke('project-workflow', { action: 'supervisor_decision', project_id: selected.id, decision, comment: decisionComment, annotations });
+      setProjects(items => items.map(item => item.id === selected.id ? { ...item, status: decision === 'approve' ? 'supervisor_approved' : 'revision_requested', review_annotations: annotations } : item));
+      setSelected(null);
+      onToast(decision === 'approve' ? 'Project approved and routed to the library.' : 'Revision request and corrections sent to the student.');
+    } catch (error) {
+      const statusMatch = error.message?.match(/Current status:\s*([a-z_]+)/i);
+      if (statusMatch) {
+        const latestStatus = statusMatch[1].toLowerCase();
+        setProjects(items => items.map(item => item.id === selected.id ? { ...item, status: latestStatus } : item));
+        setSelected(null);
+        onToast('This project has already moved past supervisor review. The queue was refreshed.');
+        return;
+      }
+      onToast(error.message || 'The supervisor decision could not be saved.');
+    }
   };
   const reviewProjects = projects.filter(item => canReview(item.status));
   const historyProjects = projects.filter(item => !canReview(item.status));
@@ -1054,6 +1076,20 @@ function createAnnotationId() {
   return globalThis.crypto?.randomUUID?.() || `review-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function documentMarks(annotations = [], onComment) {
+  return annotations.filter(item => item?.position?.boundingRect?.pageNumber).map(item => {
+    const position = item.position;
+    const rects = Array.isArray(position.rects) && position.rects.length ? position.rects : [position.boundingRect];
+    return {
+      ...item,
+      id: item.id || createAnnotationId(),
+      type: item.annotation_type === 'circle' || item.annotation_type === 'arrow' ? 'area' : 'text',
+      position: { ...position, rects },
+      ...(onComment ? { onComment } : {}),
+    };
+  });
+}
+
 function FullDocumentHighlight() {
   const { highlight, isScrolledTo } = useHighlightContainerContext();
   const annotationType = highlight.annotation_type || highlight.type;
@@ -1078,7 +1114,7 @@ function ReadOnlyDocumentReview({ path, annotations = [] }) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   useEffect(() => { let active = true; setUrl(''); setError(''); if (!path) return undefined; signedPdfUrl(path).then(value => { if (active) setUrl(value); }).catch(err => { if (active) setError(err.message || 'The reviewed PDF could not be opened.'); }); return () => { active = false; }; }, [path]);
-  const marks = annotations.filter(item => item?.position).map(item => ({ ...item, id: item.id || createAnnotationId(), type: item.annotation_type === 'circle' || item.annotation_type === 'arrow' ? 'area' : 'text' }));
+  const marks = documentMarks(annotations);
   if (!url) return <div className="student-reviewed-document-viewer"><div className="review-pdf-placeholder"><FileText size={28} color="#065f46" /><strong>{error ? 'Reviewed PDF unavailable' : 'Preparing reviewed document'}</strong><span>{error || (path ? 'Creating a short-lived secure PDF preview.' : 'The annotated document will appear here for a real submission.')}</span></div>{annotations.length > 0 && <ReviewAnnotationPreview annotations={annotations} />}</div>;
   return <div className="student-reviewed-document-viewer"><div className="student-reviewed-document-toolbar"><span><Eye size={14} />Read-only review view</span><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage student-reviewed-document-stage"><PdfLoader document={url} workerSrc={pdfWorkerSrc} beforeLoad={() => <div className="review-pdf-placeholder"><RefreshCw size={24} className="spin" color="#065f46" /><strong>Rendering reviewed document</strong><span>Loading the supervisor's marks over the PDF.</span></div>} errorMessage={loadError => <div className="review-pdf-placeholder"><FileText size={24} color="#b91c1c" /><strong>PDF could not be rendered</strong><span>{loadError.message}</span></div>} onError={loadError => setError(loadError.message)}>{pdfDocument => <PdfHighlighter pdfDocument={pdfDocument} highlights={marks} pdfScaleValue="page-width" enableAreaSelection={() => false} utilsRef={() => {}} style={{ position: 'absolute', inset: 0 }}><FullDocumentHighlight /></PdfHighlighter>}</PdfLoader></div></div>;
 }
@@ -1128,7 +1164,7 @@ function FullDocumentReview({ path, annotations = [], onChange }) {
   const deleteMark = () => { if (!commentEditor?.markId) return; updateMarks(annotations.filter(item => item.id !== commentEditor.markId)); setCommentEditor(null); };
   const clearMarks = () => updateMarks([]);
   const undo = () => { if (!undoStack.length) return; const previous = undoStack[undoStack.length - 1]; setUndoStack(history => history.slice(0, -1)); onChange(previous); };
-  const marks = annotations.filter(item => item?.position).map(item => ({ ...item, id: item.id || createAnnotationId(), type: item.annotation_type === 'circle' || item.annotation_type === 'arrow' ? 'area' : 'text', onComment: openMarkComment }));
+  const marks = documentMarks(annotations, openMarkComment);
   if (!url) return <div className="pdf-review-viewer full-document-review"><div className="review-viewer-toolbar"><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage"><div className="review-pdf-placeholder"><FileText size={28} color="#065f46" /><strong>{error ? 'Preview unavailable' : 'Preparing full document view'}</strong><span>{error || 'Creating a short-lived secure PDF preview.'}</span></div></div></div>;
   return <div className="pdf-review-viewer full-document-review"><div className="document-toolbox" role="toolbar" aria-label="Document annotation tools"><button className={`document-tool ${tool === 'select' ? 'is-active' : ''}`} type="button" onClick={() => setTool('select')} title="Select and scroll"><Eye size={15} />Select</button><button className={`document-tool ${tool === 'highlight' ? 'is-active' : ''}`} type="button" onClick={() => setTool('highlight')} title="Select text to highlight"><PencilLine size={15} />Highlight</button><button className={`document-tool ${tool === 'circle' ? 'is-active' : ''}`} type="button" onClick={() => setTool('circle')} title="Drag around a correction"><Circle size={15} />Circle</button><button className={`document-tool ${tool === 'arrow' ? 'is-active' : ''}`} type="button" onClick={() => setTool('arrow')} title="Drag an arrow to a correction"><ArrowRight size={15} />Arrow</button><button className={`document-tool ${tool === 'note' ? 'is-active' : ''}`} type="button" onClick={() => setTool('note')} title="Select text and attach a comment"><MessageCircle size={15} />Comment</button><label className="document-note-tool"><PencilLine size={15} /><input value={noteText} onChange={event => setNoteText(event.target.value)} placeholder="Optional comment" aria-label="Optional comment text" /></label><button className="button button-ghost button-small" type="button" disabled={!undoStack.length} onClick={undo} title="Undo last annotation change"><Undo2 size={14} />Undo</button><button className="button button-ghost button-small" type="button" disabled={!annotations.length} onClick={clearMarks}><XCircle size={14} />Clear all</button><span className="tag">{annotations.length} mark{annotations.length === 1 ? '' : 's'}</span></div><div className="pdf-review-stage full-document-stage" ref={stageRef} onContextMenu={handleContextMenu}><PdfLoader document={url} workerSrc={pdfWorkerSrc} beforeLoad={() => <div className="review-pdf-placeholder"><RefreshCw size={24} className="spin" color="#065f46" /><strong>Rendering document</strong><span>Loading the PDF text layer and review surface.</span></div>} errorMessage={loadError => <div className="review-pdf-placeholder"><FileText size={24} color="#b91c1c" /><strong>PDF could not be rendered</strong><span>{loadError.message}</span></div>} onError={loadError => setError(loadError.message)}>{pdfDocument => <PdfHighlighter pdfDocument={pdfDocument} highlights={marks} pdfScaleValue="page-width" onSelection={saveSelection} enableAreaSelection={() => tool === 'circle' || tool === 'arrow'} selectionTip={<div className="selection-tip">Release to place this mark</div>} textSelectionColor="rgba(250,204,21,.35)" utilsRef={() => {}} style={{ position: 'absolute', inset: 0 }}><FullDocumentHighlight /></PdfHighlighter>}</PdfLoader>{contextMenu && <div className="document-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }} onMouseDown={event => event.stopPropagation()}><button type="button" onClick={openContextComment}><MessageCircle size={14} />Add comment</button></div>}{commentEditor && <div className="document-comment-editor" style={{ left: commentEditor.x.x, top: commentEditor.x.y }} onMouseDown={event => event.stopPropagation()}><strong>{commentEditor.markId ? 'Comment on this mark' : 'Comment on selected text'}</strong><textarea autoFocus value={commentEditor.value} onChange={event => setCommentEditor({ ...commentEditor, value: event.target.value })} placeholder="Optional correction comment" /><div className="document-comment-editor-actions"><button className="button button-ghost button-small" type="button" onClick={() => setCommentEditor(null)}>Cancel</button>{commentEditor.markId && <button className="button button-danger button-small" type="button" onClick={deleteMark}>Delete mark</button>}{commentEditor.markId && <button className="button button-ghost button-small" type="button" onClick={removeComment}>Remove comment</button>}<button className="button button-primary button-small" type="button" disabled={!commentEditor.value.trim()} onClick={saveComment}>Save comment</button></div></div>}</div></div>;
 }
