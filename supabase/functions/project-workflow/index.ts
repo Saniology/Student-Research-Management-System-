@@ -67,6 +67,10 @@ Deno.serve(async (req) => {
       return await handleLibraryVerify(supabaseUrl, supabaseServiceKey, actor, body);
     }
 
+    if (action === "library_update_metadata") {
+      return await handleLibraryUpdateMetadata(supabaseUrl, supabaseServiceKey, actor, body);
+    }
+
     if (action === "library_publish") {
       return await handleLibraryPublish(supabaseUrl, supabaseServiceKey, actor, body);
     }
@@ -677,8 +681,8 @@ async function handleLibraryVerify(
     return jsonResponse({ error: `Project is not ready for metadata verification. Current status: ${project.status}` }, 409);
   }
 
-  if (!project.title?.trim() || !project.abstract?.trim() || !project.degree?.trim()) {
-    return jsonResponse({ error: "Title, abstract, and degree metadata are required before verification" }, 400);
+  if (!project.title?.trim() || !project.abstract?.trim() || !project.degree?.trim() || !project.department_id) {
+    return jsonResponse({ error: "Title, abstract, degree, and department metadata are required before verification" }, 400);
   }
 
   const verifiedAt = project.metadata_verified_at || new Date().toISOString();
@@ -691,6 +695,9 @@ async function handleLibraryVerify(
       body: {
         status: "library_review",
         metadata_verified_at: verifiedAt,
+        library_verified_by: actor.id,
+        library_verified_at: verifiedAt,
+        library_note: comment || project.library_note || null,
         updated_at: new Date().toISOString(),
       },
     },
@@ -714,6 +721,85 @@ async function handleLibraryVerify(
     title: "Metadata verified",
     message: `"${project.title}" metadata has been verified by the library.`,
     metadata: { status: "library_review", metadata_verified_at: verifiedAt },
+  });
+
+  return jsonResponse({ success: true, project: updated });
+}
+
+async function handleLibraryUpdateMetadata(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  actor: Profile,
+  body: Record<string, unknown>,
+) {
+  if (actor.role !== "library" && actor.role !== "admin") {
+    return jsonResponse({ error: "Only library staff or admins can update project metadata" }, 403);
+  }
+
+  const projectId = requireString(body.project_id, "project_id");
+  const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
+  if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
+  if (!["supervisor_approved", "library_review"].includes(project.status)) {
+    return jsonResponse({ error: `Metadata can only be edited before publication. Current status: ${project.status}` }, 409);
+  }
+
+  const title = body.title === undefined ? project.title : requireString(body.title, "title");
+  const abstract = body.abstract === undefined ? project.abstract || "" : requireString(body.abstract, "abstract");
+  const degree = body.degree === undefined ? project.degree || "" : requireString(body.degree, "degree");
+  const departmentId = body.department_id === undefined ? project.department_id : optionalString(body.department_id);
+  const courseId = body.course_id === undefined ? project.course_id : optionalString(body.course_id);
+  const keywords = normalizeKeywords(body.keywords === undefined ? project.keywords : body.keywords);
+  const libraryNote = body.library_note === undefined ? project.library_note || null : optionalString(body.library_note);
+
+  if (!departmentId) return jsonResponse({ error: "Department is required before metadata can be saved" }, 400);
+  const departments = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/departments?id=eq.${encodeURIComponent(departmentId)}&institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&select=id,name`,
+  );
+  if (!departments[0]) return jsonResponse({ error: "The selected department is not available in this institution" }, 400);
+
+  if (courseId) {
+    const courses = await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/courses?id=eq.${encodeURIComponent(courseId)}&institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&select=id,department_id,name`,
+    );
+    if (!courses[0]) return jsonResponse({ error: "The selected course is not available in this institution" }, 400);
+    if (courses[0].department_id && courses[0].department_id !== departmentId) {
+      return jsonResponse({ error: "The selected course does not belong to the selected department" }, 400);
+    }
+  }
+
+  const [updated] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*,departments(name),courses(name)`,
+    {
+      method: "PATCH",
+      body: {
+        title,
+        abstract,
+        degree,
+        department_id: departmentId,
+        course_id: courseId || null,
+        keywords,
+        library_note: libraryNote,
+        updated_at: new Date().toISOString(),
+      },
+    },
+  );
+
+  await writeReviewAndAudit(supabaseUrl, serviceRoleKey, {
+    actorId: actor.id,
+    projectId,
+    action: "metadata_updated",
+    comment: libraryNote || "Library metadata updated.",
+    fromStatus: project.status,
+    toStatus: project.status,
+    auditAction: "project_library_metadata_updated",
   });
 
   return jsonResponse({ success: true, project: updated });
@@ -747,6 +833,14 @@ async function handleLibraryPublish(
     return jsonResponse({ error: "Verify project metadata before publishing" }, 409);
   }
 
+  const existingShelfProjects = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&status=in.(published,cleared)&select=id,shelf_number`,
+  );
+  const shelfConflict = existingShelfProjects.find((item) => item.id !== project.id && String(item.shelf_number || "").trim().toLowerCase() === shelfNumber.trim().toLowerCase());
+  if (shelfConflict) return jsonResponse({ error: "That shelf number is already assigned to another published project", code: "SHELF_NUMBER_EXISTS" }, 409);
+
   const qrPayload = JSON.stringify({
     type: "spms-project",
     endpoint: `${supabaseUrl}/functions/v1/verification-lookup`,
@@ -767,6 +861,9 @@ async function handleLibraryPublish(
         qr_payload: qrPayload,
         doi: doi || project.doi || null,
         metadata_verified_at: project.metadata_verified_at || new Date().toISOString(),
+        published_by: actor.id,
+        library_verified_by: project.library_verified_by || actor.id,
+        library_verified_at: project.library_verified_at || project.metadata_verified_at || new Date().toISOString(),
         published_at: project.published_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -861,6 +958,7 @@ async function handleIssueReceipt(
       method: "PATCH",
       body: {
         status: "cleared",
+        receipt_issued_by: isStaff ? actor.id : null,
         cleared_at: project.cleared_at || new Date().toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -1166,6 +1264,11 @@ function optionalString(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+function normalizeKeywords(value: unknown) {
+  const values = Array.isArray(value) ? value : String(value || "").split(",");
+  return [...new Set(values.map((item) => String(item || "").trim()).filter(Boolean))].slice(0, 20);
+}
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -1199,6 +1302,11 @@ type Project = {
   published_at?: string | null;
   cleared_at?: string | null;
   metadata_verified_at?: string | null;
+  library_verified_by?: string | null;
+  library_verified_at?: string | null;
+  published_by?: string | null;
+  receipt_issued_by?: string | null;
+  library_note?: string | null;
   departments?: { name?: string | null } | null;
   courses?: { name?: string | null } | null;
 };

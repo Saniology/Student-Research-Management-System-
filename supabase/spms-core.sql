@@ -33,6 +33,7 @@ DO $$ BEGIN
   CREATE TYPE review_action AS ENUM (
     'submitted',
     'approved',
+    'metadata_updated',
     'revision_requested',
     'metadata_verified',
     'published',
@@ -218,6 +219,11 @@ CREATE TABLE IF NOT EXISTS projects (
   qr_payload TEXT,
   doi TEXT,
   metadata_verified_at TIMESTAMPTZ,
+  library_verified_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  library_verified_at TIMESTAMPTZ,
+  published_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  receipt_issued_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  library_note TEXT,
   published_at TIMESTAMPTZ,
   cleared_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -233,6 +239,14 @@ CREATE INDEX IF NOT EXISTS idx_projects_supervisor ON projects(supervisor_id);
 CREATE INDEX IF NOT EXISTS idx_projects_department ON projects(department_id);
 CREATE INDEX IF NOT EXISTS idx_projects_course ON projects(course_id);
 CREATE INDEX IF NOT EXISTS idx_projects_status ON projects(status);
+CREATE INDEX IF NOT EXISTS idx_projects_library_status
+  ON projects(institution_id, status, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_projects_library_shelf
+  ON projects(institution_id, shelf_number)
+  WHERE shelf_number IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_projects_institution_shelf
+  ON projects(institution_id, lower(trim(shelf_number)))
+  WHERE shelf_number IS NOT NULL AND status IN ('published', 'cleared');
 
 CREATE TABLE IF NOT EXISTS project_reviews (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
