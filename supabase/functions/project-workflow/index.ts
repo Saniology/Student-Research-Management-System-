@@ -838,7 +838,7 @@ async function handleLibraryPublish(
     serviceRoleKey,
     `/projects?institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&status=in.(published,cleared)&select=id,shelf_number`,
   );
-  const shelfConflict = existingShelfProjects.find((item) => item.id !== project.id && String(item.shelf_number || "").trim().toLowerCase() === shelfNumber.trim().toLowerCase());
+  const shelfConflict = existingShelfProjects.find((item: { id?: string; shelf_number?: string | null }) => item.id !== project.id && String(item.shelf_number || "").trim().toLowerCase() === shelfNumber.trim().toLowerCase());
   if (shelfConflict) return jsonResponse({ error: "That shelf number is already assigned to another published project", code: "SHELF_NUMBER_EXISTS" }, 409);
 
   const qrPayload = JSON.stringify({
