@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import kasuLogo from '../assets/kasu-logo.jpeg';
 import { Archive, ArrowRight, Bell, BookOpen, Check, CheckCircle2, ChevronDown, Circle, CircleDollarSign, Download, Eye, EyeOff, FileCheck2, FileText, GraduationCap, Library, LockKeyhole, Mail, MessageCircle, PencilLine, Phone, Plus, QrCode, RefreshCw, Save, Search, Send, Settings2, ShieldCheck, Undo2, UserCheck, UserCircle, UserPlus, Users, XCircle } from 'lucide-react';
 import { PdfHighlighter, PdfLoader, TextHighlight, useHighlightContainerContext } from 'react-pdf-highlighter-extended';
 import qrcode from 'qrcode-generator';
@@ -121,6 +122,11 @@ export default function App() {
 
   const notify = useCallback(message => { setToast(message); window.setTimeout(() => setToast(''), 4200); }, []);
   const role = profile?.role || (previewRole || '');
+
+  useEffect(() => {
+    const favicon = document.querySelector('link[rel="icon"]');
+    if (favicon) favicon.href = kasuLogo;
+  }, []);
 
   useEffect(() => {
     document.documentElement.dataset.rolePreview = previewRole || '';

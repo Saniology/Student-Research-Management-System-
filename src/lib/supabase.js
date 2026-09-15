@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import kasuLogo from '../../assets/kasu-logo.jpeg';
 
 const env = import.meta.env;
 const url = env.VITE_SUPABASE_URL || window.SUPABASE_URL || '';
@@ -15,7 +16,8 @@ export function validateAppConfig() {
 export function showAppConfigError() { return !validateAppConfig().valid; }
 export const config = { url, anonKey, paystackKey, ...validateAppConfig() };
 export const supabase = config.valid ? createClient(url, anonKey) : null;
-export const fallbackTenant = { slug: 'kasu', name: 'Kaduna State University', short_name: 'KASU', primary_color: '#065F46', accent_color: '#F59E0B', logo_url: '/assets/kasu-logo.jpeg' };
+const resolveTenantLogo = logoUrl => !logoUrl || /(?:^|\/)assets\/kasu-logo\.jpeg$/i.test(logoUrl) ? kasuLogo : logoUrl;
+export const fallbackTenant = { slug: 'kasu', name: 'Kaduna State University', short_name: 'KASU', primary_color: '#065F46', accent_color: '#F59E0B', logo_url: kasuLogo };
 
 export async function invoke(functionName, body) {
   if (!supabase) throw new Error('Supabase is not configured. Add browser credentials in js/config.js.');
@@ -29,10 +31,10 @@ export async function loadTenant(slug = 'kasu', hostname = window.location.hostn
   try {
     if (hostname && !['localhost', '127.0.0.1', '0.0.0.0'].includes(hostname)) {
       const { data: domainTenant } = await supabase.from('institutions').select('*').contains('allowed_domains', [hostname]).maybeSingle();
-      if (domainTenant) return domainTenant;
+      if (domainTenant) return { ...domainTenant, logo_url: resolveTenantLogo(domainTenant.logo_url) };
     }
     const { data, error } = await supabase.from('institutions').select('*').eq('slug', slug).maybeSingle();
-    return error || !data ? fallbackTenant : data;
+    return error || !data ? fallbackTenant : { ...data, logo_url: resolveTenantLogo(data.logo_url) };
   } catch (_) { return fallbackTenant; }
 }
 
