@@ -271,7 +271,7 @@ function Landing({ tenant, session, profile, localPreview = false, onLogin, onWo
   useEffect(() => {
     if (localPreview) {
       setCatalogLoading(true);
-      const timer = window.setTimeout(() => setCatalogLoading(false), 450);
+      const timer = window.setTimeout(() => setCatalogLoading(false), 1000);
       return () => window.clearTimeout(timer);
     }
     if (!supabase || !tenant?.id) {
