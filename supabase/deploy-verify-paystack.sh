@@ -27,7 +27,9 @@ if [[ -n "${SUPABASE_CLI:-}" ]]; then
 elif command -v supabase >/dev/null 2>&1; then
   SUPABASE_CMD=(supabase)
 elif command -v npx >/dev/null 2>&1; then
-  SUPABASE_CMD=(npx --yes supabase)
+  # npm can omit the Linux platform binary unless optional dependencies are
+  # explicitly enabled in restricted or CI-like environments.
+  SUPABASE_CMD=(env npm_config_include=optional npx --yes supabase)
 else
   echo "Install Supabase CLI or Node/npm first:"
   echo "  npm install -g supabase"
