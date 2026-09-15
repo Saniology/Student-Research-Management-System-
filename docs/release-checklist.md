@@ -54,6 +54,10 @@ Use this checklist before a production handover or institutional demo.
 - Set required secret: `PAYSTACK_SECRET_KEY`.
 - Set `SIS_API_URL` and `SIS_API_TOKEN` when the institution has a live SIS
   endpoint; otherwise confirm the private pilot registry is populated.
+- Set `DATACITE_PREFIX` and DataCite credentials for automatic DOI issuance, or
+  confirm the library manual DOI workflow is the approved operating path.
+- Confirm authenticated student login triggers SIS synchronization and that
+  registry fallback works when the SIS adapter is unavailable.
 - Set optional operational secrets as needed:
   `REPORT_CRON_SECRET`, `HEALTH_CHECK_SECRET`, `RESEND_API_KEY`, `REPORT_FROM_EMAIL`,
   `REPORT_DELIVERY_EMAILS`, `REPORT_LINK_TTL_SECONDS`.

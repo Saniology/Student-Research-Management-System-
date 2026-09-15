@@ -89,6 +89,19 @@ else
   echo "SIS_API_URL not set; student-identity will use the private pilot registry."
 fi
 
+if [[ -n "${DATACITE_PREFIX:-}" && ( -n "${DATACITE_API_TOKEN:-}" || ( -n "${DATACITE_USERNAME:-}" && -n "${DATACITE_PASSWORD:-}" ) ) ]]; then
+  echo "Setting DataCite DOI provider secrets..."
+  DATACITE_ARGS=("DATACITE_PREFIX=${DATACITE_PREFIX}")
+  [[ -n "${DATACITE_API_URL:-}" ]] && DATACITE_ARGS+=("DATACITE_API_URL=${DATACITE_API_URL}")
+  [[ -n "${DATACITE_USERNAME:-}" ]] && DATACITE_ARGS+=("DATACITE_USERNAME=${DATACITE_USERNAME}")
+  [[ -n "${DATACITE_PASSWORD:-}" ]] && DATACITE_ARGS+=("DATACITE_PASSWORD=${DATACITE_PASSWORD}")
+  [[ -n "${DATACITE_API_TOKEN:-}" ]] && DATACITE_ARGS+=("DATACITE_API_TOKEN=${DATACITE_API_TOKEN}")
+  [[ -n "${PUBLIC_CATALOG_URL:-}" ]] && DATACITE_ARGS+=("PUBLIC_CATALOG_URL=${PUBLIC_CATALOG_URL}")
+  "${SUPABASE_CMD[@]}" secrets set "${DATACITE_ARGS[@]}"
+else
+  echo "DataCite secrets not set; the library desk will require a manually issued DOI."
+fi
+
 echo "Deploying SPMS edge functions..."
 "${SUPABASE_CMD[@]}" functions deploy verify-paystack project-workflow repository-access student-identity verification-lookup public-config scheduled-reports health-check --no-verify-jwt --use-api
 

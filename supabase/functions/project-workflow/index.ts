@@ -71,6 +71,14 @@ Deno.serve(async (req) => {
       return await handleLibraryUpdateMetadata(supabaseUrl, supabaseServiceKey, actor, body);
     }
 
+    if (action === "library_generate_qr") {
+      return await handleLibraryGenerateQr(supabaseUrl, supabaseServiceKey, actor, body);
+    }
+
+    if (action === "library_issue_doi") {
+      return await handleLibraryIssueDoi(supabaseUrl, supabaseServiceKey, actor, body);
+    }
+
     if (action === "library_publish") {
       return await handleLibraryPublish(supabaseUrl, supabaseServiceKey, actor, body);
     }
@@ -82,7 +90,9 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Unknown workflow action" }, 400);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unexpected error";
-    return jsonResponse({ error: message }, 500);
+    const workflow = err as Error & { status?: number; code?: string };
+    const status = workflow.status || (/\b(is required|are required|must be|invalid|enter a valid)\b/i.test(message) ? 400 : 500);
+    return jsonResponse({ error: message, ...(workflow.code ? { code: workflow.code } : {}) }, status);
   }
 });
 
@@ -681,8 +691,8 @@ async function handleLibraryVerify(
     return jsonResponse({ error: `Project is not ready for metadata verification. Current status: ${project.status}` }, 409);
   }
 
-  if (!project.title?.trim() || !project.abstract?.trim() || !project.degree?.trim() || !project.department_id) {
-    return jsonResponse({ error: "Title, abstract, degree, and department metadata are required before verification" }, 400);
+  if (!project.title?.trim() || !project.abstract?.trim() || !project.degree?.trim() || !project.department_id || !project.course_id) {
+    return jsonResponse({ error: "Title, abstract, degree, department, and course metadata are required before verification" }, 400);
   }
 
   const verifiedAt = project.metadata_verified_at || new Date().toISOString();
@@ -805,6 +815,216 @@ async function handleLibraryUpdateMetadata(
   return jsonResponse({ success: true, project: updated });
 }
 
+async function handleLibraryGenerateQr(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  actor: Profile,
+  body: Record<string, unknown>,
+) {
+  if (actor.role !== "library" && actor.role !== "admin") {
+    return jsonResponse({ error: "Only library staff or admins can generate project QR labels" }, 403);
+  }
+
+  const projectId = requireString(body.project_id, "project_id");
+  const shelfNumber = requireString(body.shelf_number, "shelf_number");
+  if (shelfNumber.length > 80) return jsonResponse({ error: "Shelf number must be 80 characters or fewer" }, 400);
+  const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
+  if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
+  if (!["supervisor_approved", "library_review", "published", "cleared"].includes(project.status)) {
+    return jsonResponse({ error: `A QR label cannot be generated for the current status: ${project.status}` }, 409);
+  }
+  if (["published", "cleared"].includes(project.status) && project.shelf_number?.trim().toLowerCase() !== shelfNumber.toLowerCase()) {
+    return jsonResponse({ error: "Published QR labels are immutable; use the existing shelf number" }, 409);
+  }
+  if (!project.metadata_verified_at) {
+    return jsonResponse({ error: "Verify project metadata before generating the QR label" }, 409);
+  }
+
+  const existingShelfProjects = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&status=in.(published,cleared)&select=id,shelf_number`,
+  );
+  const shelfConflict = existingShelfProjects.find((item: { id?: string; shelf_number?: string | null }) => item.id !== project.id && String(item.shelf_number || "").trim().toLowerCase() === shelfNumber.toLowerCase());
+  if (shelfConflict) return jsonResponse({ error: "That shelf number is already assigned to another published project", code: "SHELF_NUMBER_EXISTS" }, 409);
+
+  if (project.qr_payload && project.shelf_number?.trim().toLowerCase() === shelfNumber.toLowerCase()) {
+    return jsonResponse({ success: true, project, already_generated: true });
+  }
+
+  const generatedAt = new Date().toISOString();
+  const qrPayload = JSON.stringify({
+    type: "spms-project",
+    endpoint: `${supabaseUrl}/functions/v1/verification-lookup`,
+    project_id: project.id,
+    shelf_number: shelfNumber,
+    issued_at: generatedAt,
+  });
+  const [updated] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*,departments(name),courses(name)`,
+    {
+      method: "PATCH",
+      body: {
+        shelf_number: shelfNumber,
+        qr_payload: qrPayload,
+        qr_generated_by: actor.id,
+        qr_generated_at: generatedAt,
+        updated_at: generatedAt,
+      },
+    },
+  );
+
+  await writeReviewAndAudit(supabaseUrl, serviceRoleKey, {
+    actorId: actor.id,
+    projectId,
+    action: "qr_generated",
+    comment: `QR label generated for shelf ${shelfNumber}.`,
+    fromStatus: project.status,
+    toStatus: project.status,
+    auditAction: "project_qr_generated",
+  });
+  return jsonResponse({ success: true, project: updated });
+}
+
+async function handleLibraryIssueDoi(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  actor: Profile,
+  body: Record<string, unknown>,
+) {
+  if (actor.role !== "library" && actor.role !== "admin") {
+    return jsonResponse({ error: "Only library staff or admins can issue DOIs" }, 403);
+  }
+  const projectId = requireString(body.project_id, "project_id");
+  const requestedDoi = optionalString(body.doi);
+  const [project] = await getProject(supabaseUrl, serviceRoleKey, projectId);
+  if (!project) return jsonResponse({ error: "Project not found" }, 404);
+  const tenantError = assertProjectTenant(actor, project);
+  if (tenantError) return tenantError;
+  if (!["library_review", "published", "cleared"].includes(project.status)) {
+    return jsonResponse({ error: "Verify metadata before issuing a DOI" }, 409);
+  }
+  if (!project.title?.trim() || !project.abstract?.trim() || !project.degree?.trim() || !project.department_id || !project.course_id) {
+    return jsonResponse({ error: "Complete title, abstract, degree, department, and course metadata before issuing a DOI" }, 400);
+  }
+  if (project.doi) return jsonResponse({ success: true, project, already_issued: true });
+
+  let doi = requestedDoi;
+  let provider = "manual";
+  let providerResponse: Record<string, unknown> = { source: "manual" };
+  if (doi) {
+    if (!isValidDoi(doi)) return jsonResponse({ error: "Enter a valid DOI such as 10.1234/example" }, 400);
+  } else {
+    const dataCite = await issueDataCiteDoi(supabaseUrl, project);
+    doi = dataCite.doi;
+    provider = "datacite";
+    providerResponse = dataCite.response;
+  }
+
+  const duplicate = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&doi=eq.${encodeURIComponent(doi as string)}&select=id&limit=1`,
+  );
+  if (duplicate.some((item: { id?: string }) => item.id !== project.id)) {
+    return jsonResponse({ error: "That DOI is already assigned to another project", code: "DOI_EXISTS" }, 409);
+  }
+
+  const issuedAt = new Date().toISOString();
+  const [updated] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/projects?id=eq.${encodeURIComponent(projectId)}&select=*,departments(name),courses(name)`,
+    {
+      method: "PATCH",
+      body: {
+        doi,
+        doi_provider: provider,
+        doi_provider_response: providerResponse,
+        doi_issued_by: actor.id,
+        doi_issued_at: issuedAt,
+        updated_at: issuedAt,
+      },
+    },
+  );
+  await writeReviewAndAudit(supabaseUrl, serviceRoleKey, {
+    actorId: actor.id,
+    projectId,
+    action: "doi_issued",
+    comment: `DOI issued by ${provider}.`,
+    fromStatus: project.status,
+    toStatus: project.status,
+    auditAction: "project_doi_issued",
+  });
+  if (updated && ["published", "cleared"].includes(project.status)) {
+    await upsertPublicCatalog(supabaseUrl, serviceRoleKey, updated);
+  }
+  await notifyUsers(supabaseUrl, serviceRoleKey, {
+    recipientIds: compactIds([project.student_id, project.supervisor_id]),
+    actorId: actor.id,
+    institutionId: project.institution_id || actor.institution_id || null,
+    projectId,
+    title: "Project DOI issued",
+    message: `A DOI has been assigned to "${project.title}".`,
+    metadata: { doi, provider },
+  });
+  return jsonResponse({ success: true, project: updated });
+}
+
+async function issueDataCiteDoi(supabaseUrl: string, project: Project) {
+  const prefix = optionalString(Deno.env.get("DATACITE_PREFIX"));
+  const username = optionalString(Deno.env.get("DATACITE_USERNAME"));
+  const password = optionalString(Deno.env.get("DATACITE_PASSWORD"));
+  const token = optionalString(Deno.env.get("DATACITE_API_TOKEN"));
+  if (!prefix || (!token && (!username || !password))) {
+    throw workflowError("DataCite is not configured. Enter a manual DOI or configure DATACITE_PREFIX and provider credentials.", 503, "DOI_PROVIDER_NOT_CONFIGURED");
+  }
+  const doi = `${prefix.replace(/\/$/, "")}/${crypto.randomUUID()}`;
+  const landingPage = Deno.env.get("PUBLIC_CATALOG_URL") || `${supabaseUrl}/functions/v1/verification-lookup?type=project&project_id=${encodeURIComponent(project.id)}`;
+  const payload = {
+    data: {
+      type: "dois",
+      attributes: {
+        doi,
+        url: landingPage,
+        titles: [{ title: project.title }],
+        publisher: "Kaduna State University",
+        publicationYear: new Date().getUTCFullYear(),
+        types: { resourceTypeGeneral: "Text" },
+        creators: [{ name: "Kaduna State University" }],
+        descriptions: project.abstract ? [{ description: project.abstract, descriptionType: "Abstract" }] : [],
+        subjects: (project.keywords || []).map(keyword => ({ subject: keyword })),
+      },
+    },
+  };
+  const authorization = token ? `Bearer ${token}` : `Basic ${btoa(`${username}:${password}`)}`;
+  const response = await fetch(`${(Deno.env.get("DATACITE_API_URL") || "https://api.datacite.org").replace(/\/$/, "")}/dois`, {
+    method: "POST",
+    headers: { Authorization: authorization, "Content-Type": "application/vnd.api+json", Accept: "application/vnd.api+json" },
+    body: JSON.stringify(payload),
+  });
+  const responseBody = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw workflowError(responseBody?.errors?.[0]?.detail || responseBody?.message || "DataCite DOI issuance failed", 502, "DOI_PROVIDER_FAILED");
+  }
+  return { doi: responseBody?.data?.attributes?.doi || doi, response: responseBody?.data || responseBody };
+}
+
+function workflowError(message: string, status: number, code: string) {
+  const error = new Error(message) as Error & { status?: number; code?: string };
+  error.status = status;
+  error.code = code;
+  return error;
+}
+
+function isValidDoi(value: string) {
+  return /^10\.\d{4,9}\/\S+$/i.test(value);
+}
+
 async function handleLibraryPublish(
   supabaseUrl: string,
   serviceRoleKey: string,
@@ -829,8 +1049,30 @@ async function handleLibraryPublish(
     return jsonResponse({ error: `Project is not ready for library publishing. Current status: ${project.status}` }, 409);
   }
 
-  if (project.status === "supervisor_approved" && !project.metadata_verified_at) {
+  if (["published", "cleared"].includes(project.status)) {
+    return jsonResponse({ success: true, project, already_published: true });
+  }
+
+  if (!project.metadata_verified_at) {
     return jsonResponse({ error: "Verify project metadata before publishing" }, 409);
+  }
+
+  if (!project.qr_payload || project.shelf_number?.trim().toLowerCase() !== shelfNumber.trim().toLowerCase()) {
+    return jsonResponse({ error: "Generate the QR label for this shelf number before publishing", code: "QR_REQUIRED" }, 409);
+  }
+  if (doi && project.doi && doi !== project.doi) {
+    return jsonResponse({ error: "An existing DOI cannot be replaced during publication" }, 409);
+  }
+  if (doi && !project.doi) {
+    if (!isValidDoi(doi)) return jsonResponse({ error: "Enter a valid DOI such as 10.1234/example" }, 400);
+    const duplicateDoi = await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/projects?institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&doi=eq.${encodeURIComponent(doi)}&select=id&limit=1`,
+    );
+    if (duplicateDoi.some((item: { id?: string }) => item.id !== project.id)) {
+      return jsonResponse({ error: "That DOI is already assigned to another project", code: "DOI_EXISTS" }, 409);
+    }
   }
 
   const existingShelfProjects = await supabaseRest(
@@ -841,14 +1083,6 @@ async function handleLibraryPublish(
   const shelfConflict = existingShelfProjects.find((item: { id?: string; shelf_number?: string | null }) => item.id !== project.id && String(item.shelf_number || "").trim().toLowerCase() === shelfNumber.trim().toLowerCase());
   if (shelfConflict) return jsonResponse({ error: "That shelf number is already assigned to another published project", code: "SHELF_NUMBER_EXISTS" }, 409);
 
-  const qrPayload = JSON.stringify({
-    type: "spms-project",
-    endpoint: `${supabaseUrl}/functions/v1/verification-lookup`,
-    project_id: project.id,
-    shelf_number: shelfNumber,
-    issued_at: new Date().toISOString(),
-  });
-
   const [updated] = await supabaseRest(
     supabaseUrl,
     serviceRoleKey,
@@ -858,8 +1092,11 @@ async function handleLibraryPublish(
       body: {
         status: "published",
         shelf_number: shelfNumber,
-        qr_payload: qrPayload,
+        qr_payload: project.qr_payload,
         doi: doi || project.doi || null,
+        doi_provider: doi && !project.doi ? "manual" : project.doi_provider || null,
+        doi_issued_by: doi && !project.doi ? actor.id : project.doi_issued_by || null,
+        doi_issued_at: doi && !project.doi ? new Date().toISOString() : project.doi_issued_at || null,
         metadata_verified_at: project.metadata_verified_at || new Date().toISOString(),
         published_by: actor.id,
         library_verified_by: project.library_verified_by || actor.id,
@@ -1299,6 +1536,13 @@ type Project = {
   status: string;
   shelf_number?: string | null;
   doi?: string | null;
+  qr_payload?: string | null;
+  doi_provider?: string | null;
+  doi_provider_response?: Record<string, unknown> | null;
+  doi_issued_by?: string | null;
+  doi_issued_at?: string | null;
+  qr_generated_by?: string | null;
+  qr_generated_at?: string | null;
   published_at?: string | null;
   cleared_at?: string | null;
   metadata_verified_at?: string | null;

@@ -43,6 +43,10 @@ export async function loadProfile(userId) {
   return data;
 }
 
+export async function syncStudentIdentity() {
+  return invoke('student-identity', { action: 'students/sync' });
+}
+
 export async function loadSystemConfig(institutionId) {
   if (!supabase) return null;
   const { data, error } = await supabase.functions.invoke('public-config', {

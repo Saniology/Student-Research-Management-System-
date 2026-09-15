@@ -190,6 +190,13 @@ browser loads only safe fee and upload settings through the deployed
 server-only. The tracked migrations also add tenant-scoped course records and
 carry course identity into student, project, and public catalog metadata.
 
+The latest workflow hardening migration also adds immutable DOI provenance and
+independent QR-label generation. The library can accept a manually issued DOI
+when DataCite is not configured. For automatic DOI issuance, set
+`DATACITE_PREFIX` plus either `DATACITE_API_TOKEN` or
+`DATACITE_USERNAME`/`DATACITE_PASSWORD`, and set `PUBLIC_CATALOG_URL` to the
+public landing page host.
+
 Never commit or share the Paystack secret key. The browser only uses the Paystack
 public key from `js/config.js`.
 
@@ -205,7 +212,9 @@ appear in Admin > Reports and can be downloaded by admins.
 `SIS_API_URL` and `SIS_API_TOKEN` are optional owner-only values for the
 institution's student-information-system adapter. When they are absent, the
 KASU pilot uses the private `students_registry` table through the
-`student-identity` Edge Function.
+`student-identity` Edge Function. Authenticated student login runs
+`students/sync` after the profile loads, refreshing institution-managed identity
+and supervisor mapping without allowing browser-side identity edits.
 
 ## Run The App Locally
 

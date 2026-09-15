@@ -11,6 +11,19 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    if (!supabaseUrl || !serviceRoleKey || !supabaseAnonKey) return jsonResponse({ error: "Identity service is not configured" }, 500);
+
+    if (body.action === "students/sync") {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) return jsonResponse({ error: "Missing authorization header" }, 401);
+      const user = await getAuthenticatedUser(supabaseUrl, supabaseAnonKey, authHeader);
+      if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
+      return await syncStudentIdentity(supabaseUrl, serviceRoleKey, user);
+    }
+
     const matric = normalizeString(body.matric).toUpperCase();
     const email = normalizeString(body.email).toLowerCase();
     const requestedName = normalizeString(body.full_name);
@@ -19,10 +32,6 @@ Deno.serve(async (req) => {
     if (!matric || !email || !/^\S+@\S+\.\S+$/.test(email)) {
       return jsonResponse({ error: "A valid matric number and school email are required" }, 400);
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    if (!supabaseUrl || !serviceRoleKey) return jsonResponse({ error: "Identity service is not configured" }, 500);
 
     const [institution] = await supabaseRest(
       supabaseUrl,
@@ -74,17 +83,93 @@ Deno.serve(async (req) => {
 async function lookupSis(matric: string, email: string) {
   const baseUrl = Deno.env.get("SIS_API_URL");
   if (!baseUrl) return null;
-  const response = await fetch(`${baseUrl.replace(/\/$/, "")}/students/lookup`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(Deno.env.get("SIS_API_TOKEN") ? { Authorization: `Bearer ${Deno.env.get("SIS_API_TOKEN")}` } : {}),
+  try {
+    const response = await fetch(`${baseUrl.replace(/\/$/, "")}/students/lookup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(Deno.env.get("SIS_API_TOKEN") ? { Authorization: `Bearer ${Deno.env.get("SIS_API_TOKEN")}` } : {}),
+      },
+      body: JSON.stringify({ matric, email }),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    return payload?.student || payload?.data || payload || null;
+  } catch (_) {
+    // A temporary SIS outage must not prevent the controlled private registry
+    // fallback from refreshing a known KASU student profile.
+    return null;
+  }
+}
+
+async function syncStudentIdentity(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  user: { id: string; email?: string | null },
+) {
+  const [profile] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/profiles?id=eq.${encodeURIComponent(user.id)}&select=id,email,matric,full_name,department,department_id,course_id,avatar_url,institution_id,supervisor_id,role`,
+  );
+  if (!profile) return jsonResponse({ error: "Student profile was not found" }, 404);
+  if (profile.role !== "student") return jsonResponse({ error: "Identity sync is only available for student accounts" }, 403);
+  if (!profile.matric || !profile.institution_id) {
+    return jsonResponse({ synced: false, source: "none", profile });
+  }
+
+  const registry = await lookupRegistry(
+    supabaseUrl,
+    serviceRoleKey,
+    profile.institution_id,
+    String(profile.matric).toUpperCase(),
+  );
+  const sisRecord = await lookupSis(String(profile.matric).toUpperCase(), String(user.email || profile.email || "").toLowerCase());
+  const record = sisRecord || registry;
+  if (!record) return jsonResponse({ synced: false, source: "none", profile });
+
+  const fullName = firstString(record.full_name, record.name, profile.full_name);
+  const department = firstString(record.department, record.department_name, profile.department);
+  const departmentId = firstString(record.department_id, profile.department_id);
+  const courseId = firstString(record.course_id, profile.course_id);
+  const avatarUrl = firstString(record.avatar_url, record.profile_image, record.profile_picture, profile.avatar_url);
+  const supervisorEmail = firstString(record.supervisor_email, record.supervisor?.email);
+  let supervisorId = profile.supervisor_id || null;
+
+  if (supervisorEmail) {
+    const supervisors = await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/profiles?email=eq.${encodeURIComponent(supervisorEmail.toLowerCase())}&role=eq.teacher&institution_id=eq.${encodeURIComponent(profile.institution_id)}&select=id&limit=1`,
+    );
+    supervisorId = supervisors[0]?.id || supervisorId;
+  }
+
+  const [updated] = await supabaseRest(
+    supabaseUrl,
+    serviceRoleKey,
+    `/profiles?id=eq.${encodeURIComponent(user.id)}&select=*`,
+    {
+      method: "PATCH",
+      body: {
+        full_name: fullName,
+        matric: firstString(record.matric, profile.matric),
+        department,
+        department_id: departmentId || null,
+        course_id: courseId || null,
+        avatar_url: avatarUrl || null,
+        supervisor_id: supervisorId,
+        updated_at: new Date().toISOString(),
+      },
     },
-    body: JSON.stringify({ matric, email }),
+  );
+
+  return jsonResponse({
+    synced: true,
+    source: sisRecord ? "sis" : "registry",
+    profile: updated || profile,
+    supervisor_id: supervisorId,
   });
-  if (!response.ok) return null;
-  const payload = await response.json();
-  return payload?.student || payload?.data || payload || null;
 }
 
 async function lookupRegistry(supabaseUrl: string, serviceRoleKey: string, institutionId: string, matric: string) {
@@ -104,9 +189,16 @@ async function lookupExistingAccounts(supabaseUrl: string, serviceRoleKey: strin
   );
 }
 
-async function supabaseRest(supabaseUrl: string, serviceRoleKey: string, path: string) {
+async function supabaseRest(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  path: string,
+  options: { method?: string; body?: Record<string, unknown> } = {},
+) {
   const response = await fetch(`${supabaseUrl}/rest/v1${path}`, {
+    method: options.method || "GET",
     headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+    ...(options.body ? { body: JSON.stringify(options.body), headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}`, "Content-Type": "application/json", Prefer: "return=representation" } } : {}),
   });
   if (!response.ok) throw new Error(`Identity lookup database request failed (${response.status})`);
   return await response.json();
@@ -114,6 +206,18 @@ async function supabaseRest(supabaseUrl: string, serviceRoleKey: string, path: s
 
 function normalizeString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function firstString(...values: unknown[]) {
+  return values.map(normalizeString).find(Boolean) || "";
+}
+
+async function getAuthenticatedUser(supabaseUrl: string, supabaseAnonKey: string, authHeader: string) {
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { apikey: supabaseAnonKey, Authorization: authHeader },
+  });
+  if (!response.ok) return null;
+  return await response.json();
 }
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {

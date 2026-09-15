@@ -17,6 +17,7 @@ const files = {
   projectWorkflow: 'supabase/functions/project-workflow/index.ts',
   repositoryAccess: 'supabase/functions/repository-access/index.ts',
   studentIdentity: 'supabase/functions/student-identity/index.ts',
+  libraryMigration: 'supabase/migrations/202609141100_identity_doi_qr_hardening.sql',
   verificationLookup: 'supabase/functions/verification-lookup/index.ts',
   scheduledReports: 'supabase/functions/scheduled-reports/index.ts',
 };
@@ -32,9 +33,9 @@ const edgeContracts = [
   {
     functionName: 'project-workflow',
     file: files.projectWorkflow,
-    frontendActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_update_metadata', 'library_verify', 'library_publish', 'issue_receipt'],
-    handlerActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_update_metadata', 'library_verify', 'library_publish', 'issue_receipt'],
-    requiredFields: ['project_id', 'decision', 'supervisor_id', 'file_path', 'file_name', 'course_id', 'shelf_number', 'verification_code'],
+    frontendActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_update_metadata', 'library_verify', 'library_generate_qr', 'library_issue_doi', 'library_publish', 'issue_receipt'],
+    handlerActions: ['supervisor_decision', 'student_resubmit', 'assign_supervisor', 'library_update_metadata', 'library_verify', 'library_generate_qr', 'library_issue_doi', 'library_publish', 'issue_receipt'],
+    requiredFields: ['project_id', 'decision', 'supervisor_id', 'file_path', 'file_name', 'course_id', 'shelf_number', 'verification_code', 'doi_provider', 'qr_generated_at'],
   },
   {
     functionName: 'repository-access',
@@ -46,8 +47,8 @@ const edgeContracts = [
   {
     functionName: 'student-identity',
     file: files.studentIdentity,
-    frontendActions: [],
-    handlerActions: [],
+    frontendActions: ['students/sync'],
+    handlerActions: ['students/sync'],
     requiredFields: ['matric', 'email', 'tenant_slug', 'full_name', 'department'],
   },
   {
@@ -76,6 +77,9 @@ const reviewActions = [
   'approved',
   'revision_requested',
   'metadata_verified',
+  'metadata_updated',
+  'qr_generated',
+  'doi_issued',
   'published',
   'cleared',
   'rejected',
@@ -158,15 +162,17 @@ function checkVerificationLookup() {
   });
   assert(/qrcode-generator@2\.0\.4/.test(edge), 'verification QR dependency is pinned');
   assert(!/file_path|storage_path|signedUrl|signedURL/.test(edge), 'public verification contract excludes private file paths');
+  assert(/select=project_id,title,abstract,degree,department_name,course_name,shelf_number,doi,published_at/.test(edge), 'public project verification is anonymized');
 }
 
 function checkSqlEnumsAndStatusFlow() {
-  const sql = read(files.sql);
+  const sql = `${read(files.sql)}\n${read(files.libraryMigration)}`;
   const html = frontendSource();
   const verifyPaystack = read(files.verifyPaystack);
   const projectWorkflow = read(files.projectWorkflow);
   const repositoryAccess = read(files.repositoryAccess);
   const scheduledReports = read(files.scheduledReports);
+  const libraryMigration = read(files.libraryMigration);
 
   projectStatuses.forEach((status) => {
     assert(inSqlEnum(sql, 'project_status', status), `SQL project_status includes ${status}`);
@@ -174,7 +180,7 @@ function checkSqlEnumsAndStatusFlow() {
   });
 
   reviewActions.forEach((action) => {
-    assert(inSqlEnum(sql, 'review_action', action), `SQL review_action includes ${action}`);
+    assert(inSqlEnum(sql, 'review_action', action) || new RegExp(`ADD VALUE IF NOT EXISTS ['"]${escapeRegExp(action)}['"]`, 'i').test(libraryMigration), `SQL review_action includes ${action}`);
   });
 
   transactionTypes.forEach((type) => {
@@ -200,9 +206,17 @@ function checkSqlEnumsAndStatusFlow() {
     ['revision requests move to revision_requested', projectWorkflow, /toStatus\s*=\s*"revision_requested"/],
     ['library publish moves to published', projectWorkflow, /status:\s*"published"/],
     ['receipt issue moves to cleared', projectWorkflow, /status:\s*"cleared"/],
+    ['library QR generation is persisted', projectWorkflow, /qr_generated_by[\s\S]+qr_generated_at/],
+    ['DOI provider response is persisted', projectWorkflow, /doi_provider_response/],
+    ['SIS sync is authenticated', read(files.studentIdentity), /students\/sync[\s\S]+getAuthenticatedUser/],
+    ['SIS outages fall back to the private registry', read(files.studentIdentity), /SIS outage[\s\S]+registry[\s\S]+fallback/i],
   ].forEach(([label, source, pattern]) => {
     assert(pattern.test(source), label);
   });
+
+  const publicCatalogWriter = projectWorkflow.match(/function upsertPublicCatalog[\s\S]*?function writeReviewAndAudit/)?.[0] || '';
+  assert(/department_name[\s\S]+course_name[\s\S]+title[\s\S]+abstract[\s\S]+degree[\s\S]+keywords[\s\S]+shelf_number[\s\S]+doi[\s\S]+published_at/.test(publicCatalogWriter), 'public catalog write contains only anonymized academic metadata');
+  assert(!/student_id|supervisor_id|file_path|payment|email|matric/i.test(publicCatalogWriter), 'public catalog writer excludes direct student identity and payment data');
 }
 
 function inSqlEnum(sql, enumName, value) {

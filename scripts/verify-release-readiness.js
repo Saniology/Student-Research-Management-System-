@@ -49,6 +49,10 @@ const requiredEnvNames = [
   'CLOUDFLARE_API_TOKEN',
   'CLOUDFLARE_ZONE_ID',
   'SPMS_DNS_TARGET',
+  'DATACITE_PREFIX',
+  'DATACITE_USERNAME',
+  'DATACITE_PASSWORD',
+  'PUBLIC_CATALOG_URL',
 ];
 
 function pass(message) {

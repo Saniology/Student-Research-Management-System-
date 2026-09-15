@@ -12,6 +12,7 @@ const sqlFiles = [
   'supabase/secure-payments.sql',
   'supabase/spms-core.sql',
   'supabase/migrations/202609141000_library_workflow_hardening.sql',
+  'supabase/migrations/202609141100_identity_doi_qr_hardening.sql',
 ];
 
 const rlsTables = [
@@ -49,6 +50,9 @@ const requiredIndexes = [
   'idx_projects_library_status',
   'idx_projects_library_shelf',
   'uq_projects_institution_shelf',
+  'uq_projects_institution_doi',
+  'idx_projects_doi',
+  'idx_projects_qr_generated',
   'idx_project_reviews_project',
   'idx_public_catalog_department',
   'idx_public_catalog_course',

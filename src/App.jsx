@@ -6,8 +6,8 @@ import { AppShell, EmptyState, SearchBox, SectionHeader } from './components/App
 import { Modal } from './components/Modal';
 import { PageSkeleton, RepositorySkeleton } from './components/Skeleton';
 import { StatusChip } from './components/StatusChip';
-import { config, fallbackTenant, invoke, loadProfile, loadSystemConfig, loadTenant, signedPdfUrl, supabase } from './lib/supabase';
-import { fetchQrSvg, issueReceipt, lookupVerification, retryPaymentVerification, runDueReports, runScheduledReport } from './lib/contracts';
+import { config, fallbackTenant, invoke, loadProfile, loadSystemConfig, loadTenant, signedPdfUrl, syncStudentIdentity, supabase } from './lib/supabase';
+import { fetchQrSvg, generateProjectQr, issueProjectDoi, issueReceipt, lookupVerification, retryPaymentVerification, runDueReports, runScheduledReport } from './lib/contracts';
 import { demoProjects, demoReviewProjects, demoStats } from './data/demo';
 import './styles.css';
 
@@ -138,7 +138,20 @@ export default function App() {
       setTenant(loadedTenant);
       if (currentSession) {
         setSession(currentSession);
-        try { setProfile(await loadProfile(currentSession.user.id)); } catch (error) { notify(error.message); }
+        try {
+          let nextProfile = await loadProfile(currentSession.user.id);
+          if (nextProfile?.role === 'student') {
+            try {
+              const sync = await syncStudentIdentity();
+              if (sync?.profile) nextProfile = sync.profile;
+            } catch (error) {
+              // Authentication remains available when the optional SIS endpoint
+              // is offline; the server-side registry remains authoritative.
+              console.warn('Student identity sync skipped:', error.message);
+            }
+          }
+          setProfile(nextProfile);
+        } catch (error) { notify(error.message); }
       }
       setBooting(false);
     };
@@ -146,7 +159,17 @@ export default function App() {
     if (!supabase || previewRole || previewPublic) return undefined;
     const { data } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       setSession(nextSession);
-      if (nextSession) setProfile(await loadProfile(nextSession.user.id)); else setProfile(null);
+      if (!nextSession) { setProfile(null); return; }
+      let nextProfile = await loadProfile(nextSession.user.id);
+      if (nextProfile?.role === 'student') {
+        try {
+          const sync = await syncStudentIdentity();
+          if (sync?.profile) nextProfile = sync.profile;
+        } catch (error) {
+          console.warn('Student identity sync skipped:', error.message);
+        }
+      }
+      setProfile(nextProfile);
     });
     return () => data.subscription.unsubscribe();
   }, [notify]);
@@ -1296,7 +1319,7 @@ function SupervisorProjectTable({ projects, canReview, onReview }) {
 function PdfPreview({ path }) { const [url, setUrl] = useState(''); const [error, setError] = useState(''); useEffect(() => { if (!path) return undefined; signedPdfUrl(path).then(setUrl).catch(err => setError(err.message)); return undefined; }, [path]); if (error || !url) return <div className="empty-state surface"><FileText size={22} color="#065f46" /><h3>{error ? 'Preview unavailable' : 'Preparing secure preview...'}</h3><p>{error || 'Creating a short-lived private link.'}</p></div>; return <iframe className="pdf-frame" title="Private thesis PDF preview" src={url} />; }
 
 function libraryKeywords(value) { return String(value || '').split(',').map(item => item.trim()).filter(Boolean); }
-function libraryProjectMetadataComplete(item, form) { return Boolean((form.title || item?.title)?.trim() && (form.abstract || item?.abstract)?.trim() && (form.degree || item?.degree)?.trim() && (form.department_id || item?.department_id) && (item?.file_path || item?.isDemo)); }
+function libraryProjectMetadataComplete(item, form) { return Boolean((form.title || item?.title)?.trim() && (form.abstract || item?.abstract)?.trim() && (form.degree || item?.degree)?.trim() && (form.department_id || item?.department_id) && (form.course_id || item?.course_id) && (item?.file_path || item?.isDemo)); }
 
 function LibraryWorkspace({ profile, session, preview, onToast }) {
   const [projects, setProjects] = useState(preview ? demoReviewProjects.filter(item => ['supervisor_approved', 'published', 'cleared'].includes(item.status)).map(item => ({ ...item, isDemo: true, dept: item.dept || 'Computer Science', department_id: 'preview-department', course_name: 'Computer Science', reviewHistory: [] })) : []);
@@ -1368,9 +1391,45 @@ function LibraryWorkspace({ profile, session, preview, onToast }) {
       setBusyAction('verify'); const data = await invoke('project-workflow', { action: 'library_verify', project_id: selected.id, comment: form.comment || form.library_note }); updateProject(data.project); onToast('Metadata verified. Generate the QR label and publish when ready.');
     } catch (error) { onToast(error.message || 'Metadata could not be verified.'); } finally { setBusyAction(''); }
   };
+  const generateQr = async () => {
+    if (!selected) return;
+    if (!form.shelf_number.trim()) { onToast('Assign a shelf number before generating the QR label.'); return; }
+    try {
+      await saveMetadata(true);
+      if (preview || selected.isDemo) {
+        const updated = { ...selected, shelf_number: form.shelf_number.trim(), qr_payload: JSON.stringify({ type: 'spms-project', project_id: selected.id, shelf_number: form.shelf_number.trim() }), qr_generated_at: new Date().toISOString(), status: selected.status };
+        updateProject(updated);
+        onToast('QR label generated in preview.');
+        return;
+      }
+      setBusyAction('qr');
+      const data = await generateProjectQr(selected.id, form.shelf_number.trim());
+      updateProject(data.project);
+      onToast(data.already_generated ? 'The existing QR label was restored.' : 'QR label generated and saved.');
+    } catch (error) { onToast(error.message || 'QR label could not be generated.'); } finally { setBusyAction(''); }
+  };
+  const issueDoi = async () => {
+    if (!selected) return;
+    try {
+      await saveMetadata(true);
+      if (preview || selected.isDemo) {
+        const doi = form.doi.trim() || `10.0000/preview-${selected.id}`;
+        updateProject({ ...selected, doi, doi_provider: form.doi.trim() ? 'manual' : 'preview', doi_issued_at: new Date().toISOString() });
+        update('doi', doi);
+        onToast('DOI issued in preview.');
+        return;
+      }
+      setBusyAction('doi');
+      const data = await issueProjectDoi(selected.id, form.doi.trim());
+      updateProject(data.project);
+      update('doi', data.project?.doi || form.doi);
+      onToast(data.already_issued ? 'The existing DOI was restored.' : 'DOI issued and saved.');
+    } catch (error) { onToast(error.message || 'DOI could not be issued.'); } finally { setBusyAction(''); }
+  };
   const publish = async () => {
     if (!selected) return;
     if (!form.shelf_number.trim()) { onToast('Assign a shelf number before publishing.'); return; }
+    if (!selected.qr_payload) { onToast('Generate the QR label before publishing this record.'); return; }
     try {
       await saveMetadata(true);
       if (preview || selected.isDemo) { const updated = { ...selected, ...form, status: 'published', shelf_number: form.shelf_number.trim(), qr_payload: JSON.stringify({ type: 'spms-project', project_id: selected.id, shelf_number: form.shelf_number.trim() }), published_at: new Date().toISOString() }; updateProject(updated); onToast('Preview record published and QR label generated.'); return; }
@@ -1391,13 +1450,13 @@ function LibraryWorkspace({ profile, session, preview, onToast }) {
   const qrProjects = catalogueProjects.filter(item => item.qr_payload || item.shelf_number);
   const archiveProjects = projects.filter(item => item.status === 'cleared');
   if (loading) return <PageSkeleton role="library" />;
-  return <LibraryWorkspacePages profile={profile} preview={preview} onToast={onToast} activeSection={activeSection} navigate={navigate} projects={projects} selected={selected} setSelected={setSelected} form={form} setForm={setForm} qrUrl={qrUrl} queueProjects={queueProjects} filteredQueueProjects={filteredQueueProjects} catalogueProjects={catalogueProjects} qrProjects={qrProjects} archiveProjects={archiveProjects} departments={departments} courses={courses} queueQuery={queueQuery} setQueueQuery={setQueueQuery} queueStatus={queueStatus} setQueueStatus={setQueueStatus} queueDepartment={queueDepartment} setQueueDepartment={setQueueDepartment} queueCourse={queueCourse} setQueueCourse={setQueueCourse} queueDegree={queueDegree} setQueueDegree={setQueueDegree} queueDate={queueDate} setQueueDate={setQueueDate} catalogQuery={catalogQuery} setCatalogQuery={setCatalogQuery} catalogStatus={catalogStatus} setCatalogStatus={setCatalogStatus} openRecord={openRecord} saveMetadata={saveMetadata} verifyMetadata={verifyMetadata} publish={publish} issueClearanceReceipt={issueClearanceReceipt} busyAction={busyAction} />;
+  return <LibraryWorkspacePages profile={profile} preview={preview} onToast={onToast} activeSection={activeSection} navigate={navigate} projects={projects} selected={selected} setSelected={setSelected} form={form} setForm={setForm} qrUrl={qrUrl} queueProjects={queueProjects} filteredQueueProjects={filteredQueueProjects} catalogueProjects={catalogueProjects} qrProjects={qrProjects} archiveProjects={archiveProjects} departments={departments} courses={courses} queueQuery={queueQuery} setQueueQuery={setQueueQuery} queueStatus={queueStatus} setQueueStatus={setQueueStatus} queueDepartment={queueDepartment} setQueueDepartment={setQueueDepartment} queueCourse={queueCourse} setQueueCourse={setQueueCourse} queueDegree={queueDegree} setQueueDegree={setQueueDegree} queueDate={queueDate} setQueueDate={setQueueDate} catalogQuery={catalogQuery} setCatalogQuery={setCatalogQuery} catalogStatus={catalogStatus} setCatalogStatus={setCatalogStatus} openRecord={openRecord} saveMetadata={saveMetadata} verifyMetadata={verifyMetadata} generateQr={generateQr} issueDoi={issueDoi} publish={publish} issueClearanceReceipt={issueClearanceReceipt} busyAction={busyAction} />;
 }
 
-function LibraryWorkspacePages({ profile, preview, onToast, activeSection, navigate, projects, selected, setSelected, form, setForm, qrUrl, queueProjects, filteredQueueProjects, catalogueProjects, qrProjects, archiveProjects, departments, courses, queueQuery, setQueueQuery, queueStatus, setQueueStatus, queueDepartment, setQueueDepartment, queueCourse, setQueueCourse, queueDegree, setQueueDegree, queueDate, setQueueDate, catalogQuery, setCatalogQuery, catalogStatus, setCatalogStatus, openRecord, saveMetadata, verifyMetadata, publish, issueClearanceReceipt, busyAction }) {
+function LibraryWorkspacePages({ profile, preview, onToast, activeSection, navigate, projects, selected, setSelected, form, setForm, qrUrl, queueProjects, filteredQueueProjects, catalogueProjects, qrProjects, archiveProjects, departments, courses, queueQuery, setQueueQuery, queueStatus, setQueueStatus, queueDepartment, setQueueDepartment, queueCourse, setQueueCourse, queueDegree, setQueueDegree, queueDate, setQueueDate, catalogQuery, setCatalogQuery, catalogStatus, setCatalogStatus, openRecord, saveMetadata, verifyMetadata, generateQr, issueDoi, publish, issueClearanceReceipt, busyAction }) {
   const sidebar = [[Library, 'Verification queue', activeSection === 'library-queue', () => navigate('library-queue')], [BookOpen, 'Public catalogue', activeSection === 'library-catalogue', () => navigate('library-catalogue')], [QrCode, 'QR labels', activeSection === 'library-qr', () => navigate('library-qr')], [Archive, 'Archive', activeSection === 'library-archive', () => navigate('library-archive')]];
   const selectedReadOnly = Boolean(selected && ['published', 'cleared'].includes(selected.status));
-  const metadataComplete = selected && Boolean(form.title.trim() && form.abstract.trim() && form.degree.trim() && form.department_id && (selected.file_path || selected.isDemo));
+  const metadataComplete = selected && Boolean(form.title.trim() && form.abstract.trim() && form.degree.trim() && form.department_id && form.course_id && (selected.file_path || selected.isDemo));
   const shelfValid = Boolean(form.shelf_number.trim() && form.shelf_number.trim().length <= 80);
   const checklist = [['Metadata complete', metadataComplete], ['Supervisor approval confirmed', Boolean(selected && ['supervisor_approved', 'library_review', 'published', 'cleared'].includes(selected.status))], ['PDF available', Boolean(selected?.file_path || selected?.isDemo)], ['Shelf number valid', shelfValid], ['QR payload ready', Boolean(selected?.qr_payload)], ['Public record ready', Boolean(selected && ['published', 'cleared'].includes(selected.status))]];
   const selectedCourses = courses.filter(course => !form.department_id || course.department_id === form.department_id);
@@ -1407,11 +1466,11 @@ function LibraryWorkspacePages({ profile, preview, onToast, activeSection, navig
     {activeSection === 'library-catalogue' && <section className="surface workspace-section" id="library-catalogue"><SectionHeader eyebrow="Public catalogue" title="Published research" copy="Public records contain academic metadata only. Thesis files remain private." action={<BookOpen size={18} color="#065f46" />} /><div className="table-tools"><SearchBox value={catalogQuery} onChange={setCatalogQuery} placeholder="Search catalogue records" /><select value={catalogStatus} onChange={event => setCatalogStatus(event.target.value)} aria-label="Catalogue status filter"><option value="all">Published and cleared</option><option value="published">Published</option><option value="cleared">Cleared</option></select></div>{catalogueProjects.length ? <div className="table-wrap"><table className="data-table"><thead><tr><th>Title</th><th>Degree</th><th>Department/course</th><th>Shelf</th><th>State</th><th>Action</th></tr></thead><tbody>{catalogueProjects.map(item => <tr key={item.id}><td><strong>{item.title}</strong><br /><span className="helper">{item.doi || 'No DOI assigned'}</span></td><td>{item.degree || '—'}</td><td>{item.dept || '—'}<br /><span className="helper">{item.course_name || '—'}</span></td><td>{item.shelf_number || '—'}</td><td><StatusChip status={item.status} /></td><td><button className="button button-ghost button-small" type="button" onClick={() => openRecord(item)}><Eye size={14} />View</button></td></tr>)}</tbody></table></div> : <EmptyState icon={BookOpen} title="No catalogue records published yet" copy="Verified projects will appear here after publication." />}</section>}
     {activeSection === 'library-qr' && <section className="surface workspace-section" id="library-qr"><SectionHeader eyebrow="Verification labels" title="QR labels" copy="Each label resolves to the public verification endpoint without exposing the PDF." action={<QrCode size={18} color="#065f46" />} />{qrProjects.length ? <div className="queue-list">{qrProjects.map(item => <div className="queue-item" key={`qr-${item.id}`}><div><h3>{item.title}</h3><p>{item.shelf_number || 'Shelf number pending'} · {item.status === 'cleared' ? 'Clearance complete' : 'Catalogue published'}</p></div><div className="card-actions"><button className="button button-ghost button-small" type="button" onClick={() => openRecord(item)}><Eye size={14} />View label</button>{item.qr_payload && <a className="button button-ghost button-small" href={qrUrl && selected?.id === item.id ? qrUrl : '#'} download={`${item.shelf_number || item.title}-qr.svg`} onClick={event => { if (!qrUrl || selected?.id !== item.id) { event.preventDefault(); openRecord(item); onToast('QR preview opened. Download it from the record.'); } }}><Download size={14} />Download</a>}</div></div>)}</div> : <EmptyState icon={QrCode} title="No QR labels yet" copy="Publish a verified project to create its public verification label." />}</section>}
     {activeSection === 'library-archive' && <section className="surface workspace-section" id="library-archive"><SectionHeader eyebrow="Institutional archive" title="Cleared research" copy="Final clearance records remain available for institutional audit and retrieval." action={<Archive size={18} color="#065f46" />} />{archiveProjects.length ? <div className="table-wrap"><table className="data-table"><thead><tr><th>Project</th><th>Student</th><th>Shelf</th><th>Receipt</th><th>Cleared</th><th>Action</th></tr></thead><tbody>{archiveProjects.map(item => <tr key={item.id}><td><strong>{item.title}</strong><br /><span className="helper">{item.dept || 'Department pending'}</span></td><td>{item.author || item.profiles?.full_name || 'Student'}<br /><span className="helper">{item.matric || '—'}</span></td><td>{item.shelf_number || '—'}</td><td>{item.receipt?.verification_code || 'Pending'}</td><td>{displayDate(item.cleared_at || item.updated_at)}</td><td><button className="button button-ghost button-small" type="button" onClick={() => openRecord(item)}><Eye size={14} />View archive</button></td></tr>)}</tbody></table></div> : <EmptyState icon={Archive} title="No cleared records in the archive" copy="Projects move here after the digital clearance receipt is issued." />}</section>}
-    <LibraryRecordModal selected={selected} setSelected={setSelected} form={form} setForm={setForm} qrUrl={qrUrl} departments={departments} courses={courses} selectedReadOnly={selectedReadOnly} checklist={checklist} saveMetadata={saveMetadata} verifyMetadata={verifyMetadata} publish={publish} issueClearanceReceipt={issueClearanceReceipt} busyAction={busyAction} onToast={onToast} />
+    <LibraryRecordModal selected={selected} setSelected={setSelected} form={form} setForm={setForm} qrUrl={qrUrl} departments={departments} courses={courses} selectedReadOnly={selectedReadOnly} checklist={checklist} saveMetadata={saveMetadata} verifyMetadata={verifyMetadata} generateQr={generateQr} issueDoi={issueDoi} publish={publish} issueClearanceReceipt={issueClearanceReceipt} busyAction={busyAction} onToast={onToast} />
   </Workspace>;
 }
 
-function LibraryRecordModal({ selected, setSelected, form, setForm, qrUrl, departments, courses, selectedReadOnly, checklist, saveMetadata, verifyMetadata, publish, issueClearanceReceipt, busyAction, onToast }) {
+function LibraryRecordModal({ selected, setSelected, form, setForm, qrUrl, departments, courses, selectedReadOnly, checklist, saveMetadata, verifyMetadata, generateQr, issueDoi, publish, issueClearanceReceipt, busyAction, onToast }) {
   const selectedCourses = courses.filter(course => !form.department_id || course.department_id === form.department_id);
   const update = (field, value) => setForm(current => ({ ...current, [field]: value }));
   const save = () => saveMetadata(false).catch(error => onToast(error.message || 'Metadata could not be saved.'));
@@ -1445,7 +1504,7 @@ function LibraryRecordModal({ selected, setSelected, form, setForm, qrUrl, depar
           <div className="surface library-history"><div className="surface-head"><div><p className="eyebrow">Lifecycle history</p><h3>Audit trail</h3></div><FileCheck2 size={17} color="#065f46" /></div>{selected.reviewHistory?.length ? selected.reviewHistory.map(item => <div className="library-history-item" key={item.id || `${item.action}-${item.created_at}`}><div><strong>{String(item.action || '').replaceAll('_', ' ')}</strong><span>{item.comment || 'Action recorded without a note.'}</span></div><small>{displayDate(item.created_at)}</small></div>) : <p className="helper">Library actions will appear here after the first save.</p>}{selected.receipt && <div className="library-history-item"><div><strong>Clearance receipt</strong><span>{selected.receipt.verification_code}</span></div><small>{displayDate(selected.receipt.issued_at)}</small></div>}</div>
         </aside>
       </div>
-      <div className="modal-actions"><button className="button button-ghost" type="button" onClick={() => setSelected(null)}>Close</button>{!selectedReadOnly && <button className="button button-ghost" type="button" disabled={Boolean(busyAction)} onClick={save}><Save size={15} />{busyAction === 'save' ? 'Saving...' : 'Save metadata'}</button>}{selected.status === 'supervisor_approved' && <button className="button button-primary" type="button" disabled={Boolean(busyAction)} onClick={verifyMetadata}><Check size={15} />{busyAction === 'verify' ? 'Verifying...' : 'Verify metadata'}</button>}{selected.status === 'library_review' && <button className="button button-primary" type="button" disabled={Boolean(busyAction)} onClick={publish}><BookOpen size={15} />{busyAction === 'publish' ? 'Publishing...' : 'Publish to catalogue'}</button>}{selected.status === 'published' && <button className="button button-primary" type="button" disabled={Boolean(busyAction)} onClick={issueClearanceReceipt}><CheckCircle2 size={15} />{busyAction === 'receipt' ? 'Issuing...' : 'Issue clearance receipt'}</button>}{selected.status === 'cleared' && <span className="tag"><CheckCircle2 size={13} />Receipt issued</span>}{verified && !published && <span className="helper">Metadata verified. Assign the shelf number and publish when ready.</span>}</div>
+      <div className="modal-actions"><button className="button button-ghost" type="button" onClick={() => setSelected(null)}>Close</button>{!selectedReadOnly && <button className="button button-ghost" type="button" disabled={Boolean(busyAction)} onClick={save}><Save size={15} />{busyAction === 'save' ? 'Saving...' : 'Save metadata'}</button>}{selected.status === 'supervisor_approved' && <button className="button button-primary" type="button" disabled={Boolean(busyAction)} onClick={verifyMetadata}><Check size={15} />{busyAction === 'verify' ? 'Verifying...' : 'Verify metadata'}</button>}{selected.status === 'library_review' && !selected.qr_payload && <button className="button button-ghost" type="button" disabled={Boolean(busyAction)} onClick={generateQr}><QrCode size={15} />{busyAction === 'qr' ? 'Generating...' : 'Generate QR'}</button>}{selected.status === 'library_review' && !selected.doi && <button className="button button-ghost" type="button" disabled={Boolean(busyAction)} onClick={issueDoi}><BookOpen size={15} />{busyAction === 'doi' ? 'Issuing DOI...' : 'Issue DOI'}</button>}{selected.status === 'library_review' && <button className="button button-primary" type="button" disabled={Boolean(busyAction) || !selected.qr_payload} onClick={publish}><BookOpen size={15} />{busyAction === 'publish' ? 'Publishing...' : 'Publish to catalogue'}</button>}{selected.status === 'published' && <button className="button button-primary" type="button" disabled={Boolean(busyAction)} onClick={issueClearanceReceipt}><CheckCircle2 size={15} />{busyAction === 'receipt' ? 'Issuing...' : 'Issue clearance receipt'}</button>}{selected.status === 'cleared' && <span className="tag"><CheckCircle2 size={13} />Receipt issued</span>}{verified && !published && <span className="helper">Metadata verified. Generate the QR label and publish when ready.</span>}</div>
     </>}
   </Modal>;
 }

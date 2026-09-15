@@ -6,6 +6,8 @@ export const workflowActions = {
   assignSupervisor: 'assign_supervisor',
   libraryVerify: 'library_verify',
   libraryUpdateMetadata: 'library_update_metadata',
+  libraryGenerateQr: 'library_generate_qr',
+  libraryIssueDoi: 'library_issue_doi',
   libraryPublish: 'library_publish',
   issueReceipt: 'issue_receipt',
   repositoryGetUrl: 'get_download_url',
@@ -21,6 +23,14 @@ export const projectStatuses = ['draft', 'submitted', 'supervisor_review', 'revi
 
 export async function issueReceipt(projectId) {
   return invoke('project-workflow', { action: workflowActions.issueReceipt, project_id: projectId });
+}
+
+export async function generateProjectQr(projectId, shelfNumber) {
+  return invoke('project-workflow', { action: workflowActions.libraryGenerateQr, project_id: projectId, shelf_number: shelfNumber });
+}
+
+export async function issueProjectDoi(projectId, doi = '') {
+  return invoke('project-workflow', { action: workflowActions.libraryIssueDoi, project_id: projectId, ...(doi ? { doi } : {}) });
 }
 
 export async function retryPaymentVerification(reference, metadata = {}) {
