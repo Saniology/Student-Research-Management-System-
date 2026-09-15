@@ -25,6 +25,12 @@ const previewAction = previewParams.get('preview_action') || '';
 function formatNaira(kobo = 0) { return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(kobo) / 100); }
 function displayDate(value) { return value ? new Date(value).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
 function escapePdfText(value) { return String(value ?? '').replace(/[^\x20-\x7e]/g, '?').replace(/[\\()]/g, '\\$&'); }
+function pdfHex(value) { return [...value].map(byte => byte.toString(16).padStart(2, '0')).join(''); }
+async function loadReceiptLogoBytes() {
+  const response = await fetch(kasuLogo);
+  if (!response.ok) throw new Error('KASU logo could not be loaded for the receipt.');
+  return new Uint8Array(await response.arrayBuffer());
+}
 function receiptQrCommands(payload) {
   const qr = qrcode(0, 'M');
   qr.addData(String(payload || 'SPMS receipt verification'));
@@ -46,34 +52,56 @@ function receiptQrCommands(payload) {
   commands.push(`BT /F1 9 Tf ${originX} 56 Td (Scan to verify this receipt) Tj ET`);
   return commands;
 }
-function downloadReceiptPdf(receipt, project, payment, profile) {
+async function downloadReceiptPdf(receipt, project, payment, profile) {
   if (!receipt) return;
-  const lines = [
-    'KASU SPMS - DIGITAL CLEARANCE RECEIPT',
-    '',
-    `Verification code: ${receipt.verification_code || 'Not available'}`,
-    `Student: ${receipt.profiles?.full_name || profile?.full_name || 'Student'}`,
-    `Matric: ${receipt.profiles?.matric || profile?.matric || 'Not available'}`,
-    `Project: ${project?.title || 'Research project'}`,
-    `Payment reference: ${payment?.paystack_reference || 'Not available'}`,
-    `Amount: ${payment ? formatNaira(payment.amount) : 'Not available'}`,
-    `Issued: ${displayDate(receipt.issued_at)}`,
-    '',
-    'Verify this receipt from the public SPMS verification form using the code above.',
-  ];
+  const logoBytes = await loadReceiptLogoBytes();
+  const studentName = receipt.profiles?.full_name || profile?.full_name || 'Student';
+  const matric = receipt.profiles?.matric || profile?.matric || 'Not available';
+  const verificationCode = receipt.verification_code || 'Not available';
+  const paymentReference = payment?.paystack_reference || 'Not available';
+  const amount = payment ? formatNaira(payment.amount) : 'Not available';
+  const issued = displayDate(receipt.issued_at);
+  const projectTitle = project?.title || 'Research project';
   const qrPayload = receipt.qr_payload || JSON.stringify({ type: 'spms-clearance-receipt', verification_code: receipt.verification_code });
-  const streamParts = [`BT /F1 18 Tf 72 720 Td (${escapePdfText(lines[0])}) Tj`, '/F1 11 Tf'];
-  lines.slice(1).forEach(line => streamParts.push(`0 -24 Td (${escapePdfText(line)}) Tj`));
-  streamParts.push('ET');
+  const streamParts = [
+    'q 0.025 0.373 0.275 rg 0 620 612 172 re f Q',
+    'q 0.96 0.62 0.05 rg 0 616 612 4 re f Q',
+    'q 1 1 1 rg 68 0 0 68 48 672 cm /Im1 Do Q',
+    `BT 1 1 1 rg /F1 9 Tf 132 715 Td (${escapePdfText('KADUNA STATE UNIVERSITY')}) Tj`,
+    `0 -20 Td /F1 22 Tf (${escapePdfText('KASU SPMS')}) Tj`,
+    `0 -17 Td /F1 9 Tf (${escapePdfText('STUDENT PROJECT MANAGEMENT SYSTEM')}) Tj ET`,
+    '0.025 0.373 0.275 rg 44 555 524 35 re f',
+    `BT 1 1 1 rg /F1 10 Tf 60 576 Td (${escapePdfText('DIGITAL CLEARANCE RECEIPT')}) Tj`,
+    `0 -15 Td /F1 9 Tf (${escapePdfText('Official payment and clearance evidence')}) Tj ET`,
+    '0.88 0.93 0.92 RG 44 515 524 1 re S',
+    `BT 0.12 0.22 0.24 rg /F1 9 Tf 58 483 Td (${escapePdfText('STUDENT')}) Tj`,
+    `0 -18 Td /F1 13 Tf (${escapePdfText(studentName)}) Tj`,
+    `0 -16 Td /F1 9 Tf (${escapePdfText(`Matric: ${matric}`)}) Tj ET`,
+    `BT 0.12 0.22 0.24 rg /F1 9 Tf 314 483 Td (${escapePdfText('PROJECT')}) Tj`,
+    `0 -18 Td /F1 12 Tf (${escapePdfText(projectTitle.slice(0, 48))}) Tj`,
+    `0 -16 Td /F1 9 Tf (${escapePdfText(`Issued: ${issued}`)}) Tj ET`,
+    '0.88 0.93 0.92 RG 44 410 524 1 re S',
+    `BT 0.39 0.48 0.5 rg /F1 8 Tf 58 384 Td (${escapePdfText('PAYMENT REFERENCE')}) Tj`,
+    `0 -16 Td 0.12 0.22 0.24 rg /F1 10 Tf (${escapePdfText(paymentReference)}) Tj`,
+    `0 -28 Td 0.39 0.48 0.5 rg /F1 8 Tf (${escapePdfText('AMOUNT PAID')}) Tj`,
+    `0 -16 Td 0.025 0.55 0.38 rg /F1 17 Tf (${escapePdfText(amount)}) Tj ET`,
+    '0.88 0.93 0.92 RG 44 280 524 1 re S',
+    `BT 0.39 0.48 0.5 rg /F1 8 Tf 58 254 Td (${escapePdfText('VERIFICATION CODE')}) Tj`,
+    `0 -18 Td 0.025 0.373 0.275 rg /F1 13 Tf (${escapePdfText(verificationCode)}) Tj`,
+    `0 -24 Td 0.39 0.48 0.5 rg /F1 9 Tf (${escapePdfText('Scan the QR code or check this code in the public KASU SPMS verifier.')}) Tj ET`,
+    `BT 0.025 0.373 0.275 rg /F1 9 Tf 58 126 Td (${escapePdfText('This receipt confirms a successful clearance payment recorded by KASU SPMS.')}) Tj ET`,
+  ];
   streamParts.push(...receiptQrCommands(qrPayload));
+  streamParts.push(`BT 0.39 0.48 0.5 rg /F1 8 Tf 58 54 Td (${escapePdfText('KASU SPMS · Kaduna State University')}) Tj ET`);
   const stream = streamParts.join('\n');
   const byteLength = value => new TextEncoder().encode(value).length;
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> /XObject << /Im1 6 0 R >> >> >>',
     `<< /Length ${byteLength(stream)} >>\nstream\n${stream}\nendstream`,
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    `<< /Type /XObject /Subtype /Image /Width 512 /Height 512 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /ASCIIHexDecode /Length ${logoBytes.length * 2 + 1} >>\nstream\n${pdfHex(logoBytes)}>\nendstream`,
   ];
   let pdf = '%PDF-1.4\n';
   const offsets = [0];
@@ -339,11 +367,51 @@ function VerificationBox() {
     event.preventDefault();
     if (!value.trim()) return;
     setBusy(true); setResult(null);
-    try { setResult(await lookupVerification(type, type === 'receipt' ? { verification_code: value.trim() } : type === 'project' ? { project_id: value.trim() } : { verification_code: value.trim() })); }
+    try {
+      const lookupType = type === 'qr_svg' ? 'receipt' : type;
+      setResult(await lookupVerification(lookupType, lookupType === 'receipt' ? { verification_code: value.trim() } : { project_id: value.trim() }));
+    }
     catch (error) { setResult({ error: error.message }); }
     finally { setBusy(false); }
   };
-  return <section className="verification-section"><div className="page-pad"><SectionHeader eyebrow="Public verification" title="Check a receipt or catalogue record" copy="Confirm published research and digital clearance without exposing private thesis files." /><form className="verification-form" onSubmit={verify}><div className="field"><label htmlFor="verification-type">Verification type</label><select id="verification-type" value={type} onChange={event => setType(event.target.value)}><option value="receipt">Clearance receipt</option><option value="project">Public project</option><option value="qr_svg">QR verification code</option></select></div><div className="field verification-value"><label htmlFor="verification-value">Verification code</label><input id="verification-value" value={value} onChange={event => setValue(event.target.value)} placeholder="Enter a public code" /></div><button className="button button-primary" disabled={busy}>{busy ? 'Checking...' : 'Verify record'}</button></form>{result && <div className={`verification-result ${result.error ? 'is-error' : ''}`} role="status"><strong>{result.error ? 'Verification failed' : 'Record verified'}</strong><pre>{JSON.stringify(result, null, 2)}</pre></div>}</div></section>;
+  const isProject = type === 'project';
+  const isQr = type === 'qr_svg';
+  return <section className="verification-section"><div className="page-pad"><SectionHeader eyebrow="Public verification" title="Check a receipt or catalogue record" copy="Confirm published research and digital clearance without exposing private thesis files." /><form className="verification-form" onSubmit={verify}><div className="field"><label htmlFor="verification-type">Verification type</label><select id="verification-type" value={type} onChange={event => { setType(event.target.value); setValue(''); setResult(null); }}><option value="receipt">Clearance receipt</option><option value="project">Catalogue record</option><option value="qr_svg">Receipt QR code</option></select></div><div className="field verification-value"><label htmlFor="verification-value">{isProject ? 'Catalogue record ID' : isQr ? 'Receipt code from QR label' : 'Receipt verification code'}</label><input id="verification-value" value={value} onChange={event => setValue(event.target.value)} placeholder={isProject ? 'Paste the public project ID' : isQr ? 'Enter the SPMS code under the QR' : 'Enter the SPMS receipt code'} autoComplete="off" /></div><button className="button button-primary" disabled={busy || !value.trim()}>{busy ? 'Checking...' : 'Verify record'}</button></form>{result && <VerificationResult result={result} />}</div></section>;
+}
+
+function VerificationResult({ result }) {
+  if (result.error) return <div className="verification-result is-error" role="alert"><div className="verification-result-status"><XCircle size={18} /><strong>Record could not be verified</strong></div><p>{result.error}</p><small>Check the code and try again. Private thesis files are never exposed here.</small></div>;
+  const receipt = result.type === 'receipt';
+  const record = receipt ? result : result.project;
+  return <article className="verification-result verification-result-card" role="status">
+    <div className="verification-result-head"><div className="verification-result-brand"><img src={kasuLogo} alt="KASU" /><div><p className="eyebrow">Kaduna State University</p><strong>KASU SPMS</strong></div></div><span className="verification-valid"><CheckCircle2 size={15} />Verified</span></div>
+    <div className="verification-result-title"><div><p className="eyebrow">{receipt ? 'Digital clearance' : 'Public catalogue'}</p><h3>{receipt ? 'Clearance receipt verified' : 'Catalogue record verified'}</h3></div><span className="tag">{receipt ? result.verification_code : 'PUBLIC RECORD'}</span></div>
+    <div className="verification-result-grid">
+      {receipt ? <><VerificationField label="Student" value={result.student?.full_name || 'Not available'} /><VerificationField label="Matric number" value={result.student?.matric || 'Not available'} /><VerificationField label="Department" value={result.student?.department || 'Not available'} /><VerificationField label="Project" value={result.project?.title || 'Not available'} /><VerificationField label="Shelf number" value={result.project?.shelf_number || 'Not assigned'} /><VerificationField label="Issued" value={displayDate(result.issued_at)} /></> : <><VerificationField label="Project" value={record?.title || 'Not available'} /><VerificationField label="Degree" value={record?.degree || 'Not available'} /><VerificationField label="Department" value={record?.department_name || 'Not available'} /><VerificationField label="Course" value={record?.course_name || 'Not available'} /><VerificationField label="Shelf number" value={record?.shelf_number || 'Not assigned'} /><VerificationField label="Published" value={displayDate(record?.published_at)} /></>}
+    </div>
+    {!receipt && record?.abstract && <p className="verification-result-abstract">{record.abstract}</p>}
+    <div className="verification-result-foot"><ShieldCheck size={15} /><span>Verified by the public KASU SPMS record. No private PDF, payment, or supervisor data is displayed.</span></div>
+  </article>;
+}
+
+function VerificationField({ label, value }) { return <div className="verification-result-field"><span>{label}</span><strong>{value}</strong></div>; }
+
+function ReceiptCard({ receipt, project, payment, profile, receiptQrUrl, onDownload, compact = false }) {
+  const studentName = receipt?.profiles?.full_name || profile?.full_name || 'Student';
+  const matric = receipt?.profiles?.matric || profile?.matric || 'Not available';
+  return <article className={`receipt-card ${compact ? 'is-compact' : ''}`}>
+    <div className="receipt-card-head"><div className="receipt-card-brand"><img src={kasuLogo} alt="KASU logo" /><div><p>KADUNA STATE UNIVERSITY</p><strong>KASU SPMS</strong><span>Student Project Management System</span></div></div><span className="receipt-status"><CheckCircle2 size={14} />Verified</span></div>
+    <div className="receipt-card-banner"><div><p className="eyebrow">Official digital clearance</p><h3>Clearance receipt</h3><span>Payment and clearance evidence</span></div><ShieldCheck size={28} /></div>
+    <div className="receipt-card-code"><span>Verification code</span><strong>{receipt?.verification_code || 'Not available'}</strong></div>
+    <div className="receipt-card-body"><div className="receipt-card-details"><ReceiptDetail label="Student" value={studentName} /><ReceiptDetail label="Matric number" value={matric} /><ReceiptDetail label="Project" value={project?.title || 'Research project'} /><ReceiptDetail label="Payment reference" value={payment?.paystack_reference || 'Not available'} /><ReceiptDetail label="Amount paid" value={payment ? formatNaira(payment.amount) : 'Not available'} accent /><ReceiptDetail label="Issued" value={displayDate(receipt?.issued_at)} /></div>{receiptQrUrl && <div className="receipt-card-qr"><img src={receiptQrUrl} alt="QR code for receipt verification" /><span>Scan to verify</span></div>}</div>
+    <div className="receipt-card-foot"><span>This receipt is issued by KASU SPMS and can be checked from the public verification form.</span>{onDownload && <button className="button button-primary button-small" type="button" onClick={onDownload}><Download size={14} />Download receipt PDF</button>}</div>
+  </article>;
+}
+
+function ReceiptDetail({ label, value, accent = false }) { return <div className={accent ? 'is-accent' : ''}><span>{label}</span><strong title={value}>{value}</strong></div>; }
+
+function PaymentEvidenceCard({ payment, project, receipt, receiptQrUrl, onReceipt, onIssue }) {
+  return <article className="payment-evidence-card"><div className="payment-evidence-head"><div className="receipt-card-brand"><img src={kasuLogo} alt="KASU logo" /><div><p>KADUNA STATE UNIVERSITY</p><strong>KASU SPMS</strong><span>Secure payment evidence</span></div></div><span className="receipt-status"><CheckCircle2 size={14} />Payment captured</span></div><div className="payment-evidence-total"><span>Clearance payment</span><strong>{formatNaira(payment?.amount)}</strong><small>Successful Paystack transaction</small></div><div className="receipt-card-details"><ReceiptDetail label="Payment reference" value={payment?.paystack_reference || 'Not available'} /><ReceiptDetail label="Paid on" value={displayDate(payment?.paid_at || payment?.created_at)} /><ReceiptDetail label="Project" value={project?.title || 'Research project'} /><ReceiptDetail label="Receipt status" value={receipt ? 'Issued and verifiable' : 'Available after publication'} /></div>{receiptQrUrl && <img className="payment-evidence-qr" src={receiptQrUrl} alt="QR code for receipt verification" />}{receipt ? <button className="button button-ghost button-small" type="button" onClick={onReceipt}><ShieldCheck size={14} />Open digital receipt</button> : onIssue && <button className="button button-primary button-small" type="button" onClick={onIssue}><ShieldCheck size={14} />Issue digital receipt</button>}</article>;
 }
 
 function LogInIcon() { return <ArrowRight size={16} />; }
@@ -851,12 +919,7 @@ function StudentWorkspace({ profile, session, preview, onToast, onProfileUpdate 
       <section className="surface workspace-section" id="student-payments">
         <div id="student-receipt" className="workspace-anchor" aria-hidden="true" />
         <div className="surface-head"><div><h2>Payment evidence</h2><p>Every successful payment is tied to your account.</p></div><CircleDollarSign size={17} color="#065f46" /></div>
-        {payment ? <div className="receipt" id="receipt-section">
-          <h3>{previewAction === 'show_receipt' || receipt || project?.status === 'cleared' ? 'Digital Clearance Receipt' : 'Payment captured'}</h3>
-          <dl><dt>Reference</dt><dd>{payment.paystack_reference}</dd><dt>Amount</dt><dd>{formatNaira(payment.amount)}</dd><dt>Date</dt><dd>{displayDate(payment.paid_at)}</dd></dl>
-          {receiptQrUrl && <div className="qr-preview"><img src={receiptQrUrl} alt="Clearance receipt verification QR code" /><span className="helper">Scan to verify this clearance receipt.</span></div>}
-          {(previewAction === 'show_receipt' || ['published', 'cleared'].includes(project?.status)) && (receipt ? <button className="button button-primary" style={{ marginTop: '1rem' }} onClick={() => downloadReceiptPdf(receipt, project, payment, profile)}><Download size={15} />Download receipt PDF</button> : <button className="button button-primary" style={{ marginTop: '1rem' }} onClick={generateReceipt}>Issue digital receipt</button>)}
-        </div> : pendingVerification ? <div className="status-panel"><h3>Payment recorded, verification pending</h3><p className="helper">No second payment is required. The same reference will be retried against the uploaded PDF.</p><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />Retry verification</button></div> : <EmptyState icon={CircleDollarSign} title="No payment yet" copy="The fee is initialized securely on the server when you submit." />}
+        {payment ? receipt ? <ReceiptCard receipt={receipt} project={project} payment={payment} profile={profile} receiptQrUrl={receiptQrUrl} onDownload={() => downloadReceiptPdf(receipt, project, payment, profile)} /> : <PaymentEvidenceCard payment={payment} project={project} receipt={receipt} receiptQrUrl={receiptQrUrl} onIssue={['published', 'cleared'].includes(project?.status) ? generateReceipt : null} /> : pendingVerification ? <div className="status-panel"><h3>Payment recorded, verification pending</h3><p className="helper">No second payment is required. The same reference will be retried against the uploaded PDF.</p><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />Retry verification</button></div> : <EmptyState icon={CircleDollarSign} title="No payment yet" copy="The fee is initialized securely on the server when you submit." />}
       </section>
     </div>
   </Workspace>;
@@ -961,11 +1024,11 @@ function StudentReviewedDocumentModal({ selected, onClose }) {
 }
 
 function StudentPaymentEvidence({ payment, project, receipt, receiptQrUrl, generateReceipt, onReceipt, pendingVerification, retryPendingVerification, submitting }) {
-  return <section className="surface workspace-section" id="student-payments"><SectionHeader eyebrow="Payment evidence" title="Payment history" copy="Every successful clearance payment is tied to your account." action={<span className="tag"><CircleDollarSign size={12} />Secure record</span>} />{payment ? <div className="receipt"><h3>Payment captured</h3><dl><dt>Reference</dt><dd>{payment.paystack_reference}</dd><dt>Amount</dt><dd>{formatNaira(payment.amount)}</dd><dt>Date</dt><dd>{displayDate(payment.paid_at)}</dd></dl>{receipt ? <button className="button button-ghost button-small" style={{ marginTop: '1rem' }} type="button" onClick={onReceipt}><ShieldCheck size={14} />Open digital receipt</button> : ['published', 'cleared'].includes(project?.status) && <button className="button button-primary button-small" style={{ marginTop: '1rem' }} type="button" onClick={generateReceipt}><ShieldCheck size={14} />Issue digital receipt</button>}</div> : pendingVerification ? <div className="status-panel"><h3>Payment recorded, verification pending</h3><p className="helper">No second payment is required. The same reference will be retried against the uploaded PDF.</p><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />Retry verification</button></div> : <EmptyState icon={CircleDollarSign} title="No payment yet" copy="The fee is initialized securely on the server when you submit." />}</section>;
+  return <section className="surface workspace-section" id="student-payments"><SectionHeader eyebrow="Payment evidence" title="Payment history" copy="Every successful clearance payment is tied to your account." action={<span className="tag"><CircleDollarSign size={12} />Secure record</span>} />{payment ? <PaymentEvidenceCard payment={payment} project={project} receipt={receipt} receiptQrUrl={receiptQrUrl} onReceipt={onReceipt} onIssue={['published', 'cleared'].includes(project?.status) ? generateReceipt : null} /> : pendingVerification ? <div className="status-panel"><h3>Payment recorded, verification pending</h3><p className="helper">No second payment is required. The same reference will be retried against the uploaded PDF.</p><button className="button button-primary button-small" type="button" onClick={retryPendingVerification} disabled={submitting}><RefreshCw size={14} />Retry verification</button></div> : <EmptyState icon={CircleDollarSign} title="No payment yet" copy="The fee is initialized securely on the server when you submit." />}</section>;
 }
 
 function StudentReceiptPage({ payment, project, receipt, receiptQrUrl, generateReceipt, profile }) {
-  return <section className="surface workspace-section" id="student-receipt"><SectionHeader eyebrow="Digital clearance" title="Clearance receipt" copy="Keep your verified receipt available for institutional checks and final clearance." action={<span className="tag"><ShieldCheck size={12} />Verifiable</span>} />{payment && receipt ? <div className="receipt" id="receipt-section"><h3>Digital Clearance Receipt</h3><dl><dt>Verification code</dt><dd>{receipt.verification_code}</dd><dt>Payment reference</dt><dd>{payment.paystack_reference}</dd><dt>Amount</dt><dd>{formatNaira(payment.amount)}</dd><dt>Issued</dt><dd>{displayDate(receipt.issued_at)}</dd></dl>{receiptQrUrl && <div className="qr-preview"><img src={receiptQrUrl} alt="Clearance receipt verification QR code" /><span className="helper">Scan to verify this clearance receipt.</span></div>}<button className="button button-primary" style={{ marginTop: '1rem' }} type="button" onClick={() => downloadReceiptPdf(receipt, project, payment, profile)}><Download size={15} />Download receipt PDF</button></div> : payment && ['published', 'cleared'].includes(project?.status) ? <div className="status-panel"><h3>Receipt ready to issue</h3><p className="helper">Your project has been published. Issue the digital receipt to complete clearance.</p><button className="button button-primary button-small" type="button" onClick={generateReceipt}><ShieldCheck size={14} />Issue digital receipt</button></div> : <EmptyState icon={ShieldCheck} title="Receipt not available yet" copy="Your digital receipt becomes available after library publication and clearance." />}</section>;
+  return <section className="surface workspace-section" id="student-receipt"><SectionHeader eyebrow="Digital clearance" title="Clearance receipt" copy="Keep your verified receipt available for institutional checks and final clearance." action={<span className="tag"><ShieldCheck size={12} />Verifiable</span>} />{payment && receipt ? <ReceiptCard receipt={receipt} project={project} payment={payment} profile={profile} receiptQrUrl={receiptQrUrl} onDownload={() => downloadReceiptPdf(receipt, project, payment, profile)} /> : payment && ['published', 'cleared'].includes(project?.status) ? <div className="status-panel"><h3>Receipt ready to issue</h3><p className="helper">Your project has been published. Issue the digital receipt to complete clearance.</p><button className="button button-primary button-small" type="button" onClick={generateReceipt}><ShieldCheck size={14} />Issue digital receipt</button></div> : <EmptyState icon={ShieldCheck} title="Receipt not available yet" copy="Your digital receipt becomes available after library publication and clearance." />}</section>;
 }
 
 function TeacherWorkspace({ profile, session, preview, onToast, onProfileUpdate }) {
@@ -1682,7 +1745,7 @@ function AdminLivePanel({ profile, session, initialSection, onToast }) {
     {['supervisor-directory', 'supervisor-coverage', 'supervisor-queue'].includes(section) && <AdminSupervisorQueue profile={profile} onToast={onToast} page={section.replace('supervisor-', '')} />}
     {section === 'departments' && <HierarchyManager colleges={colleges} faculties={faculties} departments={departments} courses={courses} newCollege={newCollege} setNewCollege={setNewCollege} newFaculty={newFaculty} setNewFaculty={setNewFaculty} newDepartment={newDepartment} setNewDepartment={setNewDepartment} newCourse={newCourse} setNewCourse={setNewCourse} addHierarchy={addHierarchy} />}
     {section === 'uploads' && <section className="surface"><SectionHeader eyebrow="Project register" title="All thesis uploads" copy="Monitor status, student ownership, academic level, and submission timestamps." /><DataTable columns={['Project', 'Student', 'Degree', 'Status', 'Submitted']} rows={projects.map(item => [item.title, item.profiles?.full_name || 'Student', item.degree || '—', <StatusChip status={item.status} key={`${item.id}-status`} />, displayDate(item.created_at)])} empty="No project uploads found." /></section>}
-    {section === 'payments' && <section className="surface"><SectionHeader eyebrow="Finance evidence" title="Payment ledger" copy="Clearance payments and authenticated repository downloads with references for reconciliation." /><DataTable columns={['Reference', 'Type', 'Amount', 'Status', 'Created', 'Receipt']} rows={[...payments.map(item => { const receipt = receipts.find(record => record.project_id === item.project_id); return [item.paystack_reference || '—', item.transaction_type?.replaceAll('_', ' ') || '—', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), receipt ? <button className="button button-ghost button-small" onClick={() => setSelectedReceipt(receipt)}>View</button> : '—']; }), ...guestOrders.map(item => [item.paystack_reference || '—', 'legacy repository download', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), '—'])]} empty="No payment records found." /><Modal open={Boolean(selectedReceipt)} onClose={() => setSelectedReceipt(null)} eyebrow="Clearance evidence" title={selectedReceipt?.verification_code || 'Receipt'}><div className="receipt"><h3>{selectedReceipt?.projects?.title || 'Clearance receipt'}</h3><dl><dt>Student</dt><dd>{selectedReceipt?.profiles?.full_name || '—'}</dd><dt>Matric</dt><dd>{selectedReceipt?.profiles?.matric || '—'}</dd><dt>Issued</dt><dd>{displayDate(selectedReceipt?.issued_at)}</dd><dt>Verification code</dt><dd>{selectedReceipt?.verification_code || '—'}</dd></dl><p className="helper">This receipt includes a QR payload that can be checked through the public verification endpoint.</p></div><div className="modal-actions"><button className="button button-ghost" onClick={() => setSelectedReceipt(null)}>Close</button>{selectedReceipt && <button className="button button-primary" onClick={() => downloadReceiptPdf(selectedReceipt, selectedReceipt.projects, payments.find(item => item.project_id === selectedReceipt.project_id), selectedReceipt.profiles)}><Download size={15} />Download receipt PDF</button>}</div></Modal></section>}
+    {section === 'payments' && <section className="surface"><SectionHeader eyebrow="Finance evidence" title="Payment ledger" copy="Clearance payments and authenticated repository downloads with references for reconciliation." /><DataTable columns={['Reference', 'Type', 'Amount', 'Status', 'Created', 'Receipt']} rows={[...payments.map(item => { const receipt = receipts.find(record => record.project_id === item.project_id); return [item.paystack_reference || '—', item.transaction_type?.replaceAll('_', ' ') || '—', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), receipt ? <button className="button button-ghost button-small" onClick={() => setSelectedReceipt(receipt)}>View</button> : '—']; }), ...guestOrders.map(item => [item.paystack_reference || '—', 'legacy repository download', formatNaira(item.amount), item.status || '—', displayDate(item.created_at), '—'])]} empty="No payment records found." /><Modal open={Boolean(selectedReceipt)} onClose={() => setSelectedReceipt(null)} eyebrow="Clearance evidence" title={selectedReceipt?.verification_code || 'Receipt'}><ReceiptCard receipt={selectedReceipt} project={selectedReceipt?.projects} payment={payments.find(item => item.project_id === selectedReceipt?.project_id)} profile={selectedReceipt?.profiles} onDownload={() => downloadReceiptPdf(selectedReceipt, selectedReceipt.projects, payments.find(item => item.project_id === selectedReceipt.project_id), selectedReceipt.profiles)} /><div className="modal-actions"><button className="button button-ghost" onClick={() => setSelectedReceipt(null)}>Close</button></div></Modal></section>}
     {section === 'reports' && <AdminReports schedules={schedules} generatedReports={generatedReports} schedule={schedule} setSchedule={setSchedule} createSchedule={createSchedule} generateReport={generateReport} runDue={runDue} />}
     {section === 'settings' && <AdminSettings institution={institution} settings={settings} onInstitutionChange={updateInstitution} onSettingsChange={updateSettings} onSave={saveSettings} saving={saving} />}
   </Workspace>;
