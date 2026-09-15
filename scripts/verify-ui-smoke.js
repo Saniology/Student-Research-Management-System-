@@ -66,7 +66,7 @@ assert(/blueprint/.test(source) && /background-image/.test(source), 'maintained 
 assert(/glass|backdrop-filter/.test(source), 'glassmorphism surfaces exist');
 assert(/focus-visible/.test(source), 'keyboard focus styling exists');
 assert(/<meta name="viewport"/.test(source), 'responsive viewport meta exists');
-assert(/assets\/kasu-logo\.jpeg/.test(source), 'KASU logo and favicon are wired');
+assert(/\.\/assets\/kasu-logo\.jpeg/.test(source) && /rel = ['"]icon['"]|rel = ['"]icon['"]/.test(source), 'KASU logo and favicon are wired');
 assert(/Fraunces|DM Sans/.test(source), 'product typography is wired');
 assert(!/onclick=/.test(source), 'React actions do not rely on inline onclick handlers');
 assert(!/PaystackPop\.setup|openIframe\(/.test(source), 'browser does not create direct Paystack transactions');

@@ -124,8 +124,11 @@ export default function App() {
   const role = profile?.role || (previewRole || '');
 
   useEffect(() => {
-    const favicon = document.querySelector('link[rel="icon"]');
-    if (favicon) favicon.href = kasuLogo;
+    const favicon = document.querySelector('link[rel="icon"]') || document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.type = 'image/jpeg';
+    favicon.href = kasuLogo;
+    if (!favicon.parentNode) document.head.appendChild(favicon);
   }, []);
 
   useEffect(() => {
