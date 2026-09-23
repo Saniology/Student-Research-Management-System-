@@ -1392,6 +1392,16 @@ function PdfPreview({ path }) { const [url, setUrl] = useState(''); const [error
 
 function libraryKeywords(value) { return String(value || '').split(',').map(item => item.trim()).filter(Boolean); }
 function libraryProjectMetadataComplete(item, form) { return Boolean((form.title || item?.title)?.trim() && (form.abstract || item?.abstract)?.trim() && (form.degree || item?.degree)?.trim() && (form.department_id || item?.department_id) && (form.course_id || item?.course_id) && (item?.file_path || item?.isDemo)); }
+function libraryAcademicMapping(item, departments, courses) {
+  const student = item?.profiles || {};
+  const studentDepartmentName = String(student.department || item?.department || '').trim().toLowerCase();
+  const department = departments.find(option => option.id === (item?.department_id || student.department_id || item?.departments?.id))
+    || departments.find(option => option.name.trim().toLowerCase() === studentDepartmentName);
+  const departmentId = item?.department_id || student.department_id || item?.departments?.id || department?.id || '';
+  const departmentCourses = courses.filter(course => course.department_id === departmentId);
+  const courseId = item?.course_id || student.course_id || item?.courses?.id || (departmentCourses.length === 1 ? departmentCourses[0].id : '');
+  return { departmentId, courseId };
+}
 
 function LibraryWorkspace({ profile, session, preview, onToast }) {
   const [projects, setProjects] = useState(preview ? demoReviewProjects.filter(item => ['supervisor_approved', 'published', 'cleared'].includes(item.status)).map(item => ({ ...item, isDemo: true, dept: item.dept || 'Computer Science', department_id: 'preview-department', course_name: 'Computer Science', reviewHistory: [] })) : []);
@@ -1424,7 +1434,7 @@ function LibraryWorkspace({ profile, session, preview, onToast }) {
     if (preview || !session || !supabase) return undefined;
     if (!profile?.institution_id) { setProjects([]); setLoading(false); onToast('Your library account is not linked to an institution.'); return undefined; }
     let active = true;
-    const projectQuery = supabase.from('projects').select('*, profiles!projects_student_id_fkey(full_name,matric,email,phone,avatar_url,department), supervisor:profiles!projects_supervisor_id_fkey(full_name,email,phone), departments(id,name,code), courses(id,name,code,level,department_id)').eq('institution_id', profile.institution_id).in('status', ['supervisor_approved', 'library_review', 'published', 'cleared']).order('updated_at', { ascending: false });
+    const projectQuery = supabase.from('projects').select('*, profiles!projects_student_id_fkey(full_name,matric,email,phone,avatar_url,department,department_id,course_id), supervisor:profiles!projects_supervisor_id_fkey(full_name,email,phone), departments(id,name,code), courses(id,name,code,level,department_id)').eq('institution_id', profile.institution_id).in('status', ['supervisor_approved', 'library_review', 'published', 'cleared']).order('updated_at', { ascending: false });
     const reviewQuery = supabase.from('project_reviews').select('id,project_id,action,comment,created_at,version_number').order('created_at', { ascending: false }).limit(500);
     const receiptQuery = supabase.from('clearance_receipts').select('id,project_id,verification_code,qr_payload,issued_at,projects!inner(institution_id)').eq('projects.institution_id', profile.institution_id).order('issued_at', { ascending: false }).limit(200);
     const departmentQuery = supabase.from('departments').select('id,name,code').eq('institution_id', profile.institution_id).order('name');
@@ -1448,9 +1458,7 @@ function LibraryWorkspace({ profile, session, preview, onToast }) {
 
   const updateProject = updated => { if (!updated) return; setProjects(items => items.map(item => item.id === updated.id ? { ...item, ...updated, author: updated.profiles?.full_name || item.author, matric: updated.profiles?.matric || item.matric, dept: updated.departments?.name || item.dept, course_name: updated.courses?.name || item.course_name } : item)); setSelected(current => current ? { ...current, ...updated, author: updated.profiles?.full_name || current.author, matric: updated.profiles?.matric || current.matric, dept: updated.departments?.name || current.dept, course_name: updated.courses?.name || current.course_name } : current); };
   const openRecord = item => {
-    const departmentId = item.department_id || item.departments?.id || '';
-    const departmentCourses = courses.filter(course => course.department_id === departmentId);
-    const courseId = item.course_id || item.courses?.id || (departmentCourses.length === 1 ? departmentCourses[0].id : '');
+    const { departmentId, courseId } = libraryAcademicMapping(item, departments, courses);
     setSelected(item);
     setForm({ title: item.title || '', abstract: item.abstract || '', degree: item.degree || '', department_id: departmentId, course_id: courseId, keywords: Array.isArray(item.keywords) ? item.keywords.join(', ') : '', shelf_number: item.shelf_number || `KASU-CS-${String(projects.indexOf(item) + 1).padStart(3, '0')}`, doi: item.doi || '', comment: '', library_note: item.library_note || '' });
   };
