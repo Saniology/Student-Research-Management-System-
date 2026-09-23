@@ -495,10 +495,13 @@ ON CONFLICT (institution_id, name) DO NOTHING;
 INSERT INTO courses (institution_id, department_id, code, name, level)
 SELECT i.id, d.id, c.code, c.name, c.level
 FROM institutions i
-JOIN departments d ON d.institution_id = i.id AND d.name = 'Computer Science'
 CROSS JOIN (VALUES
-  ('CSC-BSC', 'Computer Science', 'Undergraduate')
-) AS c(code, name, level)
+  ('CSC-BSC', 'Computer Science', 'Undergraduate', 'Computer Science'),
+  ('MCB-BSC', 'Microbiology', 'Undergraduate', 'Microbiology'),
+  ('MAC-BSC', 'Mass Communication', 'Undergraduate', 'Mass Communication'),
+  ('ACC-BSC', 'Accounting', 'Undergraduate', 'Accounting')
+) AS c(code, name, level, department_name)
+JOIN departments d ON d.institution_id = i.id AND d.name = c.department_name
 WHERE i.slug = 'kasu'
 ON CONFLICT (institution_id, code) DO UPDATE SET
   department_id = EXCLUDED.department_id,
@@ -512,7 +515,7 @@ WITH profile_department_backfill AS (
   FROM profiles p
   JOIN institutions i ON i.slug = 'kasu'
   LEFT JOIN departments d ON d.institution_id = i.id
-    AND d.name = p.department
+    AND lower(trim(d.name)) = lower(trim(p.department))
   WHERE p.institution_id IS NULL
 )
 UPDATE profiles p
@@ -601,7 +604,7 @@ WITH registry_department_backfill AS (
   FROM students_registry sr
   JOIN institutions i ON i.slug = 'kasu'
   LEFT JOIN departments d ON d.institution_id = i.id
-    AND d.name = sr.department
+    AND lower(trim(d.name)) = lower(trim(sr.department))
   LEFT JOIN courses c ON c.institution_id = i.id
     AND c.department_id = d.id
     AND c.code = 'CSC-BSC'

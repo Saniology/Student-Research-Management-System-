@@ -759,7 +759,7 @@ async function handleLibraryUpdateMetadata(
   const abstract = body.abstract === undefined ? project.abstract || "" : requireString(body.abstract, "abstract");
   const degree = body.degree === undefined ? project.degree || "" : requireString(body.degree, "degree");
   const departmentId = body.department_id === undefined ? project.department_id : optionalString(body.department_id);
-  const courseId = body.course_id === undefined ? project.course_id : optionalString(body.course_id);
+  let courseId = body.course_id === undefined ? project.course_id : optionalString(body.course_id);
   const keywords = normalizeKeywords(body.keywords === undefined ? project.keywords : body.keywords);
   const libraryNote = body.library_note === undefined ? project.library_note || null : optionalString(body.library_note);
 
@@ -770,6 +770,17 @@ async function handleLibraryUpdateMetadata(
     `/departments?id=eq.${encodeURIComponent(departmentId)}&institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&select=id,name`,
   );
   if (!departments[0]) return jsonResponse({ error: "The selected department is not available in this institution" }, 400);
+
+  // Existing projects may predate course mapping. When the department has one
+  // institution-managed course, use it rather than forcing a manual repair.
+  if (!courseId) {
+    const departmentCourses = await supabaseRest(
+      supabaseUrl,
+      serviceRoleKey,
+      `/courses?institution_id=eq.${encodeURIComponent(project.institution_id || actor.institution_id || "")}&department_id=eq.${encodeURIComponent(departmentId)}&select=id&limit=2`,
+    );
+    if (departmentCourses.length === 1) courseId = departmentCourses[0].id;
+  }
 
   if (courseId) {
     const courses = await supabaseRest(
